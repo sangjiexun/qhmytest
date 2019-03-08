@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DepartmentMapper">
+	
+	<resultMap type="Department" id="departmentResultMap">
+		<id column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="NAME" property="NAME"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+		<!-- <collection property="subDepartment" ofType="com.fh.entity.system.Department">
+		<id column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="NAME" property="NAME"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+		
+		</collection> -->
+	</resultMap>
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_DEPARTMENT"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",
+		"NAME_EN",
+		"BIANMA",
+		"PARENT_ID",
+		"HEADMAN",
+		"TEL",
+		"ADDRESS",
+		"BZ",
+		"DEPARTMENT_ID",
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",
+		"BUSINESSLICCODE",
+		"ZHUANGTAI",
+		"JIHUOZT",
+		"LIANXIREN",
+		"LIANXIFANGSHI",
+		"SHENG_ID",
+		"DISHI_ID",
+		"QUXIAN_ID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{NAME},
+		#{NAME_EN},
+		#{BIANMA},
+		#{PARENT_ID},
+		#{HEADMAN,jdbcType=VARCHAR},
+		#{TEL,jdbcType=VARCHAR},
+		#{ADDRESS,jdbcType=VARCHAR},
+		#{BZ,jdbcType=VARCHAR},
+		#{DEPARTMENT_ID},
+		#{DEPARTMENT_TYPE_ID},
+		#{CREWSIZE,jdbcType=VARCHAR},
+		#{REGISTADDRESS,jdbcType=VARCHAR},
+		#{BUSINESSLICCODE,jdbcType=VARCHAR},
+		#{ZHUANGTAI,jdbcType=INTEGER},
+		#{JIHUOZT,jdbcType=INTEGER},
+		#{LIANXIREN,jdbcType=VARCHAR},
+		#{LIANXIFANGSHI,jdbcType=VARCHAR},
+		#{SHENG_ID,jdbcType=VARCHAR},
+		#{DISHI_ID,jdbcType=VARCHAR},
+		#{QUXIAN_ID,jdbcType=VARCHAR}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into 
+	<include refid="tableName"></include>
+		(
+	<include refid="Field"></include>
+		) values (
+	<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	
+	<select id="xxlist" parameterType="pd" resultType="pd">
+		select * from SYS_DEPARTMENT s where  s.DEPARTMENT_TYPE_ID='1'
+	</select>
+	
+	<!-- 新增项目-->
+	<insert id="savexm" parameterType="pd">
+		insert into 
+		T_XIANGMU
+		(
+			ID,XIANGMUBM,DEPARTMENT_ID,CJR,DEPARTMENT_BIANMA,JIHUOZT
+		) values (
+			#{ID},#{XIANGMUBM},#{DEPARTMENT_ID},#{CJR},#{DEPARTMENT_BIANMA},1
+		)
+	</insert>
+	<!-- 项目FB-->
+	<insert id="savefb" parameterType="pd">
+		insert into 
+		T_XIANGMU_FB
+		(
+			ID,XIANGMU_ID,PROJECTSTATUS
+		) values (
+			#{FBID},#{ID},'0'
+		)
+	</insert>
+	
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			"NAME" = #{NAME},
+			"NAME_EN" = #{NAME_EN},
+			"HEADMAN" = #{HEADMAN,jdbcType=VARCHAR},
+			"TEL" = #{TEL,jdbcType=VARCHAR},
+			"ADDRESS" = #{ADDRESS,jdbcType=VARCHAR},
+			"BZ" = #{BZ,jdbcType=VARCHAR},	
+			"CREWSIZE" = #{CREWSIZE,jdbcType=VARCHAR},
+			"REGISTADDRESS" = #{REGISTADDRESS,jdbcType=VARCHAR},
+			"BUSINESSLICCODE" = #{BUSINESSLICCODE,jdbcType=VARCHAR},
+			"ZHUANGTAI" = #{ZHUANGTAI,jdbcType=INTEGER},
+			"JIHUOZT" = #{JIHUOZT,jdbcType=INTEGER},
+			"LIANXIREN" = #{LIANXIREN,jdbcType=VARCHAR},
+			"LIANXIFANGSHI" = #{LIANXIFANGSHI,jdbcType=VARCHAR},
+			"SHENG_ID" = #{SHENG_ID,jdbcType=VARCHAR},
+			"DISHI_ID" = #{DISHI_ID,jdbcType=VARCHAR},
+			"QUXIAN_ID" = #{QUXIAN_ID,jdbcType=VARCHAR}
+			
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 
+	<select id="findById" parameterType="pd" resultType="pd">
+		select d.*,t.dep_type_name, t.DEP_TYPE_ID from sys_department d left join sys_department_type t on d.department_type_id = t.dep_type_id
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</select>
+	-->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select d.* from v_sys_department d 
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</select>
+	<!-- 通过组织名称获取数据 -->
+	<select id="findByName" parameterType="pd" resultType="pd">
+		select d.* from v_sys_department d 
+		where 
+			"NAME" = #{NAME}
+	</select>
+	<!-- 通过项目名称获取信息 -->
+	<select id="findByxmName" parameterType="pd" resultType="pd">
+		select d.* from V_T_PROJECT d 
+		where 
+			"XIANGMUMC" = #{XIANGMUMC}
+	</select>
+	<select id="listXm" parameterType="pd" resultType="pd">
+		select "ID", "XIANGMUBM", "DEPARTMENT_ID", "XIANGMUMC"
+  		from v_t_project p
+ 		where p.DEPARTMENT_ID in
+       (select t.department_id
+          from v_SYS_DEPARTMENT t
+         start with t.DEPARTMENT_ID = #{DEPARTMENT_ID}
+        connect by prior t.DEPARTMENT_ID = t.PARENT_ID)
+   		and id in
+       (select PROJECT_ID from v_sys_user_project up where up.user_id = #{USER_ID})
+       <if test="keywords != null and keywords != ''">
+			and
+				(
+				 "XIANGMUMC" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+		</if>
+	</select>
+	<!-- 通过编码获取数据 -->
+	<select id="findByBianma" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		v_sys_department
+		where 
+			"BIANMA" = #{BIANMA}
+	</select>
+	
+	
+	
+	
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+       d.name,
+       d.department_id,
+       d.name_en,
+       d.bianma,
+       d.headman,
+       d.tel,
+       d.address,
+       t.dep_type_name,
+       d.crewsize,
+       d.registaddress,
+       d.businessliccode,
+       d.lianxiren,
+       d.lianxifangshi,
+        s.provincename,
+       c.cityname,
+       q.districtname,
+        decode(d.ZHUANGTAI, 1, '正常', 2, '停用') ZHUANGTAI,
+       decode(d.JIHUOZT, 1, '未激活', 2, '已激活') JIHUOZT,
+       d.bz
+  from sys_department d
+  left join s_province s
+    on d.sheng_id = s.provinceid
+  left join s_city c
+    on d.dishi_id = c.cityid
+  left join s_district q
+    on d.quxian_id = q.districtid
+  left join sys_department_type t
+    on d.department_type_id = t.dep_type_id
+		where
+			1=1
+		<if test="pd.DEPARTMENT_ID!= null and pd.DEPARTMENT_ID != ''"><!-- 检索 -->
+		and "PARENT_ID" = #{pd.DEPARTMENT_ID}
+		</if>
+		<if test="pd.DEPARTMENT_ID == ''"><!-- 检索 -->
+		and "PARENT_ID" != '00'
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 "NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 "NAME_EN" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				 or
+				 "BIANMA" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+		order by "NAME"
+	</select>
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listSubDepartmentByParentId" parameterType="String" resultMap="departmentResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"PARENT_ID" = #{parentId} order by "NAME" 
+			
+			
+	</select>
+	
+	<select id="departmentZtree" parameterType="pd"  resultMap="departmentResultMap">
+	
+	select * from sys_department start with department_id = '0'connect by  prior department_id =parent_id
+	
+	
+	</select>
+	
+	
+	<select id="S_province"  parameterType="pd"  resultType="pd">
+	select * from s_province
+	</select>
+	
+	<select id="S_city"  parameterType="pd"  resultType="pd">
+	select * from S_CITY  where provinceid=#{SHENG_ID}
+	</select>
+	<select id="S_district"  parameterType="pd"  resultType="pd">
+	select * from s_district where cityid=#{DISHI_ID}
+	</select>
+	
+	<!-- 列表 1-->
+	<select id="datalistPage1" parameterType="page" resultType="pd">
+		select xm.id xmid,xm.xiangmubm,de.name bmmc,dic.name xmlx,xm.XIANGMUFZR,xm.FUZERENDH,xm.XIANGMULXR,xm.XIANGMULXRDH,
+  pr.provincename,city.cityname,district.districtname,to_char(xm.XIANGMUGQQ,'yyyy-mm-dd HH24:mi:ss') XIANGMUGQQ,to_char(xm.XIANGMUGQZ,'yyyy-mm-dd HH24:mi:ss') XIANGMUGQZ from 
+  (select * from t_xiangmu where department_id in
+   (  select department_id from sys_department start with department_id=#{pd.DEPARTMENT_ID} 
+   connect by prior department_id=parent_id)) xm left join sys_department de on xm.DEPARTMENT_ID=de.department_id  
+   left join sys_dictionaries dic on xm.XIANGMULX_ID=dic.bianma left join s_province pr on xm.SHENG_ID=pr.PROVINCEID
+   left join s_city city on xm.DISHI_ID=city.cityid left join s_district district on xm.QUXIAN_ID=district.districtid
+		where
+			1=1
+			
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 de.name LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 dic.name LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				)
+		</if>
+		
+	</select>
+	
+	
+	<!-- 详情 -->
+	<select id="listmessage" parameterType="pd" resultType="pd">
+		
+	select 
+	HETONGZJ,XIANGMUJINDU,XIANGXIDZ,BAIDU_LNG,BAIDU_LAT,SYNCHRONPK,XIANGMUMC,SHIGONGXKZH,JIANSHEDW,CHENGJIANDW,JIANLIDW,ZHIJIANBUMEN,
+	case when JIHUOZT='1' then '未激活' when JIHUOZT='2' then '已激活' else '未知' end JIHUOZT
+ 	from t_xiangmu 
+ 	where id=#{xmid}
+		
+	</select>
+	
+	
+	
+	
+	<!-- 通过DEPARTMENT_TYPE_ID=1获取数据 -->
+	<select id="findByTypeId" parameterType="pd" resultType="pd">
+		select 
+			"DEPARTMENT_ID","NAME"
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_TYPE_ID" = #{DEPARTMENT_TYPE_ID}
+	</select>
+	
+	
+	<!-- 获取所有数据user控制层用 -->
+	<select id="findAll"  resultType="Department">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		
+	</select>
+	
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findBypId" parameterType="pd" resultType="Department">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"PARENT_ID" = #{DEPARTMENT_ID}
+	</select>
+	
+</mapper>

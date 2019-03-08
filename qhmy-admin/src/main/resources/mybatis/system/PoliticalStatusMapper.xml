@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PoliticalStatusMapper">
+	<!-- 获取政治面貌列表 -->
+	<select id="getSignUplistPage" parameterType="page" resultType="pd">
+		select * from sys_dictionaries d
+		where d.PARENT_ID = 'ZZMM'
+		<if test="pd.keyWord != null and pd.keyWord != ''">
+			and d.name LIKE CONCAT(CONCAT('%', #{pd.keyWord}),'%')
+		</if>
+		order by d.bianma
+	</select>
+	<!-- 根据政治面貌PKID获取政治面貌信息 -->
+	<select id="getPoliticalStatus" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries d
+		where d.DICTIONARIES_ID = #{PKID}
+	</select>
+	<!-- 编辑保存政治面貌信息 -->
+	<update id="updatePoliticalStatus" parameterType="pd" >
+		update sys_dictionaries d set
+		NAME = #{NAME},
+		BZ = #{BEIZHU},
+		IS_USED = #{IS_USED}
+		WHERE D.DICTIONARIES_ID = #{PKID}
+	</update>
+	<!-- 获取政治面貌编码 -->
+	<select id="getBianMa" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_ZZMM.nextval,3,'0') as ZZMM_BIANMA from dual
+	</select>
+	<!-- 保存政治面貌信息 -->
+	<insert id="savePoliticalStatus" parameterType="pd">
+		insert into sys_dictionaries
+		(DICTIONARIES_ID, NAME,BIANMA, ORDER_BY, PARENT_ID, BZ, 
+		IS_USED, CJSJ)
+		values
+		(sys_guid(),#{NAME},#{ZZMM_BIANMA},1,'ZZMM',#{BEIZHU,jdbcType=VARCHAR},
+		#{IS_USED},SYSDATE)
+	</insert>
+	<!-- 更新启用状态 -->
+	<update id="updateIsUse" parameterType="pd" >
+		update sys_dictionaries d
+		set IS_USED = #{IS_USED}
+		where d.DICTIONARIES_ID = #{PKID}
+	</update>
+	<!-- 根据政治面貌名称验重 -->
+	<select id="getPoliticalStatus_NAME" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries D 
+		where D.NAME = #{NAME}
+		AND D.PARENT_ID = 'ZZMM'
+		AND ROWNUM = 1
+	</select>
+	<!-- 删除政治面貌信息 -->
+	<delete id="deletePoliticalStatus" parameterType="pd" >
+		delete from sys_dictionaries d
+		where d.DICTIONARIES_ID = #{PKID}
+	</delete>
+	<!-- 根据政治面貌PKID获取学生表是否已有该值 -->
+	<select id="getStuPoliticalStatus" parameterType="pd" resultType="pd">
+		select * from t_student s
+		where s.ZHENGZHIMIANMAO_PKID = #{PKID}
+		AND ROWNUM = 1
+	</select>
+</mapper>

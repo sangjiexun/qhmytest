@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BasicClassMapper">
+
+	<!-- 查询班级数据 -->
+	<select id="basicclass_listPage" parameterType="page" resultType="pd">
+		SELECT T.PKID, 
+		 (SELECT D.NAME FROM SYS_DICTIONARIES D WHERE D.DICTIONARIES_ID = T.SYS_DICTIONARIES_PKID) GRADE,
+		 (SELECT D.NAME FROM SYS_DICTIONARIES D WHERE D.DICTIONARIES_ID = T.BANXING_PKID) BANXING,
+		T.SYS_DICTIONARIES_PKID, T.SYS_DEPARTMENT_PKID, T.SYS_USER_PKID,T.IS_USE,
+		T.REMARKS,T.CLASS_NAME,T.CJSJ,T.XGSJ,T.CLASS_BIANMA,T.BANXING_PKID,T.BANRONGLIANG
+		FROM T_CLASS T WHERE 1=1
+		<if test="pd.BANXING_PKID!=null and pd.BANXING_PKID!=''">
+		  	AND T.BANXING_PKID = #{pd.BANXING_PKID}
+		</if>
+		<if test="pd.SYS_DICTIONARIES_PKID!=null and pd.SYS_DICTIONARIES_PKID!=''">
+		  	AND T.SYS_DICTIONARIES_PKID = #{pd.SYS_DICTIONARIES_PKID}
+		</if>
+		<if test="pd.CLASS_NAME!=null and pd.CLASS_NAME!=''">
+		  	AND T.CLASS_NAME LIKE CONCAT(CONCAT('%', #{pd.CLASS_NAME}),'%')
+		</if>
+		ORDER BY T.CJSJ
+	</select>
+	
+	<!-- 新增班级 -->
+	<insert id="saveBasicClass" parameterType="pd">
+		INSERT INTO T_CLASS (PKID, SYS_DICTIONARIES_PKID,SYS_DEPARTMENT_PKID, IS_USE, CLASS_NAME,CJSJ,XGSJ,BANXING_PKID,BANRONGLIANG)
+		VALUES (SYS_GUID(),#{SYS_DICTIONARIES_PKID,jdbcType=VARCHAR},#{SYS_DEPARTMENT_PKID,jdbcType=VARCHAR},#{IS_USE,jdbcType=VARCHAR},
+		#{CLASS_NAME,jdbcType=VARCHAR},SYSDATE,SYSDATE,#{BANXING_PKID,jdbcType=VARCHAR},#{BANRONGLIANG,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getClassByPkid" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CLASS T WHERE T.PKID = #{PKID}
+	</select>
+	
+	<!-- 根据班型入学年份和班级名称查询班级 -->
+	<select id="getClassByGradeBxNm" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CLASS T WHERE T.SYS_DICTIONARIES_PKID = #{SYS_DICTIONARIES_PKID}
+		AND T.BANXING_PKID = #{BANXING_PKID}
+		AND T.CLASS_NAME = #{CLASS_NAME}
+	</select>
+	
+	<!-- 根据pkid修改一条班级信息-->
+	<update id="updateClassByPkid" parameterType="pd" >
+		UPDATE T_CLASS 
+		SET SYS_DICTIONARIES_PKID = #{SYS_DICTIONARIES_PKID,jdbcType=VARCHAR},
+		BANXING_PKID = #{BANXING_PKID,jdbcType=VARCHAR},
+		BANRONGLIANG = #{BANRONGLIANG,jdbcType=VARCHAR},
+		IS_USE = #{IS_USE,jdbcType=VARCHAR},
+		CLASS_NAME = #{CLASS_NAME,jdbcType=VARCHAR},
+		XGSJ = SYSDATE
+		WHERE PKID = #{PKID}
+	</update>
+	
+	<!-- 根据pkid删除一条班级信息-->
+	<delete id="deleteClassByPkid" parameterType="pd">
+		DELETE FROM T_CLASS WHERE PKID = #{PKID} 
+	</delete>
+	
+		<!--取字典类中数据 -->
+	<select id="getFromSYS_DICT" resultType="pd" parameterType="pd">
+		SELECT DICTIONARIES_ID,BIANMA,NAME,IS_USED FROM SYS_DICTIONARIES WHERE PARENT_ID=#{PARENT_ID}
+		<if test="is_use_d != null and is_use_d !=''">
+			and (IS_USED = 'Y' or IS_USED = '1')
+		</if>
+		<if test="SFQY != null and SFQY !=''">
+			and SFQY = '1'
+		</if>
+		ORDER BY BIANMA
+	</select>
+	
+	
+	<!-- 查询班级数据 -->
+	<select id="classtype_listPage" parameterType="page" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.NAME LIKE  CONCAT(CONCAT('%', #{pd.classTypeName}),'%')
+		ORDER BY T.ORDER_BY,T.CJSJ desc
+	</select>
+	
+	<!-- 新增班级 -->
+	<insert id="saveclasstype" parameterType="pd">
+		INSERT INTO sys_dictionaries
+		  (dictionaries_id, NAME, name_en, bianma, order_by, parent_id, bz, tbsname, sfqy, department_id, colleges_pkid, is_used)
+		VALUES
+		  (#{PKID}, #{NAME}, #{v_name_en,jdbcType=VARCHAR}, 
+		  #{BIANMA}, 1, 'CLASSTYPE', #{BZ,jdbcType=VARCHAR}, 
+		  #{v_tbsname,jdbcType=VARCHAR},1, #{v_department_id,jdbcType=VARCHAR}, #{v_colleges_pkid,jdbcType=VARCHAR},#{IS_USED})
+	</insert>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypeByPkid" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.DICTIONARIES_ID = #{PKID}
+	</select>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypeBIANMA" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.BIANMA = #{BIANMA} and rownum=1
+	</select>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypeName" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.NAME = #{NAME} AND  rownum=1
+	</select>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypeBIANMAs" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.BIANMA = #{BIANMA} AND T.DICTIONARIES_ID != #{PKID}  and rownum=1
+	</select>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypeNames" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.NAME = #{NAME} AND T.DICTIONARIES_ID != #{PKID} and rownum=1
+	</select>
+	
+	<!-- 根据pkid查看班级详情 -->
+	<select id="getclasstypePkid" parameterType="pd" resultType="pd">
+		select t.*,t.DICTIONARIES_ID PKID from sys_dictionaries t where t.parent_id='CLASSTYPE' AND T.DICTIONARIES_ID = #{PKID} and rownum=1
+	</select>
+	
+	<!-- 根据pkid修改一条班级信息-->
+	<update id="updateclasstypeByPkid" parameterType="pd" >
+		UPDATE sys_dictionaries 
+		SET 
+		NAME = #{NAME},
+		BIANMA = #{BIANMA},
+		IS_USED = #{IS_USED},
+		SFQY = #{SFQY}
+		WHERE DICTIONARIES_ID = #{PKID}
+	</update>
+	
+	<!-- 根据pkid删除一条班级信息-->
+	<delete id="deleteclasstypeByPkid" parameterType="pd">
+		DELETE FROM sys_dictionaries WHERE DICTIONARIES_ID = #{PKID} 
+	</delete>
+	
+	<!-- 根据pkid修改一条班级信息-->
+	<update id="updateclasstypeIS_USED" parameterType="pd" >
+		UPDATE sys_dictionaries 
+		SET 
+		IS_USED = #{IS_USED}
+		WHERE DICTIONARIES_ID = #{PKID}
+	</update>
+	
+	<!-- 根据pkid修改一条班级信息-->
+	<update id="updateclasstypeSFQY" parameterType="pd" >
+		UPDATE sys_dictionaries 
+		SET 
+		SFQY = #{SFQY}
+		WHERE DICTIONARIES_ID = #{PKID}
+	</update>
+	
+	<select id="getClassCount" parameterType="pd" resultType="pd">
+	
+	SELECT SUM(CCOUNT) CCOUNT FROM (
+		select count(1) CCOUNT from t_class t where t.BANXING_PKID=#{PKID}
+	    union all
+	    select count(1) CCOUNT FROM T_STUDENT_BM BM WHERE BM.BANJI_TYPE_PKID=#{PKID}
+	    union all
+	    select count(1) CCOUNT FROM T_PAY_ITEM PI WHERE PI.CLASSTYPE_PKID=#{PKID}
+    )
+	</select>
+	
+	<select id="getClassUse" parameterType="pd" resultType="pd">
+		SELECT * FROM T_STUDENT_BM T WHERE T.BANJI = #{PKID} and ROWNUM = 1
+	</select>
+	
+	<update id="updateIsUse" parameterType="pd">
+		update T_CLASS set  IS_USE = #{IS_USE}  where pkid = #{PKID}
+	</update>
+	
+</mapper>

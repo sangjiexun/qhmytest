@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SysnoticeMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_NOTICE","SYS_DEPARTMENT","SYS_USER"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+	 "FID",<!-- 主键 -->
+	 "FNAME",<!-- 发布内容名称 -->
+	 "FCONTENT",<!-- 发布内容 -->
+	 "FRELEASEPSN",<!-- 发布人 -->
+	 "FRELEASEDATE",<!-- 发布时间 -->
+	 "FDEPARTMENTID",<!-- 所属企业ID -->
+	 "SYS_DEPARTMENT.NAME" NAME,
+	 "SYS_USER.USERNAME" USERNAME
+	 
+	</sql>
+	
+	<!--表名 -->
+	<sql id="tableName1">
+		"SYS_NOTICE"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field1">
+	 "FID",<!-- 主键 -->
+	 "FNAME",<!-- 发布内容名称 -->
+	 "FCONTENT",<!-- 发布内容 -->
+	 "FRELEASEPSN",<!-- 发布人 -->
+	 "FRELEASEDATE",<!-- 发布时间 -->
+	 "FDEPARTMENTID"<!-- 所属企业ID -->
+	 
+	</sql>
+	
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{FID},
+			#{FNAME},
+			#{FCONTENT},
+			#{FRELEASEPSN},
+			#{FRELEASEDATE},
+			#{FDEPARTMENTID}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName1"></include>
+		(
+		<include refid="Field1"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from <include refid="tableName1"></include> where "FID" = #{FID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update <include refid="tableName1"></include> set "FNAME" = #{FNAME},"FCONTENT" = #{FCONTENT}, "FRELEASEDATE" = #{FRELEASEDATE}  where "FID" = #{FID}
+	</update>
+	
+		<select id="findById" parameterType="pd" resultType="pd">
+		select <include refid="Field1"></include> from <include refid="tableName1"></include>
+		where "FID"=#{FID}
+	</select>
+	
+	
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findByNamelistPagename" parameterType="page" resultType="pd">
+		select s.username username,u.user_no user_no,s.user_idcard user_idcard, ycname, to_char(sj,'yyyy-mm-dd') sj, DEV_NAME from sys_user_extends u,
+             sys_user s,
+            (select user_serial, ycname, sj, DEV_NAME
+               from kt_jiaoyujl k,
+                    (select bianma
+                       from sys_department t
+                      where t.name = #{pd.name})
+              where k.prid = bianma) n
+		where u.user_id = n.user_serial and s.user_id = n.user_serial
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+	select 	 FID,FNAME,FCONTENT,FRELEASEPSN,FRELEASEDATE,FDEPARTMENTID,SYS_DEPARTMENT.NAME NAME,SYS_USER.USERNAME USERNAME from
+	<include refid="tableName"></include>
+          where 
+          SYS_NOTICE.FDEPARTMENTID = SYS_DEPARTMENT.DEPARTMENT_ID and SYS_NOTICE.FRELEASEPSN=SYS_USER.USER_ID and
+          1=1
+          <if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 "FNAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 "FRELEASEPSN" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				 or
+				 "NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+          <if test="pd.lastLoginStart!=null and pd.lastLoginStart!='' ">
+				and FRELEASEDATE &gt;= to_date(#{pd.lastLoginStart},'yyyy-MM-dd')
+			</if>
+			<if test=" pd.lastLoginEnd!=null and pd.lastLoginEnd!=''">
+				and FRELEASEDATE &lt;= to_date(#{pd.lastLoginEnd},'yyyy-MM-dd')
+			</if>
+			
+		
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select 	 FID,FNAME,FCONTENT,FRELEASEPSN,FRELEASEDATE,FDEPARTMENTID,SYS_DEPARTMENT.NAME NAME,SYS_USER.USERNAME USERNAME from
+		<include refid="tableName"></include>
+		 where 
+          SYS_NOTICE.FDEPARTMENTID = SYS_DEPARTMENT.DEPARTMENT_ID and SYS_NOTICE.FRELEASEPSN=SYS_USER.USER_ID and "FRELEASEPSN"=#{FRELEASEPSN}
+	</select>
+	
+	
+	
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName1"></include>
+		where 
+			"FID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

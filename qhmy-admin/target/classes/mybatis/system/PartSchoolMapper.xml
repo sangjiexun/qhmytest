@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PartSchoolMapper">
+
+	<!-- 查询合作学校数据-->
+	<select id="partschool_listPage" parameterType="page" resultType="pd">
+		SELECT T.PKID, SCHOOLNAME,DINGJIN,CJSJ,XGSJ,ISHEZUO
+		FROM T_PART_SCHOOL T WHERE T.ZHUANGTAI = 1 
+		<if test="pd.SCHOOLNAME!=null and pd.SCHOOLNAME!=''">
+		  	AND T.SCHOOLNAME LIKE CONCAT(CONCAT('%', #{pd.SCHOOLNAME}),'%')
+		</if>
+		ORDER BY  
+		 SCHOOLNAME,FUN_SPELLCODE(SUBSTR(SCHOOLNAME,1,1)),
+		 cast(REGEXP_SUBSTR(SCHOOLNAME, '[0-9]+') as int)
+	</select>
+	<!-- 查询合作学校数据搭导出-->
+	<select id="exportPartSchoolList" parameterType="pd" resultType="pd">
+		SELECT T.PKID, SCHOOLNAME,DINGJIN,CJSJ,XGSJ,
+		(CASE WHEN T.ISHEZUO = 'Y' then '是' WHEN T.ISHEZUO = 'N' then '否'  ELSE ''END) ISHEZUO
+		FROM T_PART_SCHOOL T WHERE T.ZHUANGTAI = 1 
+		<if test="SCHOOLNAME!=null and SCHOOLNAME!=''">
+		  	AND T.SCHOOLNAME LIKE CONCAT(CONCAT('%', #{SCHOOLNAME}),'%')
+		</if>
+		ORDER BY  SCHOOLNAME,FUN_SPELLCODE(SUBSTR(SCHOOLNAME,1,1)),
+		 cast(REGEXP_SUBSTR(SCHOOLNAME, '[0-9]+') as int)
+		 
+	</select>
+	
+	<!-- 新增合作学校 -->
+	<insert id="savePartSchool" parameterType="pd">
+		INSERT INTO T_PART_SCHOOL (PKID, SCHOOLNAME,DINGJIN, CJSJ, XGSJ,ZHUANGTAI,ISHEZUO)
+		VALUES (SYS_GUID(),#{SCHOOLNAME,jdbcType=VARCHAR},#{DINGJIN,jdbcType=NUMERIC},SYSDATE,SYSDATE,1
+		,#{ISHEZUO,jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 根据pkid删除一条合作学校信息 实际修改学校状态-->
+	<update id="deletePartSchoolByPkid" parameterType="pd" >
+		UPDATE T_PART_SCHOOL 
+		SET ZHUANGTAI = #{ZHUANGTAI,jdbcType=VARCHAR},
+		XGSJ = SYSDATE
+		WHERE PKID = #{PKID}
+	</update>
+	
+	<!-- 批量删除合作学校-->
+	<delete id="deleteAllPartSchool" parameterType="String">
+		UPDATE T_PART_SCHOOL 
+		   SET ZHUANGTAI = 0 ,XGSJ = SYSDATE
+		 WHERE PKID  IN
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- 根据学校学校pkids查询是否已经被学生使用-->
+	<select id="getStuinfoByPkidArr" parameterType="String"  resultType="pd">
+		SELECT * FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TB ON T.PKID = TB.STUDENT_PKID  
+		WHERE TB.ZHUANGTAI = '1' AND T.WHKXUEXIAO IN
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+		
+	</select>
+	
+		<!--批量插入合作学校  -->
+	<insert id="batchSavePart" parameterType="java.util.List" useGeneratedKeys="false">
+		insert into
+		T_PART_SCHOOL
+		(
+		    PKID,
+			SCHOOLNAME,
+			DINGJIN,
+			ISHEZUO,
+			CJSJ,
+			XGSJ,
+			ZHUANGTAI
+		)
+		 <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+			select 
+				#{item.PKID,jdbcType=VARCHAR},
+				#{item.SCHOOLNAME,jdbcType=VARCHAR},
+				#{item.DINGJIN,jdbcType=NUMERIC},
+				'N',
+				SYSDATE,
+				SYSDATE,
+				'1'		
+			from dual
+		</foreach>
+
+	</insert>
+	
+	<!-- 根据学校名称查询学校-->
+	<select id="getPartSchoolByName" parameterType="pd" resultType="pd">
+		SELECT * FROM T_PART_SCHOOL T WHERE T.SCHOOLNAME = #{SCHOOLNAME} AND ZHUANGTAI ='1'
+	</select>
+	
+	<!-- 根据学校pkid查询学校-->
+	<select id="getPartSchoolByPkid" parameterType="pd" resultType="pd">
+		SELECT * FROM T_PART_SCHOOL T WHERE T.PKID = #{PKID}
+	</select>
+	
+	<!-- 根据学校学校pkid查询是否已经被学生使用-->
+	<select id="getStuinfoByPkid" parameterType="pd" resultType="pd">
+		SELECT * FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TB ON T.PKID = TB.STUDENT_PKID  
+		WHERE TB.ZHUANGTAI = '1' AND T.WHKXUEXIAO =  #{PKID}
+	</select>
+	
+	<!-- 根据pkid修改文化课学校-->
+	<update id="updatePartSchoolByPkid" parameterType="pd" >
+		UPDATE T_PART_SCHOOL 
+		SET SCHOOLNAME = #{SCHOOLNAME,jdbcType=VARCHAR},
+		DINGJIN = #{DINGJIN,jdbcType=NUMERIC},
+		ISHEZUO = #{ISHEZUO,jdbcType=VARCHAR},
+		XGSJ = SYSDATE
+		WHERE PKID = #{PKID}
+	</update>
+	
+	<!-- 更新是否合作学校状态-->
+	<update id="updateIsHezuo" parameterType="pd">
+		UPDATE T_PART_SCHOOL t SET T.ISHEZUO = #{ISHEZUO},T.XGSJ = SYSDATE
+		WHERE T.PKID = #{PKID}
+	</update>
+</mapper>

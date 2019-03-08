@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SeqMapper">
+	
+	
+	<!-- 通过ID获取数据 -->
+	<select id="getNextSeqZGSBySeqName" parameterType="String" resultType="pd">
+		select SEQ_ZONGGONGSI.nextval as RS from dual 
+	</select>
+	
+	<select id="getNextSeqFGSBySeqName" parameterType="String" resultType="pd">
+		select SEQ_FENGONGSI.nextval as RS,D.BIANMA AS BIANMA from dual
+		JOIN SYS_DEPARTMENT D
+		ON DEPARTMENT_ID = #{UUID}
+	</select>
+	<select id="getNextSeqXMBySeqName" parameterType="String" resultType="pd">
+		select SEQ_XIANGMU.nextval as RS,D.BIANMA AS BIANMA from dual
+		JOIN SYS_DEPARTMENT D
+		ON DEPARTMENT_ID = #{UUID}
+	</select>
+	
+	<select id="getNextSeqFGSBySeqNameBM" parameterType="String" resultType="pd">
+		select SEQ_FENGONGSI.nextval as RS from dual 
+	</select>
+	<select id="getNextSeqXMBySeqNameBM" parameterType="String" resultType="pd">
+		select SEQ_XIANGMU.nextval as RS from dual 
+	</select>
+</mapper>

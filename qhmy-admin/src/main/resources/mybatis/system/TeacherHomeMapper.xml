@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TeacherHomeMapper">
+	
+	<!--begin 教师首页统计  -->
+	<!-- 今日缴费总人数 -->
+	<select id="getTodayPaymentNumber" resultType="Integer">
+		SELECT count(DISTINCT(student_pkid)) FROM t_pay_order WHERE 1=1 AND trunc(cjsj)=trunc(SYSDATE) AND transaction_flag=1
+	</select>
+	<!-- 今日网上缴费人数 -->
+	<select id="getTodayOnlinePaymentNumber" resultType="Integer">
+		SELECT count(DISTINCT(student_pkid)) FROM t_pay_order WHERE 1=1 AND trunc(cjsj)=trunc(SYSDATE) AND transaction_flag=1 AND ordercreate_mode='U'
+	</select>
+	<!-- 其它缴费人数 -->
+	<select id="getTodayOtherPaymentNumber" resultType="Integer">
+		SELECT count(DISTINCT(student_pkid)) FROM t_pay_order WHERE 1=1 AND trunc(cjsj)=trunc(SYSDATE) AND transaction_flag=1 AND ordercreate_mode<![CDATA[<>]]>'U'
+	</select>
+	
+	<!-- 今日缴费总额 -->
+	<select id="getTodayTotalMoney" resultType="String">
+	SELECT
+	to_char(SUM(
+	CASE
+	WHEN t.input_output ='XX'
+	THEN (money*-1)
+	ELSE money
+
+	END
+	),'fm99999999990.00') 
+	alltotalmoney
+
+	FROM t_pay_order_detail t WHERE t.cjsj>trunc(SYSDATE) and
+	exists (select 1 from t_pay_order o where o.pkid = t.PAY_ORDER_PKID and o.TRANSACTION_FLAG = '1')
+	
+    </select>
+    <!-- 各个项目缴费总金额 -->
+	<select id="getTodayEachPayitemTotalMoney" resultType="pd">
+	SELECT
+	T.PAY_ITEM_PKID,
+	T.PAYITEM,
+	SUM(CASE
+	WHEN INPUT_OUTPUT = 'XX' THEN
+	MONEY * -1
+	ELSE
+	MONEY
+	END) TOTALMONEY
+
+	FROM (SELECT *
+	FROM T_PAY_ORDER_DETAIL A
+	JOIN T_PAY_ITEM B ON A.PAY_ITEM_PKID = B.PKID
+	WHERE A.cjsj > TRUNC(SYSDATE)
+	and exists (select 1 from t_pay_order o where o.pkid = A.PAY_ORDER_PKID and o.TRANSACTION_FLAG = '1')
+	) T
+	GROUP BY T.PAY_ITEM_PKID, T.PAYITEM
+	ORDER BY TOTALMONEY DESC
+    </select>
+	
+	<!--缴费汇总图标统计 折线图 左侧 -->
+	<select id="getPayitemMoneys" parameterType="pd" resultType="pd">
+	SELECT * FROM 
+(select w.*,ROWNUM rn from (
+    SELECT I.PAYITEM AS ITEMNAME,
+    I.PKID,I.CJSJ,
+    NVL(COUNT(DISTINCT IL.STUDENT_PKID), 0) AS RECEPEOPLE,
+    NVL(SUM(IL.AMOUNTRECEIVABLE), 0) AS RECEMONEY,
+    COUNT((SELECT DISTINCT IL.STUDENT_PKID
+    FROM T_PAY_ITEM_LIST L
+    WHERE L.PAY_ITEM_PKID = I.PKID
+    AND L.AMOUNTCOLLECTION > 0
+    AND L.STUDENT_PKID = IL.STUDENT_PKID)) AS ACTUALPEOPLE,
+    NVL(SUM(IL.AMOUNTCOLLECTION), 0) AS ACTUALMONEY,
+    NVL(T.U_MONEY, 0) AS UPEOMON,
+    NVL(OT.U_MONEY, 0) AS OPEOMON
+    FROM T_PAY_ITEM I 
+    LEFT JOIN (SELECT * FROM  T_PAY_ITEM_LIST li  JOIN t_student stu ON li.student_pkid=stu.pkid AND stu.zaixuezt='ZX' and li.is_default = 'Y') IL ON IL.PAY_ITEM_PKID = I.PKID and  i.status=1
+    LEFT JOIN (SELECT PAY_ITEM_PKID,
+    COUNT(DISTINCT D.STUDENT_PKID) AS USTUDENT,
+    NVL(SUM(CASE
+    WHEN O.ORDERCREATE_MODE = 'U' THEN
+    (CASE
+    WHEN INPUT_OUTPUT = 'XX' THEN
+    -1 * MONEY
+    ELSE
+    MONEY
+    END) ELSE 0 END), 0) AS U_MONEY
+    FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX') D
+    INNER JOIN T_PAY_ORDER O ON (O.PKID = D.PAY_ORDER_PKID AND
+    O.TRANSACTION_FLAG = '1')
+    WHERE 1 = 1
+    AND EXISTS
+    (SELECT 1
+    FROM T_PAY_ITEM_LIST L
+    WHERE L.PAY_ITEM_PKID = D.PAY_ITEM_PKID)
+    GROUP BY D.PAY_ITEM_PKID) T ON T.PAY_ITEM_PKID = I.PKID
+  
+    LEFT JOIN (SELECT PAY_ITEM_PKID,
+    COUNT(DISTINCT D.STUDENT_PKID) AS USTUDENT,
+    NVL(SUM(CASE
+    WHEN O.ORDERCREATE_MODE != 'U' THEN
+    (CASE
+    WHEN INPUT_OUTPUT = 'XX' THEN
+    -1 * MONEY
+    ELSE
+    MONEY
+    END) ELSE 0 END), 0) AS U_MONEY
+    FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX') D
+    INNER JOIN T_PAY_ORDER O ON (O.PKID = D.PAY_ORDER_PKID AND
+		O.TRANSACTION_FLAG = '1')
+		WHERE 1 = 1
+		AND EXISTS
+		(SELECT 1
+		FROM T_PAY_ITEM_LIST L
+		WHERE L.PAY_ITEM_PKID = D.PAY_ITEM_PKID)
+		GROUP BY D.PAY_ITEM_PKID) OT ON OT.PAY_ITEM_PKID = I.PKID
+		GROUP BY I.PAYITEM, OT.U_MONEY, OT.USTUDENT, T.U_MONEY, T.USTUDENT, I.PKID,I.CJSJ,I.STATUS
+		HAVING I.STATUS = 1
+		ORDER BY I.CJSJ DESC
+		)w where RECEMONEY >ACTUALMONEY )WHERE 
+		rn &lt;=#{END}AND rn &gt;=#{START}
+	</select>
+	
+	
+	
+	<!-- 折线图  图标数据-->
+	<select id="getData" parameterType="pd" resultType="pd">
+	SELECT rq.today,
+	nvl((SELECT sum(studentmoeny) FROM (
+
+	SELECT I.PAYITEM ITEMNAME,S.XINGMING,D.NAME
+	DEPTNAME,L.COST,L.DISCOUNT,L.AMOUNTRECEIVABLE,
+	L.AMOUNTCOLLECTION,OT.ORDERCREATE_MODE,OT.STUDENTMOENY,OT.XGSJ XGSJ
+	FROM
+	T_PAY_ITEM I
+	JOIN T_PAY_ITEM_LIST L ON I.PKID = L.PAY_ITEM_PKID
+	JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID AND s.zaixuezt='ZX'
+	JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+	JOIN
+	(
+	SELECT SUM(STUDENTMOENY) AS
+	STUDENTMOENY,T.ORDERCREATE_MODE,T.STUDENT_PKID,T.PAY_ITEM_PKID,T.XGSJ
+	FROM (
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'网上' AS
+	ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where o.PKID = OD.PAY_ORDER_PKID) XGSJ
+	FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX' ) OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE = 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+	UNION
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'其他' AS
+	ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where o.PKID = OD.PAY_ORDER_PKID) XGSJ
+	FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX') OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE != 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+	)T GROUP BY T.STUDENT_PKID,T.PAY_ITEM_PKID,T.ORDERCREATE_MODE,T.XGSJ
+	)OT ON OT.PAY_ITEM_PKID = I.PKID AND OT.STUDENT_PKID = L.STUDENT_PKID
+	WHERE I.STATUS IN ('1','2') AND I.PKID =
+	#{PKID}
+	)WHERE ordercreate_mode='网上' AND to_char(xgsj,'yyyy-mm-dd')=rq.today
+
+	),0) onlinepay,
+	nvl((SELECT sum(studentmoeny) FROM (
+
+	SELECT I.PAYITEM ITEMNAME,S.XINGMING,D.NAME
+	DEPTNAME,L.COST,L.DISCOUNT,L.AMOUNTRECEIVABLE,
+	L.AMOUNTCOLLECTION,OT.ORDERCREATE_MODE,OT.STUDENTMOENY,oT.XGSJ XGSJ
+	FROM
+	T_PAY_ITEM I
+	JOIN T_PAY_ITEM_LIST L ON I.PKID = L.PAY_ITEM_PKID
+	JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID AND s.zaixuezt='ZX'
+	JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+	JOIN
+	(
+	SELECT SUM(STUDENTMOENY) AS
+	STUDENTMOENY,T.ORDERCREATE_MODE,T.STUDENT_PKID,T.PAY_ITEM_PKID,T.XGSJ
+	FROM (
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'网上' AS
+	ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where o.PKID = OD.PAY_ORDER_PKID) XGSJ
+	FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX') OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE = 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+	UNION
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'其他' AS
+	ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where o.PKID = OD.PAY_ORDER_PKID) XGSJ
+	FROM (select * from T_PAY_ORDER_DETAIL dd join t_student ts on dd.student_pkid = ts.pkid and ts.zaixuezt='ZX') OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE != 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+	)T GROUP BY T.STUDENT_PKID,T.PAY_ITEM_PKID,T.ORDERCREATE_MODE,T.XGSJ
+	)OT ON OT.PAY_ITEM_PKID = I.PKID AND OT.STUDENT_PKID = L.STUDENT_PKID 
+	WHERE I.STATUS IN ('1','2') AND I.PKID =
+	#{PKID}
+
+
+	)WHERE ordercreate_mode='其他' AND to_char(xgsj,'yyyy-mm-dd')=rq.today
+
+	),0) otherpay
+
+
+	FROM
+	(
+	SELECT TO_CHAR(SYSDATE - LEVEL + 1, 'yyyy-mm-dd') TODAY
+	FROM DUAL
+	CONNECT BY LEVEL &lt;= 7
+	)rq ORDER BY today
+
+   </select>
+	
+	
+	
+	<!--end 教师首页统计  -->
+	<select id="getRightByRoleid" parameterType="pd" resultType="pd">
+		select role_id, role_name, to_char(rights) rights, parent_id, add_qx, del_qx, edit_qx, cha_qx, department_id, role_type, userid, cjsj 
+		from sys_role r where r.ROLE_ID = #{ROLE_ID} and ROWNUM = 1
+	</select>
+</mapper>

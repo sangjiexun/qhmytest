@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FamilyMapper">
+	<select id="getlistPage" parameterType="page" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES D 
+		WHERE 1=1
+		<if test="pd.keywords != '' and pd.keywords != null">
+		 AND D.NAME like CONCAT(CONCAT('%', #{pd.keywords}),'%')
+		</if>
+		and D.PARENT_ID = 'FAMILY'
+	</select>
+	<select id="getFamily" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES D 
+		WHERE D.DICTIONARIES_ID = #{PKID}
+	</select>
+	<select id="getFamilybyName" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES D 
+		WHERE PARENT_ID = 'FAMILY' AND D.NAME = #{FAMILY_NAME}
+		AND ROWNUM = 1
+	</select>
+	<update id="update" parameterType="pd">
+		update SYS_DICTIONARIES D set D.NAME = #{FAMILY_NAME},
+		IS_USED = #{IS_USED}
+		WHERE D.DICTIONARIES_ID = #{PKID}
+	</update>
+	<insert id="save" parameterType="pd">
+		insert into SYS_DICTIONARIES (DICTIONARIES_ID,NAME,IS_USED,ORDER_BY,PARENT_ID,CJSJ)
+		VALUES (SYS_GUID(),#{FAMILY_NAME},#{IS_USED},1,'FAMILY',SYSDATE)
+	</insert>
+	<update id="updateIsUse" parameterType="pd">
+		update SYS_DICTIONARIES D SET IS_USED = #{IS_USED}
+		WHERE D.DICTIONARIES_ID = #{PKID}
+	</update>
+	<select id="getStuFamily" parameterType="pd" resultType="pd">
+		SELECT * FROM T_STUDENT S WHERE (S.ONE_JHRGX_PKID = #{PKID}  OR S.TWO_JHRGX_PKID = #{PKID})
+		AND ROWNUM = 1
+	</select>
+	<delete id="delete" parameterType="pd">
+		delete from SYS_DICTIONARIES D  where d.DICTIONARIES_ID = #{PKID}
+	</delete>
+</mapper>

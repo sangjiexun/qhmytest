@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ItemListMapper">
+	
+	<!-- 查询普通缴费项目表 -->
+	<select id="queryPayItemAndList" parameterType="pd" resultType="pd" >
+		select i.*,d.NAME AS GRADE_NAME,DS.NAME AS CLASSTYPE_NAME
+        from t_pay_item i 
+        join SYS_DICTIONARIES d on d.DICTIONARIES_ID = i.GRADE_PKID and d.PARENT_ID = 'GRADE'
+        JOIN SYS_DICTIONARIES DS ON DS.DICTIONARIES_ID = I.CLASSTYPE_PKID AND DS.PARENT_ID = 'CLASSTYPE'
+        where i.PKID=#{item_pkid}  and ROWNUM=1 
+	</select>
+	<!-- end 查询普通缴费项目表 -->
+	
+	<!-- 保存名单 -->
+	<insert id="saveItemList" parameterType="pd" useGeneratedKeys="false">
+		insert into t_pay_item_list
+        (pkid, T_PAY_ITEM_PKID, student_pkid, cost, discount, amountreceivable, discount_money, discount_mode)
+        values(
+         #{pkid},#{pay_item_pkid},#{student_pkid},#{cost,jdbcType=NUMERIC},#{discount,jdbcType=VARCHAR},#{amountreceivable,jdbcType=NUMERIC},#{discount_money,jdbcType=NUMERIC},#{discount_mode,jdbcType=NUMERIC}
+        )
+	</insert>
+	<!-- end 保存名单 -->
+	
+	<select id="queryStudent" parameterType="pd" resultType="pd" >
+		select SB.*,S.WX_OPENID
+		from T_STUDENT_BM SB 
+		JOIN T_STUDENT S ON S.PKID = SB.STUDENT_PKID
+		WHERE S.SHENFENZHENGHAO = #{cardNo}
+		AND SB.RXNIANFEN_PKID = #{GRADE_PKID}
+		AND SB.BANJI_TYPE_PKID = #{CLASSTYPE_PKID}
+		AND SB.ZHUANGTAI = '1'
+		AND SB.ZXZT = 'ZX'
+		AND SB.IS_TONGGUO IN ('1','2')
+		AND ROWNUM=1
+<!-- 		select * from t_student t where 1=1 and t.zhuangtai=1 and ( t.xuehao=#{stuNumber} or t.shenfenzhenghao=#{cardNo}) and rownum=1 -->
+	</select>
+	<select id="queryStudentYj" parameterType="pd" resultType="pd">
+		select SB.*
+		from T_STUDENT_BM SB 
+		JOIN T_STUDENT S ON S.PKID = SB.STUDENT_PKID
+		WHERE S.SHENFENZHENGHAO = #{cardNo}
+		AND S.YJ_NIANFEN = #{GRADE_PKID}
+		AND S.YJ_BANJI_TYPE_PKID = #{CLASSTYPE_PKID}
+		AND S.YJ_STUBM_PKID = SB.PKID
+		AND SB.ZHUANGTAI = '1'
+		AND SB.ZXZT = 'ZX'
+		AND SB.IS_TONGGUO IN ('1','2')
+		AND ROWNUM=1
+	</select>
+	<select id="queryStu" parameterType="pd" resultType="pd" >
+		select SB.PKID from t_student t
+		join T_STUDENT_BM SB ON SB.STUDENT_PKID = T.PKID
+		where T.SHENFENZHENGHAO=#{cardNo} and ROWNUM=1 and SB.ZHUANGTAI=1 and SB.ZXZT='ZX'
+		AND SB.RXNIANFEN_PKID = #{GRADE_PKID} AND SB.BANJI_TYPE_PKID = #{CLASSTYPE_PKID}
+	</select>
+	
+	<select id="daoruqueryStu" parameterType="pd" resultType="pd" >
+		select T.*,SB.BANJI_TYPE_PKID,SB.RXNIANFEN_PKID,SB.PKID BMPKID,t.WHKXUEXIAO from t_student t
+    join T_STUDENT_BM SB ON SB.STUDENT_PKID = T.PKID
+    where T.SHENFENZHENGHAO=#{cardNo} and ROWNUM=1 and SB.ZHUANGTAI=1 and SB.ZXZT='ZX'
+    AND SB.RXNIANFEN_PKID = (select DICTIONARIES_ID from  sys_dictionaries e where e.name=#{RUXUENIANFEN} and e.parent_id='GRADE') 
+    AND SB.BANJI_TYPE_PKID = (select DICTIONARIES_ID from  sys_dictionaries e where e.name=#{BANXING} and e.parent_id='CLASSTYPE')
+	</select>
+	
+	<update id="updateItemList"  parameterType="pd">
+		update t_pay_item_list l set l.cost=#{cost,jdbcType=NUMERIC},l.discount=#{discount,jdbcType=VARCHAR},
+		l.amountreceivable=#{amountreceivable,jdbcType=NUMERIC},
+		discount_money=#{discount_money,jdbcType=NUMERIC},discount_mode=#{discount_mode,jdbcType=NUMERIC},XGSJ=sysdate
+        where l.pkid=#{pay_item_list_pkid}
+	</update>
+	
+	<!-- 导入已缴费名单时候 查询学生是否存在在缴费名单表 -->
+	
+	
+	<select id="stuIsExsitsInList" parameterType="pd" resultType="pd">
+		SELECT * FROM  t_pay_item_list WHERE T_PAY_ITEM_PKID=#{PAY_ITEM_PKID} AND student_bm_pkid=#{STUDENT_BM_PKID}
+	</select>
+	
+	
+	
+	<select id="queryItemListOnly" parameterType="pd" resultType="pd">
+		SELECT * FROM t_pay_item_list PL  WHERE pl.student_pkid=#{student_pkid}
+		 AND  pl.T_PAY_ITEM_PKID=#{item_pkid}
+		 AND PL.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+		 AND ROWNUM = 1
+	</select>
+	
+	<select id="getItemMsg" parameterType="pd" resultType="pd">
+		SELECT * FROM T_PYA_ITEM I WHERE I.PKID = #{item_pkid} where i.STATUS in ('0','1')
+	</select>
+	
+	
+	
+	<!-- 批量保存名单 -->
+	<insert id="batchSaveDatas" parameterType="java.util.List" useGeneratedKeys="false">
+		insert into t_pay_item_list
+        (pkid, T_PAY_ITEM_PKID, student_pkid, cost, discount, amountreceivable, discount_money, discount_mode,STUDENT_BM_PKID)
+        <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		select
+			#{item.pkid},#{item.pay_item_pkid},#{item.student_pkid},#{item.cost,jdbcType=NUMERIC},#{item.discount,jdbcType=VARCHAR},#{item.amountreceivable,jdbcType=NUMERIC},
+			#{item.discount_money,jdbcType=NUMERIC},#{item.discount_mode,jdbcType=NUMERIC} ,#{item.STUDENT_BM_PKID,jdbcType=VARCHAR}
+        from dual    
+        </foreach> 
+	</insert>
+	<!-- end 批量保存名单 -->
+	<select id="queryStudentList" parameterType="pd" resultType="pd">
+		select * from t_pay_item_list l 
+		where l.PAY_ITEM_PARENT_PKID = #{PAY_ITEM_PARENT_PKID}
+		and exists (select 1 from t_student s where s.pkid = l.STUDENT_PKID and s.SHENFENZHENGHAO = #{shenFenZhengHao} and s.ZAIXUEZT='ZX' and s.ZHUANGTAI = 1) 
+		AND (l.T_PAY_ITEM_PKID=l.PAY_ITEM_PARENT_PKID OR l.IS_DEFAULT='Y')
+		and ROWNUM = 1
+	</select>
+	<select id="getPayList" parameterType="pd" resultType="pd">
+		select count(*) CCOUNT from T_PAY_ORDER_DETAIL l where 1=1 
+    	and PAY_ITEM_PKID=#{ITEM_PKID}
+    	and exists (select 1 from t_student s where s.pkid = l.STUDENT_PKID and s.SHENFENZHENGHAO = #{shenFenZhengHao} and s.ZAIXUEZT='ZX' and s.ZHUANGTAI = 1) 
+	</select>
+	<select id="getPayItemListLock" parameterType="pd" resultType="pd">
+		select * from t_pay_item_list l 
+		where l.T_PAY_ITEM_PKID = #{ITEM_PKID}
+		and exists (select 1 from t_student s where s.pkid = l.STUDENT_PKID and s.SHENFENZHENGHAO = #{shenFenZhengHao} and s.ZAIXUEZT='ZX' and s.ZHUANGTAI = 1) 
+		AND (l.PAY_ITEM_PKID=l.PAY_ITEM_PARENT_PKID OR l.IS_DEFAULT='Y')
+		and ROWNUM = 1 for update
+	</select>
+	 <update id="updatePayItemList" parameterType="pd">
+    	update T_PAY_ITEM_LIST
+    	set 
+    	XGSJ=SYSDATE
+   		,AMOUNTRECEIVABLE=#{amountreceivable}
+   		,DISCOUNT_MODE=#{discountMode}
+   		,DISCOUNT=#{discount}
+   		,DISCOUNT_MONEY=#{discountMoney}
+    	WHERE PKID=#{payItemListPkid}
+    	
+    </update>
+   	<update id="updateStuPayItemLoan" parameterType="pd">
+       UPDATE T_PAY_ITEM_LIST T SET T.LOAN_MONEY = #{LOAN}, T.XGSJ = sysdate
+        WHERE T.STUDENT_PKID = #{STUDENT_PKID,jdbcType = VARCHAR}
+          AND (T.T_PAY_ITEM_PKID IN (SELECT TP.PKID FROM T_PAY_ITEM TP
+        WHERE TP.PARENT_ID = (SELECT TI.PARENT_ID FROM T_PAY_ITEM TI WHERE TI.PKID = #{ITEM_PKID, jdbcType = VARCHAR}))
+           OR T.PAY_ITEM_PKID =  #{ITEM_PKID, jdbcType = VARCHAR})
+	</update>
+	<!-- 贷款/缓交登记 -->
+	<update id="updateStuPayLoan" parameterType="pd">
+       UPDATE T_PAY_ITEM_LIST T SET T.LOAN_MONEY = #{LOAN}, T.XGSJ = sysdate
+        WHERE T.STUDENT_PKID = #{STUDENT_PKID} AND T.PAY_ITEM_PARENT_PKID = #{PAY_ITEM_PKID}
+	</update>
+</mapper>

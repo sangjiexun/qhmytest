@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RyxxMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		sys_department
+	</sql>
+	
+	<!-- 字段 -->
+		<sql id="Field">
+		"DEPARTMENT_ID",	
+		"NAME",	
+		"NAME_EN",
+		"BIANMA",	
+		"PARENT_ID",
+		"BZ",	
+		"HEADMAN",
+		"TEL",	
+		"FUNCTIONS",
+		"ADDRESS",	
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",	
+		"BUSINESSLICCODE",
+		"PROJECTCODE"
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{DEPARTMENT_ID},	
+			#{NAME},	
+			#{NAME_EN},
+			#{BIANMA},	
+			#{PARENT_ID},	
+			#{BZ},
+			#{HEADMAN},	
+			#{TEL},	
+			#{FUNCTIONS},
+			#{ADDRESS},	
+			#{DEPARTMENT_TYPE_ID},	
+			#{CREWSIZE},
+			#{REGISTADDRESS},	
+			#{BUSINESSLICCODE},	
+			#{PROJECTCODE}
+	</sql>
+	
+	<!-- 所有信息-->
+	<select id="getmessagelistPage" parameterType="page" resultType="pd">
+         select qy.name               qyname,
+       xm.name               xmname,
+       fbgs.name             fbgsname,
+       bz.name               bzname,
+       u.name                uname,
+       u.islabour            islabour,
+        u.idcard          idcard,
+        u.phone          tel,
+       userm.sex          sex,
+        userm.jg          jg,
+         userm.address          address,
+       userm.jobid           as jobid,
+       userm.userno          userno,
+       userm.gz              gz,
+       userm.jcrq            jcrq,
+       userm.lcrq            lcrq
+  from sys_department qy
+  join (select DEPARTMENT_ID id, NAME, Parent_Id
+          from sys_department
+         where DEPARTMENT_TYPE_ID = 2
+         <if test="pd.xmmc!=null and pd.xmmc!=''">
+				and "NAME"=#{pd.xmmc}
+			   </if>
+         ) xm
+    on (xm.Parent_Id = qy.DEPARTMENT_ID)
+  join (select DEPARTMENT_ID, NAME, Parent_Id
+          from sys_department
+         where DEPARTMENT_TYPE_ID = 3
+         <if test="pd.fbdw!=null and pd.fbdw!=''">
+					and "NAME"=#{pd.fbdw}
+				   </if>
+         ) fbgs
+    on (fbgs.Parent_Id = xm.id)
+  join (select DEPARTMENT_ID id, NAME, Parent_Id
+          from sys_department
+         where DEPARTMENT_TYPE_ID = 4
+          <if test="pd.bz!=null and pd.bz!=''">
+					and "NAME"=#{pd.bz}
+				   </if>
+         ) bz
+    on (bz.Parent_Id = fbgs.DEPARTMENT_ID)
+  join (select name, islabour,user_idcard idcard,phone, DEPARTMENT_ID id, USER_ID userid
+          from sys_user
+         where islabour = 'y') u
+    on (u.id = bz.id)
+  join (select USER_ID      usid,
+               user_no      userno,
+               gk_JobID     jobid,
+               gk_gz_pk     gz,
+               gk_StartDate jcrq,
+               gk_EndDate   lcrq,
+               user_sex      sex,
+               user_native   jg,
+               user_address  address
+          from sys_user_extends
+         where 1 = 1 <if test="pd.gz!=null and pd.gz!=''">
+					and gk_gz_pk=#{pd.gz}
+				   </if>
+				   <if test="pd.jcstartLoginStart!=null and pd.jcstartLoginStart!='' ">
+				and gk_StartDate &gt;= #{pd.jcstartLoginStart}
+			</if>
+			<if test=" pd.jclastLoginStart!=null and pd.jclastLoginStart!=''">
+				and gk_StartDate &lt;= #{pd.jclastLoginStart}
+			</if>
+			 <if test="pd.lcstartLoginStart!=null and pd.lcstartLoginStart!='' ">
+				and gk_EndDate &gt;= #{pd.lcstartLoginStart}
+			</if>
+			<if test=" pd.lclastLoginStart!=null and pd.lclastLoginStart!=''">
+				and gk_EndDate &lt;= #{pd.lclastLoginStart}
+			</if>
+	) userm
+    on (userm.usid = u.userid)
+ where DEPARTMENT_TYPE_ID = 1 
+ <if test="pd.qymc!=null and pd.qymc!=''">
+				and qy."NAME"=#{pd.qymc}
+			</if>
+		
+	</select>
+	
+	
+	<!-- 企业-->
+	<select id="qylist" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_TYPE_ID" = #{DEPARTMENT_TYPE_ID}
+	</select>
+	
+	<!-- 项目-->
+	<select id="xmlist" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_TYPE_ID" = '2' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	<!-- 分包公司-->
+	<select id="fbgslist" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			DEPARTMENT_TYPE_ID='3' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	
+	<!-- 班组-->
+	<select id="bzlist" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			DEPARTMENT_TYPE_ID='4' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"RYXX_ID" = #{RYXX_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"NAME" = #{NAME},	
+			"RYXX_ID" = "RYXX_ID"
+			where 
+				"RYXX_ID" = #{RYXX_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"RYXX_ID" = #{RYXX_ID}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				<!--	根据需求自己加检索条件
+					字段1 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or 
+					字段2 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				-->
+				)
+		</if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"RYXX_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

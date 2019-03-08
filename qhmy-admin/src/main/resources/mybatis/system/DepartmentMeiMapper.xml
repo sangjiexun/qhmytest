@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DepartmentMeiMapper">
+	
+	<insert id="save" parameterType="pd">
+	   insert into SYS_MEI_DEPARTMENT(PKID,ORDER_NUMBER,NAME,IS_QY)
+	   values(sys_guid(),#{ORDER_NUMBER},#{NAME},#{IS_QY})
+	</insert>
+	
+    <delete id="del" parameterType="pd">
+         delete from SYS_MEI_DEPARTMENT smd where smd.pkid='${PKID}'
+    </delete>
+    
+    <select id="depListById" resultType="pd" parameterType="pd">
+       select * from  SYS_MEI_DEPARTMENT smd WHERE smd.pkid='${PKID}' and rownum=1
+    </select>
+    
+	<update id="update" parameterType="pd">
+	   update SYS_MEI_DEPARTMENT smd 
+	   set smd.order_number='${ORDER_NUMBER}'
+	   ,smd.name='${NAME}'
+	   ,smd.is_qy='${IS_QY}'
+	   ,smd.xgsj=SYSDATE
+	    where smd.pkid='${PKID}'
+	   
+	</update>
+	
+	<select id="depMeilistPage" parameterType="page" resultType="pd" >
+     	   select * from  SYS_MEI_DEPARTMENT D
+     	   
+     	    WHERE 1=1 
+     	    
+     	    <if test="pd.NAME!=null and pd.NAME!=''">
+     	        AND D.NAME LIKE '%${pd.NAME}%'
+     	    </if>
+     	   
+     	   ORDER BY D.CJSJ DESC
+	</select>
+	
+	
+	<update id="update_isqy" parameterType="pd">
+	   update SYS_MEI_DEPARTMENT smd 
+	   set 
+	    smd.is_qy='${IS_QY}'
+	   ,smd.xgsj=SYSDATE
+	    where smd.pkid='${PKID}'
+	</update>
+	
+	
+	<select id="getMeiDepByName" resultType="pd" parameterType="pd">
+	 select COUNT(*) COUNT from  SYS_MEI_DEPARTMENT smd WHERE smd.NAME='${NAME}'
+	</select>
+	
+		<select id="getName" resultType="pd" parameterType="pd">
+	 select smd.NAME from  SYS_MEI_DEPARTMENT smd WHERE smd.PKID='${PKID}'
+	</select>
+	<select id="delete_yanzheng" resultType="pd" parameterType="pd">
+	select count(*) coun
+from t_student_bm bm
+where 1 = 1
+and bm.zhuangtai=1
+and bm.xk_mark like '%${PKID}%'
+
+	</select>
+
+	
+</mapper>

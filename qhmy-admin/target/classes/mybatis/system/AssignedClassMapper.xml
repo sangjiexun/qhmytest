@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AssignedClassMapper">
+	<select id="getassignedClasslistPage" parameterType="page" resultType="pd">
+		select 
+		d.NAME NIANJI,d.IS_USED,GETXINAMESTR(t.DEPARTMENT_PKID) DEPARTMENTNAME,getWholeRoomName_func(D.PKID) DORMNAME,
+		T.PKID,T.SHENFENZHENGHAO,T.XINGMING,T.XINGBIE,T.XUEHAO,C.CLASS_NAME,t.DEPARTMENT_PKID,t.NIANJI NIANJI_BM,
+		t.IS_RECEIVED,TO_CHAR(t.BAODAOSJ, 'YYYY-MM-DD') BAODAOSJ,
+		P.PICI_NAME PICI
+		from t_student t
+		join SYS_DICTIONARIES d on d.BIANMA = t.NIANJI and d.PARENT_ID = 'GRADE'
+		left join t_class c on c.PKID = t.BANJI
+		left join T_STUDENT_DORM D ON D.T_STUDENT_PKID = T.PKID
+		left join T_PICI P ON P.PKID = t.PICI_PKID
+		where 1=1 and t.ZHUANGTAI='1' and ZAIXUEZT = 'ZX'
+		<if test="pd.userAllDepts!=null">
+			AND T.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="pd.userAllDepts" open="(" separator="," close=")"> 
+			   #{pd.userAllDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+			</foreach>
+    	</if>
+    	<if test="pd.classList!=null">
+			AND T.BANJI IN 
+			<foreach item="item" index="index" collection="pd.classList" open="(" separator="," close=")"> 
+			   #{pd.classList[${index}].PKID,jdbcType=VARCHAR}  
+			</foreach>
+    	</if>
+    	<if test="pd.grade!=null and pd.grade !=''">
+			and t.NIANJI =#{pd.grade}
+		</if>
+		<if test="pd.BANJI!=null and pd.BANJI !=''">
+			and T.BANJI =#{pd.BANJI}
+		</if>
+		<if test="pd.PICI!=null and pd.PICI !=''">
+			and T.PICI_PKID =#{pd.PICI}
+		</if>
+		<if test="pd.IS_FENBAN == 'Y'.toString()">
+			and T.BANJI IS NOT NULL
+		</if>
+		<if test="pd.IS_FENBAN == 'N'.toString()">
+			and T.BANJI IS NULL
+		</if>
+		<if test="pd.orgtree!=null and pd.orgtree !=''">
+			and t.DEPARTMENT_PKID in
+			(SELECT REGEXP_SUBSTR(#{pd.orgtree}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pd.orgtree}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+    	<if test="pd.keywords!=null and pd.keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			      or
+			      t.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			
+			)
+	    </if>
+	    <if test="pd.xingbie!=null and pd.xingbie!=''">
+			and T.xingbie =#{pd.xingbie}
+		</if>
+		<if test="pd.IS_RECEIVED!=null and pd.IS_RECEIVED!=''">
+			and T.IS_RECEIVED =#{pd.IS_RECEIVED}
+		</if>
+		<if test="pd.YX!=null and pd.YX !=''">
+			and d.IS_YX = 'Y' 
+		</if>
+	    order by d.NAME desc,t.DEPARTMENT_PKID,getWholeRoomName_func(D.PKID)
+	</select>
+	<select id="getBanJi" parameterType="pd" resultType="pd">
+		select c.*,d.NAME NIANJI_NAME,t.NAME DEP_NAME from t_class c 
+		join SYS_DICTIONARIES d on d.DICTIONARIES_ID = c.SYS_DICTIONARIES_PKID
+		join SYS_DEPARTMENT t on t.DEPARTMENT_ID = c.SYS_DEPARTMENT_PKID
+		where 
+		1=1 
+<!-- 		and is_use=1  -->
+		and SYS_DICTIONARIES_PKID= (select DICTIONARIES_ID from SYS_DICTIONARIES where BIANMA = #{SYS_DICTIONARIES_PKID}) 
+		and SYS_DEPARTMENT_PKID in 
+		<foreach item="item" index="index" collection="deptArray" open="(" separator="," close=")"> 
+		#{deptArray[${index}],jdbcType=VARCHAR}  
+		</foreach>
+	</select>
+	<select id="getXKCJ" parameterType="pd" resultType="pd">
+		SELECT MD.PKID,MD.NAME FROM SYS_MEI_DEPARTMENT MD
+	</select>
+	<select id="getRXNF" parameterType="pd" resultType="pd">
+		 SELECT D.DICTIONARIES_ID PKID,D.NAME FROM SYS_DICTIONARIES D WHERE D.PARENT_ID='GRADE'
+	</select>
+	<select id="getBanJiType" parameterType="pd" resultType="pd">
+		SELECT D.DICTIONARIES_ID PKID,D.NAME FROM  SYS_DICTIONARIES D WHERE D.PARENT_ID='CLASSTYPE'
+	</select>
+	<select id="exportStuInfoToExcel" parameterType="pd" resultType="pd">
+		select 
+		d.NAME NIANJI,d.IS_USED,DEPARTMENTSTR(t.DEPARTMENT_PKID) DEPARTMENTNAME,getWholeRoomName_func(D.PKID) DORMNAME,
+		T.PKID,T.SHENFENZHENGHAO,T.XINGMING,T.XINGBIE,T.XUEHAO,C.CLASS_NAME,(case when t.IS_RECEIVED ='Y' then '已报到' when t.IS_RECEIVED ='N' then '未报到' end) IS_RECEIVED,
+		TO_CHAR(t.BAODAOSJ, 'YYYY-MM-DD') BAODAOSJ,P.PICI_NAME PICI
+		from t_student t
+		join SYS_DICTIONARIES d on d.BIANMA = t.NIANJI and d.PARENT_ID = 'GRADE'
+		left join t_class c on c.PKID = t.BANJI
+		left join T_STUDENT_DORM D ON D.T_STUDENT_PKID = T.PKID
+		left join T_PICI P ON P.PKID = t.PICI_PKID
+		where 1=1 and t.ZHUANGTAI='1' and ZAIXUEZT = 'ZX'
+		<if test="userAllDepts!=null">
+			AND T.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="userAllDepts" open="(" separator="," close=")"> 
+			   #{userAllDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+			</foreach>
+    	</if>
+    	<if test="grade!=null and grade !=''">
+			and t.NIANJI =#{grade}
+		</if>
+		<if test="BANJI!=null and BANJI !=''">
+			and T.BANJI =#{BANJI}
+		</if>
+		<if test="IS_FENBAN == 'Y'.toString()">
+			and T.BANJI IS NOT NULL
+		</if>
+		<if test="PICI!=null and PICI !=''">
+			and T.PICI_PKID =#{PICI}
+		</if>
+		<if test="IS_FENBAN == 'N'.toString()">
+			and T.BANJI IS NULL
+		</if>
+		<if test="orgtree!=null and orgtree !=''">
+			and t.DEPARTMENT_PKID in
+			(SELECT REGEXP_SUBSTR(#{orgtree}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{orgtree}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+    	<if test="keywords!=null and keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or
+			      t.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			
+			)
+	    </if>
+	    <if test="xingbie!=null and xingbie!=''">
+			and T.xingbie =#{xingbie}
+		</if>
+		<if test="IS_RECEIVED!=null and IS_RECEIVED!=''">
+			and T.IS_RECEIVED =#{IS_RECEIVED}
+		</if>
+		<if test="YX!=null and YX !=''">
+			and d.IS_YX = 'Y' 
+		</if>
+	    order by d.NAME desc,t.DEPARTMENT_PKID,getWholeRoomName_func(D.PKID)
+	</select>
+	<update id="updateStuClass" parameterType="pd" >
+		update t_student s set s.BANJI = #{BANJI}
+		where s.PKID IN (SELECT REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL) IS NOT NULL)
+	</update>
+	
+	<!-- 查询所有学生 -->
+	<select id="getassignedClasslist" parameterType="pd" resultType="pd">
+		select 
+	    d.NAME NIANJI,
+	    T.PKID,T.SHENFENZHENGHAO,T.XINGMING,T.XINGBIE,T.XUEHAO,C.CLASS_NAME,t.DEPARTMENT_PKID,t.NIANJI NIANJI_BM,t.IS_RECEIVED,
+	    D.NAME RUXUENIANFEN,TO_CHAR(t.BAODAOSJ, 'YYYY-MM-DD') BAODAOSJ,(case when cengci.ccdaima is null then 'XX' when cengci.is_use='0' then 'XX' else cengci.ccdaima end)ccdaima,
+	    (select DT.BIANMA from sys_department DT
+	       where DT.LEIBIE=2 and rownum=1 
+	       start with DT.DEPARTMENT_ID = T.DEPARTMENT_PKID
+	       connect by prior DT.PARENT_ID= DT.DEPARTMENT_ID ) YUANXIAOBIANMA
+	    from t_student t
+	    join SYS_DICTIONARIES d on d.BIANMA = t.NIANJI and d.PARENT_ID = 'GRADE'
+	    left join t_class c on c.PKID = t.BANJI
+	    left join T_STUDENT_DORM SD ON SD.T_STUDENT_PKID = T.PKID
+	       join t_cengci cengci on t.cengci_pkid=cengci.pkid
+	    where 1=1 and t.ZHUANGTAI='1' and ZAIXUEZT = 'ZX'
+		<if test="userAllDepts!=null">
+			AND T.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="userAllDepts" open="(" separator="," close=")"> 
+			   #{userAllDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+			</foreach>
+    	</if>
+    	<if test="classList!=null">
+			AND T.BANJI IN 
+			<foreach item="item" index="index" collection="classList" open="(" separator="," close=")"> 
+			   #{classList[${index}].PKID,jdbcType=VARCHAR}  
+			</foreach>
+    	</if>
+    	<if test="grade!=null and grade !=''">
+			and t.NIANJI =#{grade}
+		</if>
+		<if test="BANJI!=null and BANJI !=''">
+			and T.BANJI =#{BANJI}
+		</if>
+		<if test="IS_FENBAN == 'Y'.toString()">
+			and T.BANJI IS NOT NULL
+		</if>
+		<if test="IS_FENBAN == 'N'.toString()">
+			and T.BANJI IS NULL
+		</if>
+		<if test="orgtree!=null and orgtree !=''">
+			and t.DEPARTMENT_PKID in
+			(SELECT REGEXP_SUBSTR(#{orgtree}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{orgtree}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+    	<if test="keywords!=null and keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or
+			      t.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			
+			)
+	    </if>
+	    <if test="xingbie!=null and xingbie!=''">
+			and T.xingbie =#{xingbie}
+		</if>
+		<if test="IS_RECEIVED!=null and IS_RECEIVED!=''">
+			and T.IS_RECEIVED =#{IS_RECEIVED}
+		</if>
+	    order by t.BAODAOSJ asc<!-- ,d.NAME desc,t.DEPARTMENT_PKID,getWholeRoomName_func(D.PKID) -->
+	</select>
+	<!-- 获取随机学号 -->
+	<select id="getSeqXuehao" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_XUEHAO.nextval,4,'0') as SEQXUEHAO from dual
+	</select>
+	<!-- 更新学号 -->
+	<update id="updateStuXuehao" parameterType="java.util.List">
+	
+		UPDATE T_STUDENT_BM T 
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="XUEHAO =case" suffix="end,">
+                 <foreach collection="list" item="item" index="index">
+                     when T.PKID=#{item.PKID} then CONCAT(#{item.XUEHAOPREFIX},#{item.SEQNO})
+                 </foreach>
+            </trim>
+        </trim>
+        ,t.xgsj=sysdate
+        where T.PKID in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.PKID}
+        </foreach>
+	</update>
+	<select id="getRuxuenianfenList" parameterType="pd" resultType="pd">
+		SELECT * from SYS_DICTIONARIES d where d.PARENT_ID = 'GRADE'
+	</select>
+	<select id="getBanxingList" parameterType="pd" resultType="pd">
+		SELECT * from SYS_DICTIONARIES d where d.PARENT_ID = 'CLASSTYPE'
+	</select>
+	<select id="getSeqCount" parameterType="pd" resultType="pd">
+		SELECT count(*) CCOUNT FROM user_sequences S where S.SEQUENCE_NAME=#{SEQNAME}
+	</select>
+	<select id="getSeqXuehaoNext" parameterType="pd" resultType="pd">
+		#{sql}
+	</select>
+	<select id="diviXuehaolistPage" parameterType="page" resultType="pd">
+		select 
+	      d.NAME NIANJI,
+	      BM.PKID,T.SHENFENZHENGHAO,T.XINGMING,T.XINGBIE,bm.XUEHAO,C.CLASS_NAME,
+	      D.NAME RUXUENIANFEN,(case when cengci.ccdaima is null then 'XX' when cengci.is_use='0' then 'XX' else cengci.ccdaima end)ccdaima,DIC.NAME BANXING,
+	      AMOUNTCOLLECTION_T.AMOUNTCOLLECTION TOTALMONEY,cengci.CENGCI_NAME
+	      from t_student_bm bm
+	      join t_student t on bm.student_pkid=t.pkid
+	      
+	      left join t_class c on c.PKID = bm.banji
+	      left join SYS_DICTIONARIES d on d.DICTIONARIES_ID =bm.RXNIANFEN_PKID and d.PARENT_ID = 'GRADE'
+	      left join t_cengci cengci on bm.CENGCI_PKID=cengci.pkid
+	      left JOIN sys_dictionaries DIC ON bm.banji_type_pkid=DIC.DICTIONARIES_ID AND DIC.PARENT_ID='CLASSTYPE'
+	      LEFT JOIN (SELECT STUDENT_BM_PKID, SUM(PIL.AMOUNTCOLLECTION) AMOUNTCOLLECTION FROM T_PAY_ITEM_LIST PIL GROUP BY STUDENT_BM_PKID) AMOUNTCOLLECTION_T
+	      ON AMOUNTCOLLECTION_T.STUDENT_BM_PKID=BM.PKID
+	      where 1=1 and BM.ZHUANGTAI='1' and BM.IS_TONGGUO='1'
+		
+		<if test="pd.IS_FENXUEHAO == 'Y'.toString()">
+			and bm.XUEHAO IS NOT NULL
+		</if>
+		<if test="pd.IS_FENXUEHAO== 'N'.toString()">
+			and bm.XUEHAO IS NULL
+		</if>
+		<if test="pd.grade !=null and pd.grade !=''">
+			and bm.RXNIANFEN_PKID in
+			<foreach item="item" index="index" collection="pd.gradeArray" open="(" separator="," close=")"> 
+				#{pd.gradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.BANJI_TYPE_PKID !=null and pd.BANJI_TYPE_PKID !=''">
+			and bm.BANJI_TYPE_PKID in
+			<foreach item="item" index="index" collection="pd.banxingArray" open="(" separator="," close=")"> 
+				#{pd.banxingArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.BANJI !=null and pd.BANJI !=''">
+			and bm.BANJI in
+			<foreach item="item" index="index" collection="pd.banjiArray" open="(" separator="," close=")"> 
+				#{pd.banjiArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.IS_JIAOFEI == 'Y'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION > 0
+		</if>
+		<if test="pd.IS_JIAOFEI == 'N'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION = 0
+		</if>
+    	<if test="pd.keywords!=null and pd.keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			      or
+			      bm.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				  or
+				  bm.REMARKS1 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				  or
+				  bm.REMARKS2 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				  or
+				  bm.REMARKS3 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			)
+	    </if>
+	    order by bm.cjsj desc
+	</select>
+	
+	<select id="exportDiviXuehaoExcel" parameterType="pd" resultType="pd">
+		select 
+	      d.NAME NIANJI,
+	      bm.PKID,T.SHENFENZHENGHAO,T.XINGMING,(CASE WHEN T.XINGBIE='M' THEN '男' ELSE '女' END) XINGBIE,bm.XUEHAO,C.CLASS_NAME,
+	      D.NAME RUXUENIANFEN,(case when cengci.ccdaima is null then 'XX' when cengci.is_use='0' then 'XX' else cengci.ccdaima end)ccdaima,DIC.NAME BANXING,
+	      AMOUNTCOLLECTION_T.AMOUNTCOLLECTION TOTALMONEY,cengci.CENGCI_NAME
+	      from t_student_bm bm
+	      left join t_student t on bm.student_pkid=t.pkid
+	      left join t_class c on c.PKID = bm.banji
+	      join SYS_DICTIONARIES d on d.DICTIONARIES_ID = bm.RXNIANFEN_PKID and d.PARENT_ID = 'GRADE'
+	      left join t_cengci cengci on bm.CENGCI_PKID=cengci.pkid
+	      LEFT JOIN sys_dictionaries DIC ON bm.banji_type_pkid=DIC.DICTIONARIES_ID AND DIC.PARENT_ID='CLASSTYPE'
+	      LEFT JOIN (SELECT STUDENT_BM_PKID, SUM(PIL.AMOUNTCOLLECTION) AMOUNTCOLLECTION FROM T_PAY_ITEM_LIST PIL GROUP BY STUDENT_BM_PKID) AMOUNTCOLLECTION_T
+	      ON AMOUNTCOLLECTION_T.STUDENT_BM_PKID=BM.PKID
+	      where 1=1 and bm.ZHUANGTAI='1' and BM.IS_TONGGUO='1'
+		<if test="IS_FENXUEHAO == 'Y'.toString()">
+			and bm.XUEHAO IS NOT NULL
+		</if>
+		<if test="IS_FENXUEHAO == 'N'.toString()">
+			and bm.XUEHAO IS NULL
+		</if>
+		<if test="IS_JIAOFEI == 'Y'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION > 0
+		</if>
+		<if test="IS_JIAOFEI == 'N'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION = 0
+		</if>
+		<if test="grade !=null and grade !=''">
+			and bm.RXNIANFEN_PKID in
+			<foreach item="item" index="index" collection="gradeArray" open="(" separator="," close=")"> 
+				#{gradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="BANJI_TYPE_PKID !=null and BANJI_TYPE_PKID !=''">
+			and bm.BANJI_TYPE_PKID in
+			<foreach item="item" index="index" collection="banxingArray" open="(" separator="," close=")"> 
+				#{banxingArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="BANJI !=null and BANJI !=''">
+			and bm.BANJI in
+			<foreach item="item" index="index" collection="banjiArray" open="(" separator="," close=")"> 
+				#{banjiArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+    	<if test="keywords!=null and keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or
+			      bm.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS1 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS2 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS3 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			)
+	    </if>
+	    order by bm.cjsj desc
+	</select>
+	
+	<!-- 获得班级 -->
+	<select id="getClass" parameterType="pd" resultType="pd">
+		select t.* from t_class t where t.is_use=1 
+			and T.BANXING_PKID =#{BANXING_PKID}
+			and T.SYS_DICTIONARIES_PKID =#{SYS_DICTIONARIES_PKID}
+	</select>
+	<!-- 查询所有学生 -->
+	<select id="getdiviXuehaolist" parameterType="pd" resultType="pd">
+		select 
+	      d.NAME NIANJI,
+	      bm.PKID,T.SHENFENZHENGHAO,T.XINGMING,T.XINGBIE,bm.XUEHAO,C.CLASS_NAME,
+	      D.NAME RUXUENIANFEN,(case when cengci.ccdaima is null then 'XX' when cengci.is_use='0' then 'XX' else cengci.ccdaima end)ccdaima,
+	      DIC.NAME BANXING,DIC.BIANMA BANXINGBIANMA,cengci.CENGCI_NAME,
+	      AMOUNTCOLLECTION_T.AMOUNTCOLLECTION TOTALMONEY
+	      from t_student_bm bm
+	      left join t_student t on bm.student_pkid=t.pkid
+	      
+	      left join t_class c on c.PKID = bm.BANJI
+	      join SYS_DICTIONARIES d on d.DICTIONARIES_ID =bm.RXNIANFEN_PKID and d.PARENT_ID = 'GRADE'
+	      left join t_cengci cengci on bm.CENGCI_PKID=cengci.pkid
+	      LEFT JOIN sys_dictionaries DIC ON bm.banji_type_pkid=DIC.DICTIONARIES_ID AND DIC.PARENT_ID='CLASSTYPE'
+	      LEFT JOIN (SELECT STUDENT_BM_PKID, SUM(PIL.AMOUNTCOLLECTION) AMOUNTCOLLECTION FROM T_PAY_ITEM_LIST PIL GROUP BY STUDENT_BM_PKID) AMOUNTCOLLECTION_T
+	      ON AMOUNTCOLLECTION_T.STUDENT_BM_PKID=BM.PKID
+	      where 1=1 and bm.ZHUANGTAI='1' and BM.IS_TONGGUO='1'
+	    <if test="studentBmPkid !=null and studentBmPkid !=''">
+			and bm.PKID = #{studentBmPkid}
+		</if>
+	    <if test="IS_FENXUEHAO == 'Y'.toString()">
+			and bm.XUEHAO IS NOT NULL
+		</if>
+		<if test="IS_FENXUEHAO == 'N'.toString()">
+			and bm.XUEHAO IS NULL
+		</if>
+		<if test="IS_JIAOFEI == 'Y'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION > 0
+		</if>
+		<if test="IS_JIAOFEI == 'N'.toString()">
+			and AMOUNTCOLLECTION_T.AMOUNTCOLLECTION = 0
+		</if>
+    	<if test="grade !=null and grade !=''">
+			and bm.RXNIANFEN_PKID in
+			<foreach item="item" index="index" collection="gradeArray" open="(" separator="," close=")"> 
+				#{gradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="BANJI_TYPE_PKID !=null and BANJI_TYPE_PKID !=''">
+			and bm.BANJI_TYPE_PKID in
+			<foreach item="item" index="index" collection="banxingArray" open="(" separator="," close=")"> 
+				#{banxingArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="BANJI !=null and BANJI !=''">
+			and bm.BANJI in
+			<foreach item="item" index="index" collection="banjiArray" open="(" separator="," close=")"> 
+				#{banjiArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+    	<if test="keywords!=null and keywords !=''">
+			and  (
+			      t.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or
+			      bm.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			      or 
+			      t.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS1 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS2 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+				  or
+				  bm.REMARKS3 LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+			)
+	    </if>
+	    <if test="STUDENTBM_PKIDs !=null and STUDENTBM_PKIDs !=''">
+			and bm.PKID in
+			<foreach item="item" index="index" collection="STUDENTBM_PKIDsArray" open="(" separator="," close=")"> 
+				#{STUDENTBM_PKIDsArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		
+	    order by bm.cjsj desc
+	</select>
+	
+	
+</mapper>

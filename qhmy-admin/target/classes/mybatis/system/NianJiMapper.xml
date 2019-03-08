@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="NianJiMapper">
+	<!-- 查询表数据 -->
+	<select id="nianji_listPage" parameterType="page" resultType="pd">
+		SELECT DICTIONARIES_ID, NAME, BIANMA, IS_USED, BZ, CJSJ,IS_YX 
+		FROM SYS_DICTIONARIES T
+		WHERE PARENT_ID = 'GRADE'
+		<if test="pd.keyWord !=null and pd.keyWord!=''">
+			AND T.NAME LIKE CONCAT(CONCAT('%', #{pd.keyWord}),'%')
+		</if>
+		ORDER BY t.NAME
+	</select>
+	<!-- 根据PKID查询详细信息 -->
+	<select id="getNianJi" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES T WHERE T.DICTIONARIES_ID = #{DICTIONARIES_ID}
+	</select>
+	<!-- 更新 -->
+	<update id="update" parameterType="pd" >
+		UPDATE SYS_DICTIONARIES 
+		SET BIANMA = #{BIANMA},
+		NAME = #{NAME},
+		IS_USED = #{IS_USED},
+		IS_YX = #{IS_YX},
+		BZ = #{BEIZHU,jdbcType=VARCHAR}
+		WHERE DICTIONARIES_ID = #{DICTIONARIES_ID}
+	</update>
+	<!-- 新增 -->
+	<insert id="save" parameterType="pd">
+		INSERT INTO SYS_DICTIONARIES (DICTIONARIES_ID, BIANMA,NAME, IS_USED, BZ,PARENT_ID,ORDER_BY,IS_YX)
+		VALUES (sys_guid(),#{BIANMA},#{NAME},#{IS_USED},#{BEIZHU,jdbcType=VARCHAR},'GRADE','1',#{IS_YX})
+	</insert>
+	<!-- 更新启用状态 -->
+	<update id="updateIsUse" parameterType="pd">
+		UPDATE SYS_DICTIONARIES
+		SET IS_USED = #{IS_USED}
+		WHERE DICTIONARIES_ID = #{DICTIONARIES_ID}
+	</update>
+	<!-- 查询名称是否已存在 -->
+	<select id="getNianJi_NAME" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES T WHERE T.NAME = #{NAME} AND ROWNUM = 1
+	</select>
+	<!-- 获取编码 -->
+	<select id="getBianMa" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_NIANJI.nextval,3,'0') as BIANMA from dual
+	</select>
+	<select id="getNianJiIsUse" parameterType="pd" resultType="pd">
+		select *
+		  from t_student t
+		 where t.nianji =
+		       (select s.bianma
+		          from sys_dictionaries s
+		         where s.dictionaries_id = #{DICTIONARIES_ID})
+		   and rownum = 1
+	</select>
+	<delete id="delete" parameterType="pd">
+		delete from sys_dictionaries where dictionaries_id = #{DICTIONARIES_ID}
+	</delete>
+	<update id="updateISYX" parameterType="pd">
+		UPDATE SYS_DICTIONARIES
+		SET IS_YX = #{IS_YX}
+		WHERE DICTIONARIES_ID = #{DICTIONARIES_ID}  
+	</update>
+</mapper>

@@ -1,0 +1,1988 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="newStuManageMapper">
+
+
+
+
+
+
+<select id="getmenulist" resultType="pd" parameterType="pd">
+	 select * from sys_menu t where  t.parent_id='79'
+	</select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--begin 其它缴费项目设置模块 sql -->
+    
+	<!-- 保存其它缴费项 -->
+	<insert id="saveOtherPayItem" parameterType="pd">
+		INSERT INTO 
+		T_PAY_OTHER_ITEM
+		(PKID,PAYITEM,ITEM_TYPE,UPDATEPROFESSION,UPDATEPAYITEM,CJSJ,XGSJ,CJR,XGR,STATUS)
+		VALUES 
+		(#{PKID},#{PAYITEM},1,#{UPDATEPROFESSION},#{UPDATEPAYITEM},SYSDATE,SYSDATE,#{CJR},#{XGR},1)
+	</insert>
+	
+	
+	<select id="findpkbyid" parameterType="String" resultType="String">
+	 select t.pkid from t_student t where 1=1 and t.zhuangtai=1 and  t.shenfenzhenghao=#{CID} 
+	
+	</select>
+	
+	<!-- 其他项目列表 -->
+	
+	<select id="otherPayItemlistPage" parameterType="page" resultType="pd">
+
+	 
+ SELECT PKID,
+        PAYITEM,
+        CASE
+          WHEN T.ITEM_TYPE = 1 THEN
+           '自定义'
+          WHEN T.ITEM_TYPE = 0 THEN
+           '系统设置'
+        END BGXLX,
+        T.UPDATEPROFESSION,
+        UPDATEPAYITEM,
+        
+        (SELECT USERNAME FROM SYS_USER U WHERE T.XGR = U.USER_ID) XGR,
+        
+        TO_CHAR(XGSJ, 'yyyy-MM-dd HH24:mi:ss') AS XGSJ
+ 
+   FROM T_PAY_OTHER_ITEM T where 1=1 and status=1 
+  ORDER BY T.ITEM_TYPE, XGSJ DESC
+
+    </select>
+    
+    <!-- 修改其它缴费设置 -->
+    <update id="updateotherpayitemset" parameterType="pd">
+    	update T_PAY_OTHER_ITEM 
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="PAYITEM!=null and PAYITEM!=''">
+    	,PAYITEM=#{PAYITEM}
+    	</if>
+    	<if test="UPDATEPROFESSION!=null and UPDATEPROFESSION!=''">
+    	,UPDATEPROFESSION=#{UPDATEPROFESSION}
+    	</if>
+    	<if test="UPDATEPAYITEM!=null and UPDATEPAYITEM!=''">
+    	,UPDATEPAYITEM=#{UPDATEPAYITEM}
+    	</if>
+    	<if test="XGR!=null and XGR!=''">
+    	,XGR=#{XGR}
+    	</if>
+    	WHERE PKID=#{PKID}
+    	
+    	
+    </update>
+    
+    
+    <!--删除其它缴费项  -->
+    
+    <update id="deleteotherpayitemset" parameterType="pd">
+    	UPDATE T_PAY_OTHER_ITEM SET STATUS=0 WHERE PKID=#{PKID}
+    </update>
+<!--end 其它缴费项目设置模块 sql -->
+    
+    
+    
+<!--begin 其他收费模块相关sql  -->
+    
+    <!--查询系统所有其它缴费项目  -->
+    <select id="getOtherPayItems" resultType="pd">
+    	select * from t_pay_other_item where status =1
+    </select>
+    
+    <!-- 根据学生身份证号或学号查询学生基本信息-->
+    <select id="getStuInfo" parameterType="pd" resultType="pd">
+    	select t.XINGMING,t.shenfenzhenghao,t.xuehao,t.pkid,t.nianji,t.ZHUANYE,t.department_pkid,
+    	(SELECT s.NAME FROM sys_dictionaries s WHERE s.BIANMA=t.zaixuezt) zxzt,
+    	t.xiaoqu,
+    	(select d.name from sys_department d where d.department_id=t.department_pkid) zuzhi
+    	 from t_student T where 1=1 and zhuangtai=1 
+    	<if test="SEARCHTEXT !=null and SEARCHTEXT!=''">
+    		AND SHENFENZHENGHAO=#{SEARCHTEXT}
+    		OR XUEHAO=#{SEARCHTEXT}
+    	</if>
+    </select>
+    
+    
+    <!--查询当前高校下所有的项目  -->
+    <select id="getPayItems" parameterType="pd" resultType="pd">
+    	SELECT * FROM T_PAY_ITEM WHERE STATUS=1 
+    	<!--AND COLLEGES_PKID=#{COLLEGES_PKID}  --> 
+    </select>
+    
+    
+    <!--查询某学生的某缴费项目的实际缴纳金额 -->
+    <select id="getStuOrderMoney" parameterType="pd" resultType="pd">
+    	SELECT NVL(T.MONEY,0) AS YIJIAOJINE  FROM T_PAY_ORDER_DETAIL T WHERE T.STUDENT_PKID=#{STUDENT_PKID} 
+    	AND T.PAY_ITEM_PKID=#{PAY_ITEM_PKID}
+    </select>
+    
+    <!--某个学生某个项目是否有优惠，有的话取出优惠方式和结果 -->
+	<select id="getStuItemDiscountMoney" parameterType="pd"	resultType="pd">
+		select pkid,discount_mode,
+		(
+		CASE
+		WHEN discount_mode=0
+		THEN '不优惠'
+		WHEN discount_mode=1
+		THEN '打折'
+		ELSE
+		'直减'
+		END
+		)yhfs,
+		(
+		CASE
+		WHEN discount_mode=0
+		THEN 0
+		WHEN discount_mode=1
+		THEN discount
+		ELSE
+		discount_money
+		END
+		)yh
+		from t_pay_item_rule where instr(PROFESSION, #{PROFESSION}) &gt; 0 AND
+		INSTR(GRADE,#{GRADE})&gt;0 AND pay_item_pkid=#{PAY_ITEM_PKID} AND instr(DISCOUNT_SCOPE, #{DISCOUNT_SCOPE}) > 0
+
+
+	</select>
+    
+    <!--查询某学生可以转出的缴费项目 t_pay_item_list中查询  -->
+    <select id="getStuCanOutPayitems" parameterType="pd" resultType="pd">
+    		SELECT A.AMOUNTCOLLECTION,a.amountreceivable,a.discount,B.PKID,B.PAYITEM FROM T_PAY_ITEM_LIST A JOIN T_PAY_ITEM B ON A.PAY_ITEM_PKID=B.PKID
+
+            WHERE STUDENT_PKID=#{STUDENT_PKID} and A.AMOUNTCOLLECTION &gt;0
+            
+            <if test="list!=null and list.size()>0">
+            AND PAY_ITEM_PKID NOT IN 
+            <foreach collection="list" item="PAY_ITEM_PKID" open="(" separator="," close=")">
+					#{PAY_ITEM_PKID}
+			</foreach>
+            </if>
+    </select>
+    <!--可以转入的项目  -->
+	<select id="getStuCanInPayitems" parameterType="pd" resultType="pd">
+		SELECT T.PAY_ITEM_PKID AS PKID,
+		(SELECT i.payitem FROM t_pay_item i WHERE t.pay_item_pkid=i.pkid) payitem 
+		FROM T_PAY_ITEM_LIST T
+		
+		left join t_student stu on t.student_pkid = stu.pkid 
+		
+		WHERE 1=1 and T.STUDENT_PKID = #{STUDENT_PKID} 
+		and exists (select 1 from T_PAY_ITEM I WHERE I.PKID = T.PAY_ITEM_PKID AND I.STATUS IN (1,2))
+		<!-- 如果是调整专业，需过滤原专业项目 -->
+		<if test="changeprofess!=null and changeprofess !='' ">
+			and stu.nianji !=#{nianji}
+			and stu.department_pkid !=#{department_pkid}
+		</if>
+		<if test="list!=null and list.size()>0">
+		AND t.pay_item_pkid NOT IN 
+		     <foreach collection="list" item="PAY_ITEM_PKID" open="(" separator="," close=")">
+						#{PAY_ITEM_PKID}
+		     </foreach>
+		</if>
+		<!-- AND T.AMOUNTCOLLECTION>0 -->
+		<!-- 先加上实付小于应缴 -->
+		and   T.AMOUNTCOLLECTION &lt;T.AMOUNTRECEIVABLE
+		
+		UNION
+		SELECT A.PKID,
+		payitem
+		FROM T_PAY_ITEM A
+
+		JOIN T_PAY_ITEM_RULE B ON A.PKID = B.PAY_ITEM_PKID
+		AND A.STATUS = 1
+		<if test="list!=null and list.size()>0">
+		 AND A.pkid NOT IN 
+		      <foreach collection="list" item="PAY_ITEM_PKID" open="(" separator="," close=")">
+						#{PAY_ITEM_PKID}
+		      </foreach>
+		 </if>
+		 
+		AND A.STARTUSING = 'Y'
+		AND INSTR(B.PROFESSION,
+		#{PROFESSION}) > 0
+		AND INSTR(B.GRADE, #{GRADE}) > 0
+		AND A.STARTDATE IS NOT NULL 
+		AND SYSDATE > A.STARTDATE
+		AND SYSDATE &lt; A.ENDDATE
+		
+		UNION
+		SELECT A.PKID,
+		payitem
+		FROM T_PAY_ITEM A
+
+		JOIN T_PAY_ITEM_RULE B ON A.PKID = B.PAY_ITEM_PKID
+		AND A.STATUS = 1
+		<if test="list!=null and list.size()>0">
+		 AND A.pkid NOT IN 
+		      <foreach collection="list" item="PAY_ITEM_PKID" open="(" separator="," close=")">
+						#{PAY_ITEM_PKID}
+		      </foreach>
+		 </if>
+		 
+		AND A.STARTUSING = 'Y'
+		AND INSTR(B.PROFESSION,
+		#{PROFESSION}) > 0
+		AND INSTR(B.GRADE, #{GRADE}) > 0
+		AND  A.STARTDATE IS NULL
+
+
+	</select>
+    <!-- 查询项目各种金额 -->
+    <select id="getpayItemMoneyByList" parameterType="pd" resultType="pd">
+    SELECT T.PAY_ITEM_PKID AS PKID,T.AMOUNTCOLLECTION,T.PAY_ITEM_RULE,
+		T.COST,
+		 (CASE 
+       WHEN T.DISCOUNT_MODE=0
+       THEN '不优惠'
+        WHEN T.DISCOUNT_MODE=1
+       THEN T.discount
+        WHEN T.DISCOUNT_MODE=2
+       THEN concat('直减',T.DISCOUNT_MONEY)
+       END)YHFS,T.DISCOUNT_MODE,
+		T.DISCOUNT_MONEY,
+		(T.AMOUNTRECEIVABLE - T.AMOUNTCOLLECTION) SYYJJE,
+		(SELECT i.payitem FROM t_pay_item i WHERE t.pay_item_pkid=i.pkid) payitem,
+		T.pay_item_rule as pay_item_rule_pkid
+		FROM T_PAY_ITEM_LIST T
+		WHERE 1=1 and T.STUDENT_PKID = #{STUDENT_PKID}
+		<if test="PAY_ITEM_PKID!=null and PAY_ITEM_PKID !=''">
+		AND t.pay_item_pkid =#{PAY_ITEM_PKID}
+		</if>
+    </select>
+    <!-- 查询项目的各种金额 2-->
+    <select id="getPayItemMoneyByRule" parameterType="pd" resultType="pd">
+    SELECT w.*,(w.cost-w.discount_money)syyjje FROM (
+    SELECT A.PKID,
+       A.COST,
+       (CASE 
+       WHEN B.DISCOUNT_MODE=0
+       THEN '不优惠'
+        WHEN B.DISCOUNT_MODE=1
+       THEN concat(concat('打',b.discount),'折')
+        WHEN B.DISCOUNT_MODE=2
+       THEN concat('直减',B.DISCOUNT_MONEY)
+       END)YHFS,B.DISCOUNT_MODE,
+      
+       (CASE
+         WHEN (SELECT COUNT(*)
+                 FROM (SELECT REGEXP_SUBSTR((SELECT R.DISCOUNT_SCOPE
+                                              FROM T_PAY_ITEM_RULE R
+                                             WHERE INSTR(R.PROFESSION,
+                                                         #{PROFESSION}) > 0
+                                               AND INSTR(R.GRADE,
+                                                         #{GRADE}) > 0 AND r.pay_item_pkid=#{PAY_ITEM_PKID}  ),
+                                            '[^,]+',
+                                            1,
+                                            LEVEL) EXCEPTIONAL
+                         FROM DUAL
+                       CONNECT BY REGEXP_SUBSTR((SELECT R.DISCOUNT_SCOPE
+                                                  FROM T_PAY_ITEM_RULE R
+                                                 WHERE INSTR(R.PROFESSION,
+                                                             #{PROFESSION}) > 0
+                                                   AND INSTR(R.GRADE,
+                                                             #{GRADE}) > 0 AND r.pay_item_pkid=#{PAY_ITEM_PKID}  ),
+                                                '[^,]+',
+                                                1,
+                                                LEVEL) IS NOT NULL 
+                       INTERSECT
+                       SELECT EXCEPTIONAL
+                         FROM T_STUDENT_FLAG
+                        WHERE STUDENT_PKID =
+                              #{STUDENT_PKID}) WHERE EXCEPTIONAL IS NOT NULL  ) > 0
+         
+          THEN
+          (
+              CASE 
+              WHEN B.DISCOUNT_MODE=1
+              THEN round(a.cost*0.1*( 10-b.discount),2)
+              WHEN b.DISCOUNT_MODE=2
+              THEN nvl(B.DISCOUNT_MONEY,0)
+              END 
+           )
+         ELSE
+          0
+       END) as  discount_money,
+       A.payitem,B.pkid as pay_item_rule_pkid 
+  FROM T_PAY_ITEM A
+
+ JOIN T_PAY_ITEM_RULE B ON A.PKID = B.PAY_ITEM_PKID AND a.pkid=#{PAY_ITEM_PKID} 
+ <if test="PAY_ITEM_RULE!=null and PAY_ITEM_RULE !=''">
+ 	and b.PKID!=#{PAY_ITEM_RULE}
+ </if>
+    ) w where rownum=1
+    </select>
+    
+    
+    <!-- LIST列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		SELECT T.PAY_ORDER_PKID,t.input_output,
+		(CASE
+		WHEN T.STATUS = 1 THEN
+		'正常'
+		WHEN T.STATUS = 2 THEN
+		'转入'
+		WHEN T.STATUS = 3 THEN
+		'转出'
+		END) ZHUANGTAI,to_char(T.CJSJ,'yyyy-MM-dd HH24:mi:ss') CJSJ,
+		T.MONEY,
+    otherpayitem,
+		D.*
+    
+		FROM T_PAY_ORDER_DETAIL T JOIN (
+     SELECT o.*,(SELECT payitem FROM t_pay_other_item po WHERE po.pkid=o.other_item ) otherpayitem FROM  t_pay_order o WHERE o.ordercreate_mode='DO') r ON t.pay_order_pkid=r.pkid
+		LEFT JOIN
+		(SELECT PAY_ORDER_DETAIL_PKID,
+		MAX(DECODE(PAY_MODE, 'CASH', MONEY, 0)) AS CASH,
+		MAX(DECODE(PAY_MODE, 'CARD', MONEY, 0)) AS CARD,
+		MAX(DECODE(PAY_MODE, 'ZFB', MONEY, 0)) AS ZFB,
+		MAX(DECODE(PAY_MODE, 'WX', MONEY, 0)) AS WX,
+		MAX(DECODE(PAY_MODE, 'TT', MONEY, 0)) AS TT
+		FROM T_PAY_ORDER_DETAIL_MONEY
+    
+		GROUP BY PAY_ORDER_DETAIL_PKID) D ON T.PKID = D.PAY_ORDER_DETAIL_PKID
+		WHERE <!-- T.OTHERITEM_FLAG = 'Y' --> 1=1
+		AND T.STUDENT_PKID = #{pd.STUDENT_PKID}
+        <if test="pd.PAY_ITEM_PKID!=null and pd.PAY_ITEM_PKID!=''">
+        and other_item=#{pd.PAY_ITEM_PKID}
+        </if>
+        ORDER BY T.CJSJ DESC 
+	</select>
+    
+    
+    
+    
+<!--end 其他收费模块相关sql  -->
+
+	<!-- 缴费项目列表 -->
+	
+	<select id="getPayItemlistPage" parameterType="page" resultType="pd">
+
+	SELECT t.PKID,t.PAYITEM,t.PARENT_ID,(select s.pay_style_name from t_pay_style s where s.pkid = t.pay_type_pkid) pay_style_name,t.pay_type_pkid,
+	(select y.school_year_name from t_school_year y where y.pkid = t.school_year_pkid) school_year_name,t.school_year_pkid,
+	CASE
+	WHEN t.IS_INCLUDE_CHILD='Y' THEN '是'
+	ELSE ''
+	END IS_INCLUDE_CHILD,
+	
+	CASE
+	WHEN t.ITEMLIST_CREATEMODE=1 THEN '导入缴费名单'
+	WHEN t.ITEMLIST_CREATEMODE=2 THEN '系统根据规则生成'
+	END ITEMLIST_CREATEMODE,
+
+	ENDDATE,
+	
+	CASE
+	WHEN t.MUSTPAY='Y' THEN '是'
+	WHEN t.MUSTPAY='N' THEN '否'
+	END MUSTPAY,
+	
+	CASE
+	WHEN t.STATUS=0 THEN '待审核'
+	WHEN t.STATUS=1 THEN '审核成功'
+	WHEN t.STATUS=-1 THEN '审核失败'
+	WHEN t.STATUS=2 THEN '已结束'
+	WHEN t.STATUS=3 THEN '已过期'
+	END STATUS,
+	t.STATUS as STATUSNO,
+	STARTUSING,
+	to_char(XGSJ,'yyyy-MM-dd HH24:mi:ss') as XGSJ,
+	to_char(t.STARTDATE,'yyyy-MM-dd HH24:mi:ss') STARTD,
+	to_char(t.ENDDATE,'yyyy-MM-dd HH24:mi:ss') ENDD, 
+    to_char(STARTDATE,'yyyy-MM-dd HH24:mi:ss')||'-'||to_char(ENDDATE,'yyyy-MM-dd HH24:mi:ss')  INTERVAL_DATE
+	FROM T_PAY_ITEM t
+	WHERE 1=1 and t.PARENT_ID is null
+	<if test="pd.startusing !=null and pd.startusing!=''">
+   		AND t.STARTUSING=#{pd.startusing}
+   	</if>
+   	<if test="pd.status !=null and pd.status!=''">
+   		AND t.STATUS=#{pd.status}
+   	</if>
+   	<!-- <if test="pd.payitem !=null and pd.payitem!=''">
+   		AND t.PAYITEM LIKE CONCAT(CONCAT('%', #{pd.payitem}),'%')
+   	</if> -->
+   	
+   	<if test="pd.payitemPKIDs!=null">
+			AND t.PKID IN 
+			<foreach item="item" index="index" collection="pd.payitemPKIDs" open="(" separator="," close=")"> 
+			   #{pd.payitemPKIDs[${index}]} 
+			  </foreach>
+	    </if>
+	    
+   	<if test="pd.startDate !=null and pd.startDate!=''">
+   		<!-- <![CDATA[ AND t.CJSJ >=to_date(#{pd.startdate},'yyyy-mm-dd HH24:mi:ss') ]]>   --> 
+   		and to_char(t.CJSJ,'yyyy-mm-dd') &gt;=#{pd.startDate}
+   	</if>
+   	<if test="pd.endDate !=null and pd.endDate !=''">
+   		and to_char(t.CJSJ,'yyyy-mm-dd') &lt;=#{pd.endDate}
+   		<!-- <![CDATA[ AND t.CJSJ <= to_date(#{pd.enddate},'yyyy-mm-dd HH24:mi:ss') ]]> -->
+   	</if>
+   	 <if test="pd.PAY_TYPE_PKID!=null and pd.PAY_TYPE_PKID!=''">
+		and  t.PAY_TYPE_PKID =#{pd.PAY_TYPE_PKID}
+	  </if>
+	  <if test="pd.SCHOOL_YEAR_PKID!=null and pd.SCHOOL_YEAR_PKID!=''">
+		and  t.SCHOOL_YEAR_PKID =#{pd.SCHOOL_YEAR_PKID}
+	  </if>
+
+	ORDER BY t.CJSJ DESC 
+    </select>
+    
+    <!-- 修改缴费设置 -->
+    <update id="updatePayItem" parameterType="pd">
+    	update T_PAY_ITEM 
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="startusing!=null and startusing!=''">
+    	,STARTUSING=#{startusing}
+    	</if>
+    	WHERE PKID=#{PKID} OR PARENT_ID=#{PKID}
+    	
+    </update>
+    
+    <!-- 缴费名单列表  edit by kangcl-->
+	
+	<select id="getPayItemListlistPage" parameterType="page" resultType="pd">
+		select t.PKID,
+		s.xuehao,
+		(SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T.PAY_ITEM_PARENT_PKID AND ROWNUM=1) AS PAYITEM,<!-- 父项目名称 -->
+	    (
+	    CASE WHEN T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID THEN ''
+	    ELSE I.PAYITEM
+	    END 
+	    ) PAYITEM_CHILD,<!-- 子项目名称 -->
+	  	p.pici_name,
+	  	c.cengci_name,
+	  	ds.NAME as nianji,
+	  	(case when t.status = '0' then '欠费' when t.status = '1' then '核验中' when t.status = '2' then '已完成' when t.status = '3' then '已关闭' end) status,
+	  	t.PAY_ITEM_PKID,t.COST,t.DISCOUNT,t.AMOUNTRECEIVABLE,t.AMOUNTCOLLECTION, s.PKID SPKID,s.SHENFENZHENGHAO,s.XINGMING,s.DEPARTMENT_PKID,
+	  	<!-- departmentstr(s.department_pkid) ZUZHINAME, -->
+	  	(select NAME from SYS_DEPARTMENT d where d.DEPARTMENT_ID = s.department_pkid) as ZUZHINAME,
+	  	(SELECT COUNT(1) FROM T_GOODS_GET G WHERE G.T_STUDENT_PKID=S.PKID AND G.T_PAY_ITEM_PKID=T.PAY_ITEM_PKID AND G.OPT_STATE='1') AS GOODS_GET_COUNT,
+	  	(select PAY_STYLE_NAME from T_PAY_STYLE p where p.pkid = i.PAY_TYPE_PKID) PAY_STYLE_NAME,
+	  	(select SCHOOL_YEAR_NAME from T_SCHOOL_YEAR s where s.pkid = i.SCHOOL_YEAR_PKID) SCHOOL_YEAR_NAME
+	  	from T_PAY_ITEM_LIST t
+	  	join T_PAY_ITEM i on i.PKID=T.PAY_ITEM_PKID 
+	  	<!-- and i.status in (1,2) -->
+	  	left join T_STUDENT s on t.student_pkid = s.pkid
+	  	join SYS_DICTIONARIES ds
+	  	on s.nianji=ds.BIANMA
+	  	left join t_pici p on p.pkid = s.pici_pkid
+	  	left join t_cengci c on c.pkid = s.cengci_pkid
+	  	where 1=1 and s.ZAIXUEZT='ZX' 
+	  	<choose>
+			<when test="pd.showStatus!=null and pd.showStatus!='' and pd.showStatus == '012'">
+				and i.status in (0,1,2)
+			</when>
+			<otherwise>
+				and i.status in (1,2)
+			</otherwise>
+		</choose>
+		and ds.parent_id='GRADE'
+	  	AND (T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID OR T.IS_DEFAULT='Y')<!-- 无子项目 OR 默认子项目 -->
+		<!-- <if test="pd.payItemPkid!=null and pd.payItemPkid!=''">
+		and t.PAY_ITEM_PKID = #{pd.payItemPkid} 
+		</if> -->
+		<if test="pd.payItemPkid!=null and pd.payItemPkid!=''">
+			AND (t.PAY_ITEM_PARENT_PKID IN 
+			<foreach item="item" index="index" collection="pd.payItemPkid" open="(" separator="," close=")"> 
+			   #{pd.payItemPkid[${index}]} 
+			  </foreach>
+			  
+			  OR T.PAY_ITEM_PKID IN
+			  <foreach item="item" index="index" collection="pd.payItemPkid" open="(" separator="," close=")"> 
+			   #{pd.payItemPkid[${index}]} 
+			  </foreach>
+			  )
+	    </if>
+		<if test="pd.status!=null and pd.status!=''">
+	   		and t.status=#{pd.status}
+	   	</if>
+	   	<if test="pd.grade!=null and pd.grade!=''">
+	   		and s.NIANJI=#{pd.grade}
+	   	</if>
+	   	<!-- <if test="pd.DEPARTMENT_PKID!=null and pd.DEPARTMENT_PKID!=''">
+	   		and s.DEPARTMENT_PKID=#{pd.DEPARTMENT_PKID}
+	   	</if> -->
+	   	<if test="pd.departmentPkids!=null">
+			AND s.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="pd.departmentPkids" open="(" separator="," close=")"> 
+			   #{pd.departmentPkids[${index}]} 
+			  </foreach>
+	    </if>
+	   	<if test="pd.conditions!=null and pd.conditions!=''">
+	   		and (
+	   		s.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%')
+	   		or s.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+	   		or s.XINGMING LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+	   		)
+	   	</if>
+	   	 <if test="pd.PAY_TYPE_PKID!=null and pd.PAY_TYPE_PKID!=''">
+			and  i.PAY_TYPE_PKID =#{pd.PAY_TYPE_PKID}
+		  </if>
+		  <if test="pd.SCHOOL_YEAR_PKID!=null and pd.SCHOOL_YEAR_PKID!=''">
+			and  i.SCHOOL_YEAR_PKID =#{pd.SCHOOL_YEAR_PKID}
+		  </if>
+		ORDER BY t.XGSJ DESC 
+    </select>
+    
+    <!-- 修改缴费名单 -->
+    <update id="updatePayItemList" parameterType="pd">
+    	update T_PAY_ITEM_LIST
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="cost!=null and cost!=''">
+    		,COST=#{cost}
+    	</if>
+    	<if test="amountreceivable!=null and amountreceivable!=''">
+    		,AMOUNTRECEIVABLE=#{amountreceivable}
+    	</if>
+    	<if test="discountMode!=null and discountMode!=''">
+    		,DISCOUNT_MODE=#{discountMode}
+    	</if>
+    	<if test="discount!=null and discount!=''">
+    		,DISCOUNT=#{discount}
+    	</if>
+    	<if test="discountMoney!=null and discountMoney!=''">
+    		,DISCOUNT_MONEY=#{discountMoney}
+    	</if>
+    	WHERE PKID=#{pkid}
+    	
+    </update>
+    
+    <!-- 修改缴费名单 -->
+    <update id="updatePayItemListDiscount" parameterType="pd">
+    	update T_PAY_ITEM_LIST_DISCOUNT
+    	set 
+    	XGSJ=SYSDATE,ALONEFLAG='Y' 
+    	<if test="discount_money!=null and discount_money!=''">
+    		,DISCOUNT_MONEY=#{discountMoney}
+    	</if>
+    	<if test="discountMode!=null and discountMode!=''">
+    		,DISCOUNT_MODE=#{discountMode}
+    	</if>
+    	<if test="discount!=null and discount!=''">
+    		,DISCOUNT=#{discount}
+    	</if>
+    	WHERE PAY_ITEM_LIST_PKID=#{payItemListPkid}
+    	
+    </update>
+    
+    <!-- 根据id获得对象-->
+    <select id="getPayItemListInfo" parameterType="pd" resultType="pd">
+    	select COST,DISCOUNT,AMOUNTRECEIVABLE from T_PAY_ITEM_LIST 
+    	where 1=1 
+    	and PKID=#{PKID}
+    </select>
+    
+    <!--删除缴费项  -->
+    <delete id="deletePayItem" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM WHERE PKID=#{PKID}
+    </delete>
+    
+    <!--删除父缴费项目和子缴费项目  -->
+    <delete id="deletePayItemParentAndChild" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM WHERE PKID=#{PKID} OR PARENT_ID=#{PKID}
+    </delete>
+    
+    
+    <!-- 保存项目发布 T_PAY_ITEM表数据 -->
+	<insert id="saveItem" parameterType="pd">
+  insert into t_pay_item
+  (pkid, payitem,mustpay,startdate,enddate,cjsj,cjr,itemlist_createmode,PAY_TYPE_PKID,SCHOOL_YEAR_PKID,
+  PARENT_ID,IS_INCLUDE_CHILD,BEIZHU,T_DORM_TYPE_PKID)
+	values
+  (#{ITEMPKID},#{fabuxm},#{MUSTPAY},to_date(#{yxqqi},'yyyy-mm-dd hh24:mi:ss'),to_date(#{yxqzhi},'yyyy-mm-dd hh24:mi:ss'),
+  sysdate,#{CJR},#{ITEMLIST_CREATEMODE},#{PAY_TYPE_PKID},#{SCHOOL_YEAR_PKID},
+  #{PARENT_ID,jdbcType=VARCHAR},#{IS_INCLUDE_CHILD,jdbcType=VARCHAR},#{BEIZHU,jdbcType=VARCHAR},#{T_DORM_TYPE_PKID,jdbcType=VARCHAR})
+	</insert>
+	<insert id="savePic" parameterType="pd">
+		insert into t_pay_item_picture
+		(item_pkid, picture_path, cjsj,picture_order, pkid)
+		values (#{ITEM_PKID},#{PICTURE_PATH},sysdate,#{PICTURE_ORDER},sys_guid())
+	</insert>
+	
+	
+	
+	 <!-- 保存项目发布导入方式  T_PAY_ITEM_list表数据 -->
+	<insert id="saveItemList" parameterType="pd">
+  insert into t_pay_item_list
+  (pkid,
+   pay_item_pkid,
+   student_pkid,
+   cost,
+   discount,
+   amountreceivable,
+   discount_money
+   )
+values
+  (
+   #{IPKID},
+   #{PAY_ITEM_PKID},
+   #{STUDENT_PKID},
+   #{COST},
+   #{DISCOUNT},
+   #{AMOUNTRECEIVABLE},
+   #{DISCOUNT_MONEY}
+)
+	</insert>
+	
+	
+	<!-- 保存项目发布导入方式  T_PAY_ITEM_list表数据 -->
+	<insert id="saveItemListdr" parameterType="pd">
+  insert into t_pay_item_list
+  (pkid,
+   pay_item_pkid,
+   student_pkid,
+   cost,
+   discount,
+   amountreceivable,
+   discount_money,
+   DISCOUNT_MODE,
+   IS_DEFAULT,
+   PAY_ITEM_PARENT_PKID
+   )
+values
+  (
+   #{IPKID},
+   #{PAY_ITEM_PKID},
+   #{STUDENT_PKID},
+   #{COST},
+   #{DISCOUNT},
+   #{AMOUNTRECEIVABLE},
+   #{DISCOUNT_MONEY},
+   2,
+   'Y',
+   #{PAY_ITEM_PKID}
+)
+	</insert>
+	
+	
+	
+	
+	
+	 <!-- 保存项目发布 RULE表数据 -->
+	<insert id="saveRule" parameterType="pd">
+  insert into t_pay_item_rule
+  (pkid, profession, grade, discount_mode, discount, discount_money, discount_scope, cjsj, pay_item_pkid,CENGCI_PKID,PICI_PKID,COST,RULE_ITEM_PKID)
+values
+(#{RULEPKID},#{orgtreeid},#{nianjilist},#{selectedvalue},#{dazheshu},#{zhijianshu},#{youhuifw},sysdate,#{ITEMPKID},#{cengcilist},#{picilist},#{COST},#{RULE_ITEM_PKID,jdbcType=VARCHAR})
+	</insert>
+	
+	
+	<!-- 保存项目发布 List表数据 -->
+	<!-- <insert id="saveItemLlst" parameterType="pd">
+  insert into t_pay_item_list
+  (pkid,pay_item_pkid,student_pkid,cjsj,cost,discount,amountreceivable,discount_money,discount_mode,pay_item_rule)
+  select (select sys_guid() from dual),#{ITEMPKID},s.pkid,sysdate,#{ITEMCOST},#{DISCOUNT},#{AMOUNTRECEIVABLE},#{DISCOUNT_MONEY},#{RULEPKID}  from t_student s where  s.department_pkid in 
+(
+select regexp_substr(#{orgtreeid},'[^,]+', 1, level) from dual
+connect by regexp_substr(#{orgtreeid}, '[^,]+', 1, level) is not null
+) and s.nianji in
+(
+select regexp_substr(#{nianjilist},'[^,]+', 1, level) from dual
+connect by regexp_substr(#{nianjilist}, '[^,]+', 1, level) is not null
+)
+	</insert> -->
+	
+	 <!-- 得到学生pkid -->
+    <select id="getxspkidlist" parameterType="pd" resultType="pd">
+select s.PKID from t_student s where  s.department_pkid in 
+(
+select regexp_substr(#{orgtreeid},'[^,]+', 1, level) from dual
+connect by regexp_substr(#{orgtreeid}, '[^,]+', 1, level) is not null
+) and s.nianji in
+(
+select regexp_substr(#{nianjilist},'[^,]+', 1, level) from dual
+connect by regexp_substr(#{nianjilist}, '[^,]+', 1, level) is not null
+) and s.ZHUANGTAI=1
+ and s.CENGCI_PKID in 
+ (
+select regexp_substr(#{cengcilist},'[^,]+', 1, level) from dual
+connect by regexp_substr(#{cengcilist}, '[^,]+', 1, level) is not null
+) and s.PICI_PKID in 
+	(
+	select regexp_substr(#{picilist},'[^,]+', 1, level) from dual
+	connect by regexp_substr(#{picilist}, '[^,]+', 1, level) is not null
+	)
+	</select>
+	
+		 <!-- 得到学生flag -->
+    <select id="getxsflaglist" parameterType="pd" resultType="pd">
+	select t.exceptional from t_student_flag t where t.student_pkid=#{XSPKID}
+	</select>
+	
+	 <select id="getxsyhlist" parameterType="pd" resultType="pd">
+	select * from t_pay_item_rule r where r.pkid =(select l.PAY_ITEM_RULE from t_pay_item_list l where l.pkid=#{LISTPKID}) 
+	 <if test="FLAG!=null and FLAG!=''">
+		 and #{FLAG}  in (
+		 select regexp_substr(r.DISCOUNT_SCOPE,'[^,]+', 1, level) from dual
+		connect by regexp_substr(r.DISCOUNT_SCOPE, '[^,]+', 1, level) is not null
+		 )
+	   </if>
+	
+	</select>
+	
+	
+	
+	<!-- 更新t_pay_item_list -->
+    <update id="updateList" parameterType="pd">
+    	update t_pay_item_list 
+    	set 
+    	<if test="DC!=null and DC!=''">
+    	DISCOUNT=#{DC}
+    	</if>
+    	<if test="ysje!=null and ysje!=''">
+    	,AMOUNTRECEIVABLE=#{ysje}
+    	</if>
+    	<if test="DMONEY!=null and DMONEY!=''">
+    	,DISCOUNT_MONEY=#{DMONEY}
+    	</if>
+    	<if test="yhlx!=null and yhlx!=''">
+    	,DISCOUNT_MODE=#{yhlx}
+    	</if>
+    	WHERE PKID=#{LISTPKID}
+    	
+    </update>
+	
+	
+	
+	<insert id="saveItemLlstxs" parameterType="pd">
+	  insert into t_pay_item_list
+	  (pkid,pay_item_pkid,student_pkid,cost,pay_item_rule,IS_DEFAULT,PAY_ITEM_PARENT_PKID)
+	  VALUES(#{LISTPKID},#{ITEMPKID},#{XSPKID},#{JE},#{RULEPKID},#{IS_DEFAULT},#{PAY_ITEM_PARENT_PKID})
+ 	</insert>
+	
+	
+	
+	
+    <!-- 得到年级 -->
+    <select id="getnianji" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries t where t.parent_id='GRADE' 
+		<if test="queryAll==null or queryAll==''"> and IS_USED = 'Y' </if>
+		order by t.name desc
+	</select>
+	<!-- 得到优惠范围 -->
+    <select id="getyouhuifw" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries t where t.parent_id='STUDENT_FLAG'
+	</select>
+	<!--树结构  查询所有的学院节点  -->
+	<select id="getZuzhis" resultType="pd" parameterType="pd">
+	   select z.department_id, z.name || '(' || Z.rs || '人)' name, z.parent_id
+     from (select t.name,
+                  t.department_id,
+                  t.parent_id,
+                  (select sum(son.rs)
+                     from v_sys_department son
+                    start with son.DEPARTMENT_ID = t.department_id
+                   connect by prior son.DEPARTMENT_ID = son.PARENT_ID) rs
+             from v_sys_department t) z
+	</select>
+	
+	<!-- 缴费审核列表 -->
+	
+	<select id="jfshenhelistPage" parameterType="page" resultType="pd">
+  		 select a.* , nvl(yhje+yszje,0) zje
+          from (select i.pkid,
+                       i.cjsj,
+                       (select PAY_STYLE_NAME from T_PAY_STYLE p where p.pkid = i.PAY_TYPE_PKID) PAY_STYLE_NAME,
+					   (select SCHOOL_YEAR_NAME from T_SCHOOL_YEAR s where s.pkid = i.SCHOOL_YEAR_PKID) SCHOOL_YEAR_NAME,                      
+                       i.payitem,
+                       i.PAY_TYPE_PKID,
+                       i.SCHOOL_YEAR_PKID,
+                       i.STATUS,
+                       i.ITEMLIST_CREATEMODE,
+                       to_char(i.startdate, 'YYYY-MM-DD hh24:mi:ss') || '-' ||
+                       to_char(i.enddate, 'YYYY-MM-DD hh24:mi:ss') YXQ,
+                       (case
+                         when i.mustpay = 'Y' then
+                          '是'
+                         when i.mustpay = 'N' then
+                          '否'
+                       end) bxjf,
+                       (case
+                         when i.STATUS = '0' then
+                          '待审核'
+                         when i.STATUS = '1' then
+                          '审核成功'
+                         when i.STATUS = '-1' then
+                          '审核失败'
+                         when i.STATUS = '2' then
+                          '已结束'
+                         when i.STATUS = '3' then
+                          '已过期'
+                       end) zt,
+                       (select count(distinct l.student_pkid)
+                          from t_pay_item_list l
+                         where i.pkid = l.Pay_Item_Parent_Pkid and exists (select 1 from t_student s where s.PKID = l.STUDENT_PKID and s.ZAIXUEZT = 'ZX')) rs,
+                      
+                       (select count(distinct s.student_pkid)
+                          from t_pay_item_list s
+                         where s.Pay_Item_Parent_Pkid = i.pkid and nvl(s.DISCOUNT_MONEY,0)>0
+                           and s.discount_mode != 0
+                           and exists (select 1 from t_student s where s.PKID = S.STUDENT_PKID and s.ZAIXUEZT = 'ZX')
+                           ) yhrs,
+                          nvl((select  sum(DISCOUNT_MONEY) from t_pay_item_list l where l.Pay_Item_Parent_Pkid=i.pkid  and l.discount_mode != 0
+                          and l.is_default = 'Y'
+                          and exists (select 1 from t_student s where s.PKID = l.STUDENT_PKID and s.ZAIXUEZT = 'ZX')
+                          ),0) yhje,
+                          (select  sum(AMOUNTRECEIVABLE) from t_pay_item_list l where l.Pay_Item_Parent_Pkid=i.pkid  
+                          and exists (select 1 from t_student s where s.PKID = l.STUDENT_PKID and s.ZAIXUEZT = 'ZX')
+                          and l.is_default = 'Y'
+                          ) yszje
+                  from t_pay_item i where i.parent_id is null) a where 1=1  
+                  <if test="pd.RQQ!=null and pd.RQQ!=''">
+    				and to_char(a.cjsj,'yyyy-mm-dd') &gt;=#{pd.RQQ}
+    			  </if>
+    			  <if test="pd.RQZ!=null and pd.RQZ!=''">
+    				and to_char(a.cjsj,'yyyy-mm-dd') &lt;=#{pd.RQZ}
+    			  </if>
+    			  <if test="pd.payitemPKIDs!=null">
+						AND a.PKID IN 
+						<foreach item="item" index="index" collection="pd.payitemPKIDs" open="(" separator="," close=")"> 
+						   #{pd.payitemPKIDs[${index}]} 
+						</foreach>
+				   </if>
+    			   <if test="pd.STATUS!=null and pd.STATUS!=''">
+    				and  a.STATUS =#{pd.STATUS}
+    			  </if>
+    			  <if test="pd.PAY_TYPE_PKID!=null and pd.PAY_TYPE_PKID!=''">
+    				and  a.PAY_TYPE_PKID =#{pd.PAY_TYPE_PKID}
+    			  </if>
+    			  <if test="pd.SCHOOL_YEAR_PKID!=null and pd.SCHOOL_YEAR_PKID!=''">
+    				and  a.SCHOOL_YEAR_PKID =#{pd.SCHOOL_YEAR_PKID}
+    			  </if>
+                  
+                  order by cjsj desc
+
+    </select>
+    <!-- 获取学生数 -->
+    <select id="getStuNum" parameterType="pd" resultType="pd">
+    	select count(DISTINCT s.pkid) as tr_stuNum from t_student s 
+    	where s.ZHUANGTAI = '1' and 
+    	S.ZAIXUEZT = 'ZX' AND 
+    	s.DEPARTMENT_PKID  in (
+		 select regexp_substr(#{orgtreeid},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{orgtreeid}, '[^,]+', 1, level) is not null
+		 )
+		and s.CENGCI_PKID in (
+		 select regexp_substr(#{cengcilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{cengcilist}, '[^,]+', 1, level) is not null
+		)
+		and exists(
+			select name from SYS_DICTIONARIES  d where d.bianma = s.nianji and d.PARENT_ID = 'GRADE'
+			AND D.NAME IN 
+			 (
+			 select regexp_substr(#{nianjilist},'[^,]+', 1, level) from dual
+			connect by regexp_substr(#{nianjilist}, '[^,]+', 1, level) is not null
+			)
+		) 
+		and s.PICI_PKID in (
+		 select regexp_substr(#{picilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{picilist}, '[^,]+', 1, level) is not null
+		)
+    </select>
+    <select id="getStuNumByBM" parameterType="pd" resultType="pd">
+    	select count(DISTINCT s.pkid) as tr_stuNum from t_student s 
+    	where s.ZHUANGTAI = '1' and 
+    	S.ZAIXUEZT = 'ZX' AND 
+    	s.DEPARTMENT_PKID  in (
+		 select regexp_substr(#{orgtreeid},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{orgtreeid}, '[^,]+', 1, level) is not null
+		 )
+		and s.CENGCI_PKID in (
+		 select regexp_substr(#{cengcilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{cengcilist}, '[^,]+', 1, level) is not null
+		)
+		and s.nianji in 
+			 (
+			 select regexp_substr(#{nianjilist},'[^,]+', 1, level) from dual
+			connect by regexp_substr(#{nianjilist}, '[^,]+', 1, level) is not null
+			) 
+		and s.PICI_PKID in (
+		 select regexp_substr(#{picilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{picilist}, '[^,]+', 1, level) is not null
+		)
+    </select>
+    <!-- 根据规则获取学生列表 -->
+    <select id="exportStuNumList" parameterType="pd" resultType="pd">
+    	select s.SHENFENZHENGHAO,s.XINGMING,
+    	(select NAME from SYS_DEPARTMENT d where d.DEPARTMENT_ID = s.DEPARTMENT_PKID) as ZUZHINAME,
+    	(select NAME from SYS_DICTIONARIES d where d.BIANMA = s.NIANJI) as NIANJI,
+    	(select p.PICI_NAME from t_pici p where p.pkid = s.PICI_PKID ) as PICI_NAME,
+    	(select c.CENGCI_NAME from T_CENGCI c where c.PKID = s.CENGCI_PKID) as CENGCI_NAME
+    	from t_student s 
+    	where s.ZHUANGTAI = '1' and 
+    	s.DEPARTMENT_PKID  in (
+		 select regexp_substr(#{orgtreeid},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{orgtreeid}, '[^,]+', 1, level) is not null
+		 )
+		and s.CENGCI_PKID in (
+		 select regexp_substr(#{cengcilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{cengcilist}, '[^,]+', 1, level) is not null
+		)
+		and s.NIANJI in (
+		 select regexp_substr(#{nianjilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{nianjilist}, '[^,]+', 1, level) is not null
+		)
+		and s.PICI_PKID in (
+		 select regexp_substr(#{picilist},'[^,]+', 1, level) from dual
+		connect by regexp_substr(#{picilist}, '[^,]+', 1, level) is not null
+		)
+		and S.ZAIXUEZT = 'ZX'
+    </select>
+	<update id="updatebatchGree" parameterType="String">
+	update
+		t_pay_item 
+		set STATUS=1 ,XGSJ=SYSDATE
+		where 
+			(PARENT_ID  in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+		OR
+			PKID  in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+		)
+    </update>
+    
+    <update id="updatebatchGreeOne" parameterType="String">
+	update
+		t_pay_item 
+		set STATUS=1 ,XGSJ=SYSDATE
+		where PKID  =#{PKID}
+		OR PARENT_ID=#{PKID}
+    </update>
+    <update id="updatebatchNoOne" parameterType="String">
+	update
+		t_pay_item 
+		set STATUS= -1 ,XGSJ=SYSDATE
+		where 
+			PKID  =#{PKID}
+			OR PARENT_ID=#{PKID}
+		
+    </update>
+    
+    <update id="updatebatchNo" parameterType="String">
+	update
+		t_pay_item 
+		set STATUS= -1 ,XGSJ=SYSDATE
+		where 
+		
+		(PARENT_ID  in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+		OR
+			PKID  in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+		)
+    </update>
+    
+    <select id="getItem" parameterType="pd" resultType="pd">
+    	select pkid, payitem,mustpay, to_char(startdate, 'YYYY-MM-DD hh24:mi:ss')startdate,to_char(enddate, 'YYYY-MM-DD hh24:mi:ss') enddate,
+			itemlist_createmode, status, startusing, 
+			(select s.SCHOOL_YEAR_NAME from T_SCHOOL_YEAR s where s.pkid = i.school_year_pkid)
+			SCHOOL_YEAR_NAME, 
+			(select s.PAY_STYLE_NAME from T_PAY_STYLE s where s.pkid = i.pay_type_pkid) PAY_STYLE_NAME,
+			 parent_id, is_include_child, beizhu from t_pay_item i 
+		where  i.pkid = #{PKID}
+    </select>
+    <select id="getItemChild" parameterType="pd" resultType="pd">
+    	select pkid, 
+    	(select PAY_STYLE_NAME from T_PAY_STYLE p where p.pkid = PAY_TYPE_PKID) PAY_STYLE_NAME,
+    	payitem,mustpay, to_char(startdate, 'YYYY-MM-DD hh24:mi:ss')startdate,to_char(enddate, 'YYYY-MM-DD hh24:mi:ss') enddate,
+			itemlist_createmode, status, startusing, 
+			pay_type_pkid, school_year_pkid, parent_id, is_include_child, beizhu from t_pay_item i 
+		where  i.parent_id = #{PKID}
+    </select>
+    <select id="geRuleList" parameterType="pd" resultType="pd">
+    	select r.*,i.PAYITEM from t_pay_item_rule r 
+    	join t_pay_item i on i.pkid = r.PAY_ITEM_PKID
+    	where r.RULE_ITEM_PKID = #{RULE_ITEM_PKID}
+    </select>
+    <select id="getPicPathList" parameterType="pd" resultType="pd">
+    	select p.* from T_PAY_ITEM_PICTURE p where p.ITEM_PKID = #{PKID} order by PICTURE_ORDER
+    </select>
+    <select id="rulelist" parameterType="pd" resultType="pd">
+    select R.pkid, R.profession, R.discount_mode, R.discount, R.discount_money, R.discount_scope, R.cjsj, R.xgsj, R.status, R.pay_item_pkid, R.cengci_pkid, R.pici_pkid, R.cost, R.rule_item_pkid,
+    r.GRADE as grade_bianma,
+       nvl((select wm_concat(t.name)
+          from sys_dictionaries t
+         where t.PARENT_ID='STUDENT_FLAG' and  t.bianma in
+               (select regexp_substr(r.discount_scope, '[^,]+', 1, level)
+                  from dual
+                connect by regexp_substr(r.discount_scope, '[^,]+', 1, level) is not null)),'无') xslx,
+                
+       nvl((select wm_concat(t.name)
+          from sys_department t
+         where t.LEIBIE = '4' and
+         t.department_id in
+               (select regexp_substr(r.profession, '[^,]+', 1, level)
+                  from dual
+                connect by regexp_substr(r.profession, '[^,]+', 1, level) is not null)),'') nianji,
+        nvl((select wm_concat(t.name)
+          from sys_dictionaries t
+         where t.PARENT_ID='GRADE' and  t.bianma in
+               (select regexp_substr(r.GRADE, '[^,]+', 1, level)
+                  from dual
+                connect by regexp_substr(r.GRADE, '[^,]+', 1, level) is not null)),'') GRADE,
+                
+       case
+         when r.DISCOUNT_MODE = 0 then
+          '不优惠'
+         when r.DISCOUNT_MODE = 1 then
+          concat('打折-', r.DISCOUNT)
+         when r.DISCOUNT_MODE = 2 then
+         concat('直减-', to_char(r.DISCOUNT_MONEY,'fm9999990.09'))
+          <!-- concat('直减-', r.DISCOUNT_MONEY) -->
+       end yhfs,
+       (SELECT listagg(CENGCI_NAME,',')  within GROUP (order by pkid) FROM T_CENGCI C WHERE  C.PKID IN(
+        SELECT regexp_substr(r.CENGCI_PKID,'[^,]+', 1, level) from dual
+        connect by regexp_substr(r.CENGCI_PKID, '[^,]+', 1, level) is not null
+        )) AS CENGCI_NAME ,
+        
+         (SELECT listagg(PICI_NAME,',')  within GROUP (order by pkid) FROM T_PICI C WHERE  C.PKID IN(
+        SELECT regexp_substr(r.PICI_PKID,'[^,]+', 1, level) from dual
+        connect by regexp_substr(r.PICI_PKID, '[^,]+', 1, level) is not null
+        )) AS PICI_NAME,
+        (select i.payitem from t_pay_item i where i.pkid = r.pay_item_pkid) as childitem 
+  from t_pay_item_rule r
+ where r.pay_item_pkid = #{PKID}
+    </select>
+    
+    
+     <select id="getlistrule" parameterType="pd" resultType="pd">
+     select * from t_pay_item_rule r  where r.pay_item_pkid = #{PKID}
+    </select>
+
+    <!--查询缴费项目  -->
+    <select id="getPayItemListByPayItemPkid"  parameterType="pd" resultType="pd">
+    	select * from t_pay_item_list t where t.PAY_ITEM_PKID = #{payItemPkid}
+    </select>
+    
+    <!-- 通过学生查找学生的缴费项目列表 -->
+	<select id="getPayItemlistPageByStudentPkidAndStatus" parameterType="page" resultType="pd">
+
+	select t1.pkid,t1.PAY_ITEM_PKID<!-- ,t2.payitem -->,t2.startdate,t2.enddate,t1.status,t1.cost,t1.discount,t1.amountreceivable,t1.amountcollection,
+	
+	t2.IS_INCLUDE_CHILD,t1.PAY_ITEM_PARENT_PKID,
+	(SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PARENT_PKID AND ROWNUM=1) AS PAYITEM,<!-- 父项目名称 -->
+    (
+    CASE WHEN T1.PAY_ITEM_PKID=T1.PAY_ITEM_PARENT_PKID THEN ''
+    ELSE t2.PAYITEM
+    END 
+    ) PAYITEM_CHILD<!-- 子项目名称 -->,
+    (CASE WHEN MAX(OD.MONEY) >0 THEN 'Y' ELSE 'N' END) IS_EXISTS_PAYLOG,
+    (select PAY_STYLE_NAME from T_PAY_STYLE p where p.pkid = t2.PAY_TYPE_PKID) PAY_STYLE_NAME,
+  	(select SCHOOL_YEAR_NAME from T_SCHOOL_YEAR s where s.pkid = t2.SCHOOL_YEAR_PKID) SCHOOL_YEAR_NAME
+    
+	from t_pay_item_list t1 
+	join t_pay_item t2
+	on t1.pay_item_pkid = t2.pkid
+	join t_student t3
+	on t1.student_pkid = t3.pkid and t3.ZHUANGTAI=1
+	left join t_pay_order_detail od on od.pay_item_pkid = t1.pay_item_pkid 
+	and od.STUDENT_PKID = t1.STUDENT_PKID
+	<!-- join T_PAY_ITEM_RULE r
+	on t1.PAY_ITEM_RULE=r.PKID 
+	and is_include_str(r.PROFESSION,t3.DEPARTMENT_PKID) > 0 学生院校专业是否符合规则
+	and is_include_str(r.GRADE,t3.NIANJI) > 0 学生年级是否符合规则
+	and is_include_str(r.CENGCI_PKID,t3.CENGCI_PKID) > 0 学生层次是否符合规则
+	and is_include_str(r.PICI_PKID,t3.PICI_PKID) > 0 学生批次是否符合规则
+	 -->
+	where 1=1
+	 AND (T1.PAY_ITEM_PKID=T1.PAY_ITEM_PARENT_PKID OR T1.IS_DEFAULT='Y')<!-- 无子项目 OR 默认子项目 -->
+	<if test="pd.studentPkid!=null and pd.studentPkid!=''">
+    	and t3.pkid=#{pd.studentPkid}
+    </if>
+	and t2.status in (1,2)
+	<if test="pd.status!=null and pd.status!=''">
+    	and t1.status=#{pd.status}
+    </if>
+    GROUP BY t1.pkid,t1.PAY_ITEM_PKID,t2.startdate,t2.enddate,t1.status,t1.cost,t1.discount,t1.amountreceivable,t1.amountcollection,
+    t2.IS_INCLUDE_CHILD,t1.PAY_ITEM_PARENT_PKID,t2.PAYITEM,T1.CJSJ,t2.PAY_TYPE_PKID,t2.SCHOOL_YEAR_PKID
+	ORDER BY t1.CJSJ DESC 
+    </select>
+    
+    
+    <select id="getPayItemlistByStudentPkidAndStatus" parameterType="pd" resultType="pd">
+
+	select t1.pkid,t2.payitem,t2.startdate,t2.enddate,t1.status,t1.cost,t1.discount,t1.amountreceivable,t1.amountcollection
+	from t_pay_item_list t1 
+	left join t_pay_item t2
+	on t1.pay_item_pkid = t2.pkid
+	left join t_student t3
+	on t1.student_pkid = t3.pkid
+	where 1=1
+	<if test="studentPkid!=null and studentPkid!=''">
+    	and t3.pkid=#{studentPkid}
+    </if>
+	and t2.startusing='Y'
+	and t2.status in (1,2)
+	ORDER BY t1.XGSJ DESC 
+    </select>
+    
+    <!-- 获得线下缴费记录列表 -->
+    <select id="getPayOrderDetailList" parameterType="pd" resultType="pd">
+
+	SELECT T1.PKID,T1.PAY_ITEM_PKID,T1.CJSJ,T1.INPUT_OUTPUT,
+	(CASE WHEN (SELECT PARENT_ID FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PKID AND ROWNUM=1) is null
+	    THEN (SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PKID AND ROWNUM=1)
+	    ELSE (SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=(SELECT PARENT_ID FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PKID AND ROWNUM=1) AND ROWNUM=1)
+	    END) AS PAYITEM,<!-- 父项目名称 -->
+	    
+	    (CASE WHEN (SELECT PARENT_ID FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PKID AND ROWNUM=1) is null
+	    THEN ''
+	    ELSE T4.PAYITEM
+	    END) AS PAYITEM_CHILD,<!-- 子项目名称 -->
+	CASE
+	  WHEN T2.TRANSACTION_TYPE='SF' THEN '收费'
+	  WHEN T2.TRANSACTION_TYPE='TF' THEN '退费'
+	END TRANSACTION_TYPE,
+	CASE
+	  WHEN T2.ORDERCREATE_MODE='U' THEN '线上'
+	  WHEN T2.ORDERCREATE_MODE='I' THEN '导入'
+	  WHEN T2.ORDERCREATE_MODE='D' THEN '线下'
+	  WHEN T2.ORDERCREATE_MODE='DO' THEN '线下其他'
+	END ORDERCREATE_MODE,
+	CASE
+	  WHEN T1.PRINTFLAG='Y' THEN '已打'
+	  WHEN T1.PRINTFLAG='N' THEN '未打'
+	END PRINTFLAG,
+	
+	CASE
+	  WHEN T1.STATUS='1' THEN '正常'
+	  WHEN T1.STATUS='2' THEN '转入'
+	  WHEN T1.STATUS='3' THEN '转出'
+	END STATUS
+	
+	FROM T_PAY_ORDER_DETAIL T1
+	 
+	LEFT JOIN T_PAY_ORDER T2
+	ON T1.PAY_ORDER_PKID = T2.PKID
+	LEFT JOIN T_STUDENT T3
+	ON T2.STUDENT_PKID = T3.PKID
+	LEFT JOIN T_PAY_ITEM T4
+	ON T1.PAY_ITEM_PKID = T4.PKID
+	LEFT JOIN T_PAY_OTHER_ITEM T5
+	ON T1.PAY_ITEM_PKID = T5.PKID
+	
+	WHERE 1=1 AND T2.TRANSACTION_FLAG=1 AND T1.MONEY>0
+	<if test="createModels!=null">
+		AND T2.ORDERCREATE_MODE IN 
+		<foreach item="item" index="index" collection="createModels" open="(" separator="," close=")"> 
+		   #{item}  
+		  </foreach>
+    </if>
+	
+	<if test="studentPkid!=null and studentPkid!=''">
+    	AND T3.PKID=#{studentPkid}
+    </if>
+    <if test="payItemPkid!=null and payItemPkid!=''">
+    	<!-- AND T1.PAY_ITEM_PKID=#{payItemPkid} -->
+    	
+    	AND (
+    		T1.PAY_ITEM_PKID=#{payItemPkid} OR T4.PARENT_ID=(SELECT PARENT_ID FROM T_PAY_ITEM TT WHERE TT.PKID=#{payItemPkid} AND ROWNUM=1)
+    	)
+    </if>
+	ORDER BY T1.CJSJ DESC 
+    </select>
+    
+    <!-- 获得缴费记录金额和支付方式列表 -->
+    <select id="getPayOrderDetailMoneyList" parameterType="pd" resultType="pd">
+
+	SELECT * FROM T_PAY_ORDER_DETAIL_MONEY T WHERE 1=1 
+	<if test="orderDetailPkid!=null and orderDetailPkid!=''">
+    	AND T.PAY_ORDER_DETAIL_PKID=#{orderDetailPkid}
+    </if>
+	
+    </select>
+    
+    <!-- 获得缴费名单 -->
+    <select id="getPayItemList" parameterType="pd" resultType="pd">
+
+	SELECT T1.PAY_ITEM_PKID,T1.COST,T3.DISCOUNT_SCOPE,T3.DISCOUNT_MODE,T3.DISCOUNT_MONEY,T3.DISCOUNT,T1.AMOUNTRECEIVABLE,T1.AMOUNTCOLLECTION,T1.STATUS,T1.DISCOUNT DISCOUNTS,
+	(
+      CASE WHEN T1.PAY_ITEM_PKID=T1.PAY_ITEM_PARENT_PKID THEN T2.PAYITEM
+      ELSE (SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T1.PAY_ITEM_PARENT_PKID AND ROWNUM=1) || '-' || T2.PAYITEM
+      END 
+      ) PAYITEM
+	FROM T_PAY_ITEM_LIST T1
+	LEFT JOIN T_PAY_ITEM T2
+	ON T1.PAY_ITEM_PKID = T2.PKID
+	LEFT JOIN T_PAY_ITEM_LIST_DISCOUNT T3
+	ON T1.PAY_ITEM_PKID = T3.PAY_ITEM_LIST_PKID
+	WHERE 1=1 
+	<if test="studentPkid!=null and studentPkid!=''">
+    	AND T1.STUDENT_PKID=#{studentPkid}
+    </if>
+    <if test="payItemPkid!=null and payItemPkid!=''">
+    	AND T1.PAY_ITEM_PKID=#{payItemPkid}
+    </if>
+    </select>
+    
+    
+    <!-- 获得缴费详情 -->
+    <select id="getPayOrderDetail" parameterType="pd" resultType="pd">
+
+	SELECT CASE
+	  WHEN T2.ORDERCREATE_MODE='D' THEN '线下'
+	  WHEN T2.ORDERCREATE_MODE='DO' THEN '线下其他'
+	  WHEN T2.ORDERCREATE_MODE='I' THEN '导入'
+	  WHEN T2.ORDERCREATE_MODE='U' THEN '线上'
+	END ORDERCREATE_MODE,
+	
+	TO_CHAR(T2.ORDERDATE, 'YYYY-MM-DD HH24:mi:ss') ORDERDATE,
+	T2.CJR,T1.PAY_ORDERNO,T3.TRANSACTION_HOST_SN,
+	TO_CHAR(T5.CJSJ, 'YYYY-MM-DD HH24:mi:ss') DCJSJ,
+	TO_CHAR(T3.CJSJ, 'YYYY-MM-DD HH24:mi:ss') CJSJ,
+	T1.PKID,
+	T3.TRANSACTION_PAY_PLATFORM,
+	T1.MONEY,T4.USERNAME
+	from T_PAY_TRANSACTION_LOG T3
+	LEFT JOIN T_PAY_ORDER T2
+	ON T3.PAY_ORDER_PKID = T2.PKID
+	LEFT JOIN T_PAY_ORDER_DETAIL T1
+	ON T2.PKID=T1.PAY_ORDER_PKID
+	LEFT JOIN T_PAY_ITEM T5
+	ON T5.PKID=T1.PAY_ITEM_PKID
+	LEFT JOIN SYS_USER T4
+	ON T2.CJR = T4.USER_ID
+
+	WHERE 1=1 AND t3.TRANSACTION_STATUS in (1,2)
+	<if test="orderDetailPkid!=null and orderDetailPkid!=''">
+    	AND T1.PKID=#{orderDetailPkid}
+    </if>
+    </select>
+    
+    <!-- 修改订单明细 -->
+    <update id="updatePayOrderDetail" parameterType="pd">
+    	update T_PAY_ORDER_DETAIL 
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="printFlag!=null and printFlag!=''">
+    	,PRINTFLAG=#{printFlag}
+    	</if>
+    	<if test="XGR!=null and XGR!=''">
+    	,XGR=#{XGR}
+    	</if>
+    	WHERE PKID=#{orderDetailPkid}
+    	
+    	
+    </update>
+    
+    <!-- 获得所有缴费记录 -->
+    <select id="getPayOrderDetailGroup" parameterType="pd" resultType="pd">
+
+	SELECT TT.PAY_ITEM_PKID 
+	FROM(SELECT * 
+	FROM T_PAY_ORDER_DETAIL T1
+	LEFT JOIN T_PAY_ITEM T2
+	ON T1.PAY_ITEM_PKID = T2.PKID
+	LEFT JOIN T_PAY_OTHER_ITEM T3
+	ON T1.PAY_ITEM_PKID = T3.PKID
+	WHERE 1=1
+	<if test="printFlag!=null and printFlag!=''">
+    	AND T1.PRINTFLAG=#{printFlag}
+    </if>
+    <if test="studentPkid!=null and studentPkid!=''">
+    	AND T1.STUDENT_PKID=#{studentPkid}
+    </if>
+    <if test="payItemPkids!=null">
+		AND T1.PAY_ITEM_PKID IN
+		<foreach item="item" index="index" collection="payItemPkids" open="(" separator="," close=")"> 
+		   #{item}  
+		  </foreach>
+    </if>
+	) TT GROUP BY TT.PAY_ITEM_PKID
+    </select>
+    
+    
+    <!-- 获得线下缴费记录列表 -->
+    <select id="getPayOrderDetailListForPrint" parameterType="pd" resultType="pd">
+
+	SELECT T1.PKID,T1.PAY_ITEM_PKID,T1.CJSJ,T2.TRANSACTION_TYPE,T2.ORDERCREATE_MODE,T1.PRINTFLAG,T4.PAYITEM 
+	FROM T_PAY_ORDER_DETAIL T1
+	 
+	LEFT JOIN T_PAY_ORDER T2
+	ON T1.PAY_ORDER_PKID = T2.PKID
+	LEFT JOIN T_STUDENT T3
+	ON T2.STUDENT_PKID = T3.PKID
+	LEFT JOIN T_PAY_ITEM T4
+	ON T1.PAY_ITEM_PKID = T4.PKID
+	LEFT JOIN T_PAY_OTHER_ITEM T5
+	ON T1.PAY_ITEM_PKID = T5.PKID
+	
+	WHERE 1=1 AND T2.TRANSACTION_FLAG=1 AND T1.PRINTFLAG !='Y' 
+	<if test="createModels!=null">
+		AND T2.ORDERCREATE_MODE IN 
+		<foreach item="item" index="index" collection="createModels" open="(" separator="," close=")"> 
+		   #{item}  
+		  </foreach>
+    </if>
+	<if test="studentPkid!=null and studentPkid!=''">
+    	AND T3.PKID=#{studentPkid}
+    </if>
+    <if test="payItemPkid!=null and payItemPkid!=''">
+    	AND T1.PAY_ITEM_PKID=#{payItemPkid}
+    </if>
+	ORDER BY T1.XGSJ DESC 
+    </select>
+    
+
+    <!--所有的缴费项目  -->
+    <select id="getAllPayItems" parameterType="pd" resultType="pd">
+    	select pkid,payitem from t_pay_item where 1=1
+    </select>
+    
+    <!-- 更新缴费项目状态  已完成  已过期  -->
+    <update id="updatePayItemStatus" useGeneratedKeys="false" parameterType="pd">
+    	update t_pay_item i set i.status=(case when i.status=1 then 2  when i.status=0 then 3 else i.status end),XGSJ=sysdate 
+		where enddate is not null 
+		and enddate &lt; sysdate
+    </update>
+    
+    
+    <!-- 未缴费学生名单 -->
+	
+	<select id="getStudentPaylistPage" parameterType="page" resultType="pd">
+
+	SELECT T1.PKID,T1.XINGMING,T1.XUEHAO,T1.DEPARTMENT_PKID,T1.XINGBIE,T1.RUXUESHIJIAN,T1.NIANJI,T1.ZAIXUEZT,T1.SUSHE,T1.DAOSHI,T1.SHENFENZHENGHAO,
+	(select name from SYS_DEPARTMENT T3 where T1.DEPARTMENT_PKID = T3.DEPARTMENT_ID) DEPARTMENT_NAME,
+	(select name from SYS_DICTIONARIES T4 where T1.ZAIXUEZT = T4.DICTIONARIES_ID  ) ZAIXUEZT_NAME
+	FROM T_STUDENT T1  
+	WHERE T1.ZHUANGTAI=1 AND T1.PKID NOT IN   
+	(SELECT T2.STUDENT_PKID FROM T_PAY_ITEM_LIST T2   
+	
+	<if test="pd.payItemPkid!=null and pd.payItemPkid!=''">
+    	WHERE T2.PAY_ITEM_PKID=#{pd.payItemPkid}
+    </if>
+	    GROUP BY T2.STUDENT_PKID)
+	<if test="pd.conditions!=null and pd.conditions!=''">
+   		AND (
+   		T1.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%')
+   		or T1.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+   		or T1.XINGMING LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+   		)
+   	</if>
+	  ORDER BY T1.XGSJ
+    </select>
+    
+    
+    <!-- 保存缴费名单 -->
+	<insert id="savePayItemList" parameterType="pd">
+		INSERT INTO 
+		T_PAY_ITEM_LIST
+		(PKID,PAY_ITEM_PKID,STUDENT_PKID,CJSJ,XGSJ,STATUS,COST,DISCOUNT,AMOUNTRECEIVABLE,AMOUNTCOLLECTION,DISCOUNT_MONEY,DISCOUNT_MODE,IS_DEFAULT,PAY_ITEM_PARENT_PKID)
+		VALUES 
+		(#{PKID},#{payItemPkid},#{studentPkid},SYSDATE,SYSDATE,
+		<choose>
+			<when test="STATUS!=null and STATUS!=''">#{STATUS}</when>
+			<otherwise>0</otherwise>
+		</choose>
+		,#{COST},#{DISCOUNT},#{AMOUNTRECEIVABLE},0,#{DISCOUNT_MONEY},#{DISCOUNT_MODE},#{IS_DEFAULT,jdbcType=VARCHAR},#{PAY_ITEM_PARENT_PKID,jdbcType=VARCHAR})
+	</insert>
+		
+	<!-- 获得缴费记录个数 -->
+    <select id="getCountFromPayItemList" parameterType="pd" resultType="pd">
+	
+		SELECT COUNT(*) ccount FROM T_PAY_ITEM_LIST T WHERE 1=1 
+		<if test="studentPkid!=null and studentPkid!=''">
+	    	AND T.STUDENT_PKID=#{studentPkid}
+	    </if>
+	    <if test="payItemPkid!=null and payItemPkid!=''">
+	    	AND T.PAY_ITEM_PKID=#{payItemPkid}
+	    </if>
+    </select>
+    
+    <!-- 根据id获得对象-->
+    <select id="getPayItemInfo" parameterType="pd" resultType="pd">
+    	select COST,STATUS,PARENT_ID,PKID from T_PAY_ITEM 
+    	where 1=1 
+    	and PKID=#{PKID}
+    </select>
+    
+    <!-- 获得缴费名单 -->
+    <select id="getPayItemListList" parameterType="pd" resultType="pd">
+    	select t.PKID,
+		<!-- i.PAYITEM, -->
+		(SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T.PAY_ITEM_PARENT_PKID AND ROWNUM=1) AS PAYITEM,<!-- 父项目名称 -->
+	    (
+	    CASE WHEN T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID THEN ''
+	    ELSE I.PAYITEM
+	    END 
+	    ) PAYITEM_CHILD,<!-- 子项目名称 -->
+	  	p.pici_name,
+	  	c.cengci_name,
+	  	s.nianji,
+	  	(case when t.status = '0' then '欠费' when t.status = '1' then '核验中' when t.status = '2' then '已完成' when t.status = '3' then '已关闭' end) status,
+	  	t.PAY_ITEM_PKID,t.COST,t.DISCOUNT,t.AMOUNTRECEIVABLE,t.AMOUNTCOLLECTION, (t.AMOUNTRECEIVABLE-t.AMOUNTCOLLECTION) AMOUNTQF,s.PKID SPKID,s.SHENFENZHENGHAO,s.XINGMING,s.DEPARTMENT_PKID,
+	  	<!-- departmentstr(s.department_pkid) ZUZHINAME, -->
+	  	(select NAME from SYS_DEPARTMENT d where d.DEPARTMENT_ID = s.department_pkid) as ZUZHINAME,
+	  	(SELECT COUNT(1) FROM T_GOODS_GET G WHERE G.T_STUDENT_PKID=S.PKID AND G.T_PAY_ITEM_PKID=T.PAY_ITEM_PKID AND G.OPT_STATE='1') AS GOODS_GET_COUNT 
+	  	from T_PAY_ITEM_LIST t
+	  	join T_PAY_ITEM i on i.PKID=T.PAY_ITEM_PKID <!-- and i.status in (1,2) -->
+	  	<choose>
+			<when test="showStatus!=null and showStatus!='' and showStatus == '012'">
+				and i.status in (0,1,2)
+			</when>
+			<otherwise>
+				and i.status in (1,2)
+			</otherwise>
+		</choose>
+	  	left join T_STUDENT s on t.student_pkid = s.pkid
+	  	left join t_pici p on p.pkid = s.pici_pkid
+	  	left join t_cengci c on c.pkid = s.cengci_pkid
+	  	where 1=1 and s.ZAIXUEZT='ZX'
+	  	AND (T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID OR T.IS_DEFAULT='Y')<!-- 无子项目 OR 默认子项目 -->
+		<!-- <if test="payItemPkid!=null and payItemPkid!=''">
+		and t.PAY_ITEM_PKID = #{payItemPkid} 
+		</if> -->
+	    
+	    <if test="payItemPkid!=null and payItemPkid!=''">
+			AND (t.PAY_ITEM_PARENT_PKID IN 
+			<foreach item="item" index="index" collection="payItemPkid" open="(" separator="," close=")"> 
+			   #{payItemPkid[${index}]} 
+			  </foreach>
+			  
+			  OR T.PAY_ITEM_PKID IN
+			  <foreach item="item" index="index" collection="payItemPkid" open="(" separator="," close=")"> 
+			   #{payItemPkid[${index}]} 
+			  </foreach>
+			  )
+	    </if>
+		<if test="status!=null and status!=''">
+	   		and t.status=#{status}
+	   	</if>
+	   	<if test="grade!=null and grade!=''">
+	   		and s.NIANJI=#{grade}
+	   	</if>
+	   	<if test="departmentPkids!=null and departmentPkids.size() > 0">
+			AND s.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="departmentPkids" open="(" separator="," close=")"> 
+			   #{departmentPkids[${index}]} 
+			  </foreach>
+	    </if>
+	   	<if test="conditions!=null and conditions!=''">
+	   		and (
+	   		s.XUEHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%')
+	   		or s.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%') 
+	   		or s.XINGMING LIKE CONCAT(CONCAT('', #{conditions}),'%') 
+	   		)
+	   	</if>
+	   	ORDER BY  t.XGSJ DESC
+	</select>
+	
+	
+	 <!-- 得到学生flag -->
+    <select id="yanzmc" parameterType="pd" resultType="pd">
+	select * from t_pay_item t  where t.payitem=#{MC}
+	</select>
+	
+	<!-- 获得所有缴费条数 -->
+    <select id="getPayOrderDetailCount" parameterType="pd" resultType="pd">
+		select count(*) CCOUNT from T_PAY_ORDER_DETAIL where 1=1 
+		<if test="payItemPkid!=null and payItemPkid!=''">
+    	and PAY_ITEM_PKID=#{payItemPkid}
+    	</if>
+    	<if test="studentPkid!=null and studentPkid!=''">
+    	 and STUDENT_PKID=#{studentPkid}
+    	</if>
+    </select>
+	
+
+	<!--导出缴费名单 kangchl -->
+	<select id="getCanExportPayItemList" parameterType="pd" resultType="pd">
+    	select t.PKID,
+		s.xuehao,
+		(SELECT PAYITEM FROM T_PAY_ITEM WHERE PKID=T.PAY_ITEM_PARENT_PKID AND ROWNUM=1) AS PAYITEM,<!-- 父项目名称 -->
+	    (
+	    CASE WHEN T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID THEN ''
+	    ELSE I.PAYITEM
+	    END 
+	    ) PAYITEM_CHILD,<!-- 子项目名称 -->
+	  	p.pici_name,
+	  	c.cengci_name,
+	  	ds.NAME as nianji,
+	  	(case when t.status = '0' then '欠费' when t.status = '1' then '核验中' when t.status = '2' then '已完成' when t.status = '3' then '已关闭' end) status,
+	  	t.PAY_ITEM_PKID,t.COST,t.DISCOUNT,t.AMOUNTRECEIVABLE,t.AMOUNTCOLLECTION, s.PKID SPKID,s.SHENFENZHENGHAO,s.XINGMING,s.DEPARTMENT_PKID,
+	  	(select name from sys_department sysd where sysd.department_id=s.DEPARTMENT_PKID) ZUZHINAME,
+	  	(t.AMOUNTRECEIVABLE-t.AMOUNTCOLLECTION) AMOUNTQF,
+	  	(SELECT COUNT(1) FROM T_GOODS_GET G WHERE G.T_STUDENT_PKID=S.PKID AND G.T_PAY_ITEM_PKID=T.PAY_ITEM_PKID AND G.OPT_STATE='1') AS GOODS_GET_COUNT,
+	  	(select PAY_STYLE_NAME from T_PAY_STYLE p where p.pkid = i.PAY_TYPE_PKID) PAY_STYLE_NAME,
+	  	(select SCHOOL_YEAR_NAME from T_SCHOOL_YEAR s where s.pkid = i.SCHOOL_YEAR_PKID) SCHOOL_YEAR_NAME
+	  	from T_PAY_ITEM_LIST t
+	  	join T_PAY_ITEM i on i.PKID=T.PAY_ITEM_PKID 
+	  	<!-- and i.status in (1,2) -->
+	  	left join T_STUDENT s on t.student_pkid = s.pkid
+	  	join SYS_DICTIONARIES ds
+	  	on s.nianji=ds.BIANMA
+	  	left join t_pici p on p.pkid = s.pici_pkid
+	  	left join t_cengci c on c.pkid = s.cengci_pkid
+	  	where 1=1 and s.ZAIXUEZT='ZX' 
+	  	<choose>
+			<when test="showStatus!=null and showStatus!='' and showStatus == '012'">
+				and i.status in (0,1,2)
+			</when>
+			<otherwise>
+				and i.status in (1,2)
+			</otherwise>
+		</choose>
+		and ds.parent_id='GRADE'
+	  	AND (T.PAY_ITEM_PKID=T.PAY_ITEM_PARENT_PKID OR T.IS_DEFAULT='Y')<!-- 无子项目 OR 默认子项目 -->
+		<!-- <if test="payItemPkid!=null and payItemPkid!=''">
+		and t.PAY_ITEM_PKID = #{payItemPkid} 
+		</if> -->
+		<if test="payItemPkid!=null and payItemPkid!=''">
+			AND (t.PAY_ITEM_PARENT_PKID IN 
+			<foreach item="item" index="index" collection="payItemPkid" open="(" separator="," close=")"> 
+			   #{payItemPkid[${index}]} 
+			  </foreach>
+			  
+			  OR T.PAY_ITEM_PKID IN
+			  <foreach item="item" index="index" collection="payItemPkid" open="(" separator="," close=")"> 
+			   #{payItemPkid[${index}]} 
+			  </foreach>
+			  )
+	    </if>
+		<if test="status!=null and status!=''">
+	   		and t.status=#{status}
+	   	</if>
+	   	<if test="grade!=null and grade!=''">
+	   		and s.NIANJI=#{grade}
+	   	</if>
+	   	<!-- <if test="DEPARTMENT_PKID!=null and DEPARTMENT_PKID!=''">
+	   		and s.DEPARTMENT_PKID=#{DEPARTMENT_PKID}
+	   	</if> -->
+	   	<if test="departmentPkids!=null">
+			AND s.DEPARTMENT_PKID IN 
+			<foreach item="item" index="index" collection="departmentPkids" open="(" separator="," close=")"> 
+			   #{departmentPkids[${index}]} 
+			  </foreach>
+	    </if>
+	   	<if test="conditions!=null and conditions!=''">
+	   		and (
+	   		s.XUEHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%')
+	   		or s.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%') 
+	   		or s.XINGMING LIKE CONCAT(CONCAT('%', #{conditions}),'%') 
+	   		)
+	   	</if>
+	   	 <if test="PAY_TYPE_PKID!=null and PAY_TYPE_PKID!=''">
+			and  i.PAY_TYPE_PKID =#{PAY_TYPE_PKID}
+		  </if>
+		  <if test="SCHOOL_YEAR_PKID!=null and SCHOOL_YEAR_PKID!=''">
+			and  i.SCHOOL_YEAR_PKID =#{SCHOOL_YEAR_PKID}
+		  </if>
+		ORDER BY t.XGSJ DESC 
+	</select>
+
+	 <delete id="deleteItem" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM WHERE PKID=#{pkid}
+    </delete>
+     <delete id="deleteItemrule" parameterType="pd">
+    	DELETE FROM t_pay_item_rule t  where t.PAY_ITEM_PKID=#{pkid}
+    </delete>
+     <delete id="deleteItemlist" parameterType="pd">
+    	DELETE FROM t_pay_item_list t  where t.PAY_ITEM_PKID=#{pkid}
+    </delete>
+	
+	<!--批量   更改缴费名单表状态   更新名单状态为已关闭-->
+	<update id="updatePayItemListStatusClose" parameterType="pd">
+		update t_pay_item_list l set l.status=3,l.xgsj=sysdate  
+		where exists(
+		      select 1 from t_pay_item i where i.pkid=l.pay_item_pkid and i.status in(2,3)
+		)
+		and l.status!=3 and l.status!=2   
+	</update>
+	<!-- end 更改缴费名单表状态 -->
+	
+	
+	<!--批量   更改缴费名单表状态   更新名单状态为已完成-->
+	<update id="updatePayItemListStatusOk" parameterType="pd">
+		update t_pay_item_list l set l.status=2 ,l.xgsj=sysdate,OFFTHESTOCKS_DATE=sysdate   
+		where l.Amountcollection>=l.AMOUNTRECEIVABLE  
+		and not exists(
+		     select 1 from t_pay_order o inner join t_pay_transaction_log tl on(tl.pay_order_pkid=o.pkid) inner join t_pay_order_detail od 
+		     on(od.pay_order_pkid=o.pkid)
+		     where o.student_pkid=l.student_pkid and od.pay_item_pkid=l.pay_item_pkid
+		     and tl.transaction_status in (1,-1) 
+		)
+		and l.status!=2
+	</update>
+	<!-- 更改缴费名单表状态   更新名单状态为已完成-->
+	<!-- 保存缴费名单删除表 -->
+	<insert id="insertPayItemListDel" parameterType="pd">
+		INSERT INTO 
+		T_PAY_ITEM_LIST_DEL
+		(PKID,PAY_ITEM_PKID,STUDENT_PKID,CJSJ,XGSJ,STATUS,COST,DISCOUNT,AMOUNTRECEIVABLE,AMOUNTCOLLECTION,DISCOUNT_MONEY,DISCOUNT_MODE,DELDATE)
+		VALUES 
+		(#{PKID},#{PAY_ITEM_PKID},#{STUDENT_PKID},SYSDATE,SYSDATE,#{STATUS},#{COST},#{DISCOUNT},#{AMOUNTRECEIVABLE},#{AMOUNTCOLLECTION},#{DISCOUNT_MONEY},#{DISCOUNT_MODE},SYSDATE)
+	</insert>
+	
+	<!--删除缴费名单表  -->
+    <delete id="deletePayItemList" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_LIST WHERE PAY_ITEM_PKID=#{payItemPkid}
+    </delete>
+    
+    <!--删除缴费名单  -->
+    <delete id="deletePayItemListObject" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_LIST l WHERE l.PAY_ITEM_PARENT_PKID = 
+    	(select PAY_ITEM_PARENT_PKID from T_PAY_ITEM_LIST p where p.PKID=#{pkid})
+    	and l.STUDENT_PKID = 
+    	(select STUDENT_PKID from T_PAY_ITEM_LIST p where p.PKID=#{pkid})
+    </delete>
+    
+<update id="updateitem" parameterType="pd">
+		update T_PAY_ITEM t set t.payitem=#{fabuxm},t.mustpay=#{MUSTPAY}, t.startdate=to_date(#{yxqqi},'yyyy-mm-dd hh24:mi:ss'), 
+		t.enddate=to_date(#{yxqzhi},'yyyy-mm-dd hh24:mi:ss'),t.XGSJ=sysdate,t.XGR=#{CJR},
+		t.T_DORM_TYPE_PKID = #{T_DORM_TYPE_PKID,jdbcType=VARCHAR},
+		t.PAY_TYPE_PKID = #{PAY_TYPE_PKID},t.SCHOOL_YEAR_PKID = #{SCHOOL_YEAR_PKID},beizhu = #{BEIZHU,jdbcType=VARCHAR}
+		 WHERE t.PKID=#{pkid}
+	</update>
+	<delete id="deletePic" parameterType="pd">
+		delete from T_PAY_ITEM_PICTURE where ITEM_PKID = #{ITEMPKID}
+	</delete>
+	 <delete id="deletedr" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_LIST WHERE PAY_ITEM_PKID=#{pkid}
+    </delete>
+    <select id="getlist" parameterType="pd" resultType="pd">
+    select nvl(t.discount_money, 0) discount_money,
+       (select s.SHENFENZHENGHAO
+          from t_student s
+         where s.pkid = t.student_pkid) cardNo,
+       (select s.XUEHAO from t_student s where s.pkid = t.student_pkid) stuNumber,
+       (select s.XINGMING from t_student s where s.pkid = t.student_pkid) stuName
+  from t_pay_item_list t
+ where t.pay_item_pkid = #{PKID}
+    </select>
+    
+    <!-- 添加 -->
+    <insert id="insertPayItemListDiscount" parameterType="pd">
+	  insert into t_pay_item_list_discount
+	  (PKID,XGSJ,CJSJ,DISCOUNT_SCOPE,DISCOUNT_MONEY,DISCOUNT,DISCOUNT_MODE,PAY_ITEM_LIST_PKID,ALONEFLAG)
+	  VALUES(#{PKID},sysdate,sysdate,null,#{discountMoney},#{discountZhe,jdbcType=DOUBLE},#{discountMode},#{payItemListPkid},#{ALONEFLAG})
+ 	</insert>
+ 	
+ 	<delete id="deletePayItemListDiscount" parameterType="pd">
+    	DELETE FROM t_pay_item_list_discount WHERE PAY_ITEM_LIST_PKID=#{payItemListPkid}
+    </delete>
+    
+    <!-- 根据id获得对象-->
+    <select id="getPayItemListInfoLock" parameterType="pd" resultType="pd">
+    	select COST,DISCOUNT,AMOUNTRECEIVABLE,STUDENT_PKID,PAY_ITEM_PKID from T_PAY_ITEM_LIST 
+    	where 1=1 
+    	and PKID=#{PKID} for update
+    </select>
+
+	<!-- 获取缴费名单/暂打印时使用 -->
+    <select id="getPayItemListForPrint" parameterType="pd" resultType="pd">
+    	select t1.pkid,t1.cjsj,t1.PAY_ITEM_PKID,t2.payitem,t2.startdate,t2.enddate,t1.status,t1.cost,t1.discount,t1.amountreceivable,t1.amountcollection,t3.XINGMING,
+    	(select w.name from sys_department w where w.department_id=t3.DEPARTMENT_PKID) ZUZHINAME 
+		from t_pay_item_list t1 
+		left join t_pay_item t2
+		on t1.pay_item_pkid = t2.pkid
+		left join t_student t3
+		on t1.student_pkid = t3.pkid
+		where 1=1
+		<if test="payItemListPkidList!=null and payItemListPkidList.size() > 0">
+			AND T1.PKID IN 
+			<foreach item="item" index="index" collection="payItemListPkidList" open="(" separator="," close=")"> 
+			   #{item}  
+			  </foreach>
+	    </if>
+		<if test="studentPkid!=null and studentPkid!=''">
+	    	AND t3.pkid=#{studentPkid}
+	    </if>
+		and t2.startusing='Y'
+		and t2.status in (1,2)
+		ORDER BY t1.XGSJ DESC 
+    </select>
+    
+     <!-- 线下缴费查询学生名单 -->
+	
+	<select id="getStudentQuerylistPage" parameterType="page" resultType="pd">
+
+	SELECT DISTINCT T1.PKID,T1.XINGMING,T1.XUEHAO,T1.DEPARTMENT_PKID,T1.XINGBIE,T1.RUXUESHIJIAN,T1.NIANJI,T1.ZAIXUEZT,<!-- T1.SUSHE, -->
+	(SELECT GETWHOLEROOMNAME_FUNC(SD.PKID) FROM DUAL) AS SUSHE,T1.DAOSHI,T1.SHENFENZHENGHAO,T1.XGSJ,
+	(select name from SYS_DEPARTMENT T3 where T1.DEPARTMENT_PKID = T3.DEPARTMENT_ID) DEPARTMENT_NAME,
+	(select name from SYS_DICTIONARIES T4 where T1.ZAIXUEZT = T4.DICTIONARIES_ID  ) ZAIXUEZT_NAME
+	FROM T_STUDENT T1  
+	LEFT JOIN t_pay_item_list T2
+	ON t2.student_pkid = t1.pkid
+	LEFT JOIN T_STUDENT_DORM SD
+	ON T1.PKID=SD.T_STUDENT_PKID
+	WHERE T1.ZHUANGTAI=1 
+	<if test="pd.status!=null and pd.status!=''">
+    	and T2.status=#{pd.status}
+    </if>
+    <if test="pd.departmentIdList!=null and pd.departmentIdList.size() > 0">
+		AND T1.DEPARTMENT_PKID IN 
+		<foreach item="item" index="index" collection="pd.departmentIdList" open="(" separator="," close=")"> 
+		   #{pd.departmentIdList[${index}]}
+		  </foreach>
+    </if>
+	<if test="pd.conditions!=null and pd.conditions!=''">
+   		AND (
+   		T1.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%')
+   		or T1.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+   		or T1.XINGMING LIKE CONCAT(CONCAT('', #{pd.conditions}),'%') 
+   		)
+   	</if>
+	  ORDER BY T1.XGSJ
+    </select>
+    
+    <!-- 查询学生基本信息-->
+    <select id="getStudentInfo" parameterType="pd" resultType="pd">
+    	select t.XINGMING,t.shenfenzhenghao,t.xuehao,t.pkid,t.nianji,t.ZHUANYE,t.department_pkid,
+    	(SELECT s.NAME FROM sys_dictionaries s WHERE s.BIANMA=t.zaixuezt) zxzt,
+    	t.xiaoqu,
+    	(select d.name from sys_department d where d.department_id=t.department_pkid) zuzhi
+    	 from t_student T where 1=1 and zhuangtai=1 
+    	<if test="studentPkid !=null and studentPkid!=''">
+    		AND T.PKID=#{studentPkid}
+    	</if>
+    </select>
+    
+    <!-- 查询学生基本信息-->
+    <select id="getStudentInfo2" parameterType="pd" resultType="pd">
+    	select t.XINGMING,t.shenfenzhenghao,t.xuehao,t.pkid,D.NAME AS nianji,t.ZHUANYE,t.department_pkid,t.IS_SURE_INF,t.IS_SURE_DEP,
+    	(SELECT s.NAME FROM sys_dictionaries s WHERE s.BIANMA=t.zaixuezt) zxzt,P.PICI_NAME,C.CENGCI_NAME,
+    	to_char(t.RUXUESHIJIAN,'YYYY-MM-DD') RUXUESHIJIAN,
+    	t.xiaoqu,
+    	DEPARTMENTSTR(t.department_pkid) zuzhi
+    	<!-- (select d.name from sys_department d where d.department_id=t.department_pkid) zuzhi -->
+    	 from t_student T
+    	 join SYS_DICTIONARIES D
+		 ON D.PARENT_ID = 'GRADE' AND T.NIANJI=D.BIANMA
+    	 LEFT JOIN T_PICI P
+    	 ON P.PKID=T.PICI_PKID
+    	 LEFT JOIN T_CENGCI C
+    	 ON C.PKID=T.CENGCI_PKID
+    	  where 1=1 and zhuangtai=1 
+    	<if test="studentPkid !=null and studentPkid!=''">
+    		AND T.PKID=#{studentPkid}
+    	</if>
+    </select>
+    
+    <!-- 查询学生 -->
+	<select id="getStudentQuerylist2" parameterType="pd" resultType="pd">
+
+	select t.XINGMING,t.shenfenzhenghao,t.xuehao,t.pkid,t.nianji,t.ZHUANYE,t.department_pkid,
+    	(SELECT s.NAME FROM sys_dictionaries s WHERE s.BIANMA=t.zaixuezt) zxzt,
+    	t.xiaoqu,
+    	(select d.name from sys_department d where d.department_id=t.department_pkid) zuzhi
+	FROM T_STUDENT T  
+	
+	WHERE T.ZHUANGTAI=1 
+    <if test="departmentIdList!=null and departmentIdList.size() > 0">
+		AND T.DEPARTMENT_PKID IN 
+		<foreach item="item" index="index" collection="departmentIdList" open="(" separator="," close=")"> 
+		   #{departmentIdList[${index}]}
+		  </foreach>
+    </if>
+	<if test="conditions!=null and conditions!=''">
+   		AND (
+   		T.XUEHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%')
+   		or T.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{conditions}),'%') 
+   		or T.XINGMING LIKE CONCAT(CONCAT('', #{conditions}),'%') 
+   		)
+   	</if>
+    </select>
+    <!-- 设置欠费项目为关闭 -->
+    <update id="updatePayItemListStatusIsClose" parameterType="pd">
+		update t_pay_item_list l set l.status=3,l.xgsj=sysdate  
+		where 1=1
+		<if test="payItemListPkid!=null and cpayItemListPkid!=''">
+	   		AND l.PKID = #{payItemListPkid}
+	   	</if>
+		and l.status = 0
+	</update>
+	<select id="getDetailByOtherPayItem" parameterType="pd" resultType="pd">
+		  select t1.*,t2.USERNAME from T_PAY_ORDER_DETAIL t1
+		  left join sys_user t2
+		  on t1.cjr= t2.USER_ID
+		  where t1.pkid = #{orderDetailPkid}
+    </select>
+    
+    <select id="getStudent" parameterType="pd" resultType="pd">
+		  select * from t_student t where t.pkid=#{studentPkid}
+    </select>
+    
+     <update id="updateChildPayItemList" parameterType="pd">
+		update t_pay_item_list l set l.IS_DEFAULT=#{IS_DEFAULT},l.xgsj=sysdate  
+		where 1=1
+		<if test="payItemListPkid!=null and payItemListPkid!=''">
+	   		AND l.PKID = #{payItemListPkid}
+	   	</if>
+	</update>
+	
+	<update id="updateChildPayItemList2" parameterType="pd">
+		update t_pay_item_list l set l.IS_DEFAULT=#{IS_DEFAULT},l.xgsj=sysdate  
+		where 1=1
+		AND l.PAY_ITEM_PKID = #{payitem_pkid_child}
+		AND l.STUDENT_PKID = #{studentPkid}
+	   	<if test="payitem_pkid_parent !=null and payitem_pkid_parent !=''">
+	   		AND l.PAY_ITEM_PARENT_PKID = #{payitem_pkid_parent}
+	   	</if>
+	</update>
+    <select id="getdormtypelist" parameterType="pd" resultType="pd">
+    	select * from T_STUDENT_DORM_TYPE where IS_USE = '1'
+    </select>
+	<!-- 查询宿舍资源 -->
+	<select id="getDormListInfo" parameterType="pd" resultType="pd">
+		SELECT PIL.AMOUNTCOLLECTION,RR.SEX_TYPE,PI.T_DORM_TYPE_PKID T_STUDENT_DORM_TYPE_PKID,PI.PKID AS PAY_ITEM_PKID,
+	    PI.T_DORM_TYPE_PKID,
+	    (CASE WHEN PI.T_DORM_TYPE_PKID IS NULL THEN '0' ELSE '1' END) AS IS_ZHUSUFEI,
+	    (CASE WHEN PI.PARENT_ID IS NULL THEN '0' ELSE '1' END) AS IS_ZIXIANG,
+	    SDT.IS_NUM_LIMIT,
+	    (RR.ROOM_SUM_NUM - RR.ROOM_ALREADY_USED - RR.ROOM_ALREADY_ORDER) AS SHENGYU_DORM_COUNT,
+	    (SELECT COUNT(1) FROM T_STUDENT_DORM SD 
+	    WHERE SD.T_STUDENT_DORM_TYPE_PKID=PI.T_DORM_TYPE_PKID AND SD.SD_SEX=(CASE WHEN S.XINGBIE='男' THEN '1' ELSE '0' END)
+	    AND SD.T_STUDENT_PKID=#{STUDENT_PKID}
+	    AND ROWNUM=1)
+	    AS IS_FENPEICHUANG
+	    
+	    FROM T_PAY_ITEM PI
+	    JOIN T_PAY_ITEM_LIST PIL
+	    ON PIL.PAY_ITEM_PKID = PI.PKID
+	    LEFT JOIN T_STUDENT S
+	    ON PIL.STUDENT_PKID=S.PKID 
+	    LEFT JOIN T_STUDENT_DORM_TYPE SDT
+	    ON PI.T_DORM_TYPE_PKID=SDT.PKID
+	    LEFT JOIN T_ROOM_RESOURCE RR
+	    ON SDT.PKID=RR.T_STUDENT_DORM_TYPE_PKID AND RR.SEX_TYPE=(CASE WHEN S.XINGBIE='男' THEN 'M' ELSE 'W' END)
+	    
+	    WHERE 1=1 
+	    <if test="PAY_ITEM_LIST_PKIDlist != null and PAY_ITEM_LIST_PKIDlist.size() > 0">
+			AND PI.PKID IN 
+			<foreach item="item" index="index" collection="PAY_ITEM_LIST_PKIDlist" open="(" separator="," close=")"> 
+			   #{item}  
+			  </foreach>
+	    </if>
+	    AND PIL.STUDENT_PKID=#{STUDENT_PKID}
+	    
+	</select>
+    <select id="getchildPkidByName" parameterType="pd" resultType="pd">
+    	select * from T_STUDENT_DORM_TYPE dt where dt.DT_NAME = #{fabuxm} and rownum = 1 for update
+    </select>
+	
+	<select id="getSendMsgCounts" parameterType="pd" resultType="pd">
+		select COUNT(*) AS totalcount,
+		nvl(SUM(
+		CASE 
+		WHEN b.wx_openid IS NOT NULL
+		THEN 1
+		END 
+		),0) AS sendcount
+		 
+		from t_pay_item_list a JOIN t_student b ON a.student_pkid=b.pkid 
+		WHERE a.status=0 AND a.pay_item_parent_pkid=#{payitempkid} and a.IS_DEFAULT='Y'
+	</select>
+	<select id="getSendMsgLoglistPage" parameterType="page" resultType="pd">
+		select a.*,b.USERNAME from t_sendmsg_log a left join sys_user b on a.OPERATOR=b.USER_ID
+		
+		<where>
+			<if test="pd.payItemListPkid !=null and pd.payItemListPkid != '' ">
+				a.T_PAYITEMLIST_PKID=#{pd.payItemListPkid}
+			</if>
+		</where> 
+		order by a.cjsj desc
+	</select>
+	<update id="updateItemName" parameterType="pd">
+		update t_pay_item i set i.PAYITEM = #{PAYITEM} where i.PKID = #{PKID}
+	</update>
+	<select id="updateItemList" parameterType="pd" resultType="pd">
+		select * from t_pay_item_list l where l.pkid = #{PKID}
+	</select>
+	<update id="updateItemListStatus" parameterType="pd" >
+		update t_pay_item_list l set l.STATUS = #{STATUS},L.XGSJ = SYSDATE
+		where l.PKID = #{PKID}
+	</update>
+	<insert id="insertItemList" parameterType="pd" useGeneratedKeys="false">
+		insert into T_PAY_ITEM_LIST_DEL 
+		(pkid, pay_item_pkid, student_pkid, cjsj, xgsj, status, cost, discount, amountreceivable, amountcollection, discount_money, discount_mode, is_default, pay_item_parent_pkid)
+		select
+		sys_guid(),pay_item_pkid, student_pkid, cjsj, xgsj, status, cost, discount, amountreceivable, amountcollection, discount_money, discount_mode, is_default, pay_item_parent_pkid
+		from t_pay_item_list l
+		where l.PKID = #{PKID}
+	</insert>
+	<delete id="delitemlist" parameterType="pd" >
+		delete from t_pay_item_list l where l.PKID = #{PKID}
+	</delete>
+</mapper>

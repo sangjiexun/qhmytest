@@ -1,0 +1,110 @@
+/*重置*/
+* {
+	margin: 0;
+	padding: 0;
+	font-family: "微软雅黑";
+}
+ul,ol{
+	list-style: none;
+	margin: 0;
+}
+a{
+	text-decoration: none;
+	color: inherit;
+}
+img{
+	border:none;
+}
+.clearfix {
+	clear: both;
+}
+
+.pl-man,.pl-wei,.pl-kong{
+				width: 75px;
+				height:75px;
+				margin: 0 auto;
+				border-radius: 10px;
+				text-align: center;
+			}
+			.pl-man{
+				background:#f2241f ;
+			}
+			.pl-wei{
+				background:#1c9cff ;
+			}
+			.pl-kong{
+				background:#d6ebff ;
+			}
+			.pl-man span,.pl-wei span,.pl-kong span{
+				line-height: 75px;
+				font-size:28px;
+				color: #fff;
+			}
+			.pl-miaoShu{
+				width: 100px;
+			    margin: 0 auto;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			   /*  white-space: nowrap; */
+			    margin-top: 10px;
+			    cursor: pointer;
+			}
+			.pl-shanGe{
+				margin-bottom: 30px;
+			}
+			.pl-wSolid{
+				border-radius: 10px;
+				padding: 15px;
+				width: 165px;
+				margin: 0 auto;
+			}
+			.pl-wSolid h5{
+				margin-top:0;
+			}
+			.pl-wSolid div{
+				text-align: center;
+			}
+			.pl-wSolid p{
+				margin-bottom: 0;
+				width: 110px;
+			    margin: 0 auto;
+				margin-top: 10px;
+			    white-space: normal;
+			    word-break: break-all;
+				cursor: pointer;
+			}
+			.text-red{
+				color:#f2241f;
+				font-weight: bold;
+			}
+			.text-bule{
+				color:#448aea;
+				font-weight: bold;
+			}
+			.text-black{
+				font-weight: bold;
+			}
+			.pl-fanYe{
+				position: fixed;
+				bottom: 1%;
+				right: 30px;
+			}
+			.pl-fanYe span{
+				font-size: 16px;
+				font-weight: bold;
+			}
+			.nav>.pl-item>a{
+				padding: 6px 10px;
+				cursor: pointer;
+			}
+			.nav-pills>.pl-item.active>a, .nav-pills>.pl-item.active>a:focus, .nav-pills>.pl-item.active>a:hover{
+				background:#d9534f ;
+				color:#fff;
+				border:none;
+			}
+			.table-bordered>tbody>tr>td, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>td, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>thead>tr>th{
+				text-align: center;
+			}
+			.pa-row{
+				margin-top: 15px;
+			}

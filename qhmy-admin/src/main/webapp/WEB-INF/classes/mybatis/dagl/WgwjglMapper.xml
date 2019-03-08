@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WgwjglMapper">
+	
+	<!--表名 -->
+	
+	<sql id="tableName">
+		sys_department
+	</sql>
+	<sql id="Field">
+		"DEPARTMENT_ID",	
+		"NAME",	
+		"NAME_EN",
+		"BIANMA",	
+		"PARENT_ID",
+		"BZ",	
+		"HEADMAN",
+		"TEL",	
+		"FUNCTIONS",
+		"ADDRESS",	
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",	
+		"BUSINESSLICCODE",
+		"PROJECTCODE"
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{DEPARTMENT_ID},	
+			#{NAME},	
+			#{NAME_EN},
+			#{BIANMA},	
+			#{PARENT_ID},	
+			#{BZ},
+			#{HEADMAN},	
+			#{TEL},	
+			#{FUNCTIONS},
+			#{ADDRESS},	
+			#{DEPARTMENT_TYPE_ID},	
+			#{CREWSIZE},
+			#{REGISTADDRESS},	
+			#{BUSINESSLICCODE},	
+			#{PROJECTCODE}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findByNamelistPagename" parameterType="page" resultType="pd">
+		
+		select distinct sys_user.name username,
+       TT_PLUSEXCEPT.ycmc ycmc,
+       kt_wgjl.sj sj,
+       kt_wgjl.dev_serial dev_serial,
+       kt_wgjl.gly_no  gly_no
+  from sys_user, TT_PLUSEXCEPT, kt_wgjl, sys_department
+ where (select department_id from sys_department where name =#{pd.name}) = sys_user.department_id
+   and sys_user.user_id = kt_wgjl.user_serial
+   and TT_PLUSEXCEPT.YCXH = kt_wgjl.ycmc
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+         select sys_department.name name, count(kt_wgjl.ycmc) count, TT_PLUSEXCEPT.ycmc
+  from sys_department, kt_wgjl, sys_user, TT_PLUSEXCEPT
+ where sys_department.department_id = sys_user.department_id
+   and sys_user.user_id = kt_wgjl.user_serial
+   and TT_PLUSEXCEPT.YCXH = kt_wgjl.ycmc
+     <if test="pd.wglx!=null and pd.wglx!='' ">
+       		and	TT_PLUSEXCEPT.ycmc = #{pd.wglx}
+      	  </if>
+          <if test="pd.xmmc!=null and pd.xmmc!='' ">
+       		and	sys_department.name = #{pd.xmmc}
+      	  </if>
+      	  <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and kt_wgjl.sj &gt;=  to_date(#{pd.startLoginStart}, 'yyyy-mm-dd hh24:mi:ss')
+				
+			</if>
+			<if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+				and kt_wgjl.sj &lt;=  to_date(#{pd.lastLoginStart}, 'yyyy-mm-dd hh24:mi:ss')
+				
+			</if>
+ group by sys_department.name, TT_PLUSEXCEPT.ycmc
+                    
+         
+	</select>
+	
+	
+	        <!-- 获取项目信息 -->
+	<select id="findqyxm" parameterType="pd" resultType="Department">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='2' 
+	</select>
+         
+	
+	
+	<select id="findwglx" parameterType="pd" resultType="pd">
+	
+		select ycmc from TT_PLUSEXCEPT
+		 
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<!-- zhoudibo -->
+</mapper>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ControlMapper">
+	
+	
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"t_kongzhiqi"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"BIANMA",
+		"MINGCHENG",
+		"IPDIZHI",
+		"TONGDAOHAO",
+		"GONGZUOZHAN_BIANAM",
+		"LUXIANGJI_BIANMA",
+		"LUXIANGJI_TDH",
+		"LEIXING",
+		"DUANKOUHAO",
+		"CHUANKOUHAO",
+		"CHUANKOUBTL",
+		"DAILIIPDZ",
+		"DAILIDKH",
+		"KAOQINJIMAC",
+		"CJSJ",
+		"PROJECT_BIANMA",
+		"TONGXUNLX"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{BIANMA},
+		#{MINGCHENG},
+		#{IPDIZHI},
+		#{TONGDAOHAO},
+		#{GONGZUOZHAN_BIANAM},
+		#{LUXIANGJI_BIANMA},
+		#{LUXIANGJI_TDH},
+		#{LEIXING},
+		#{DUANKOUHAO},
+		#{CHUANKOUHAO},
+		#{CHUANKOUBTL},
+		#{DAILIIPDZ},
+		#{DAILIDKH},
+		#{KAOQINJIMAC},
+		#{CJSJ},
+		#{TONGXUNLX},
+		#{PROJECT_BIANMA}
+	</sql>
+	
+	
+	<select id="cllistPage" parameterType="page" resultType="pd" >
+	 select BIANMA,
+       MINGCHENG,
+       IPDIZHI,
+       TONGDAOHAO,
+       (select gongzuozhanmc from t_gongzuozhan g where g.bianma=k.gongzuozhan_bianam ) GONGZUOZHAN_BIANAM,
+       (select mingcheng from t_luxiangji l where l.bianhao=k.luxiangji_bianma ) LUXIANGJI_BIANMA,
+       (SELECT MENGANGMC FROM T_MENGANG_RULE m where m.pkid=k.MENGANGRULE_PKID) MQMC,
+       LUXIANGJI_TDH,
+       case
+         when LEIXING='1'  then
+          'WG'
+          when LEIXING='2'  then
+          'WEDS'
+         else
+          '未知'
+       end LEIXING,
+       DUANKOUHAO,
+       CHUANKOUHAO,
+       CHUANKOUBTL,
+       DAILIIPDZ,
+       DAILIDKH,
+       KAOQINJIMAC,
+       to_char(CJSJ, 'yyyy-mm-dd') CJSJ,
+       PROJECT_BIANMA,
+       SNHAO
+       from t_kongzhiqi k
+ 		where 1=1
+ 		<if test="pd.jdid!=null and pd.jdid !=''">
+			and  k.project_bianma= (select xiangmubm
+          from v_t_project p
+         where p.ID = #{pd.jdid})
+		</if>
+	   <if test="pd.seText!=null and pd.seText !=''">
+			and (
+			k.MINGCHENG like CONCAT(CONCAT('%',#{pd.seText}),'%')
+			or
+			k.BIANMA like CONCAT(CONCAT('%',#{pd.seText}),'%')
+			)
+		</if>
+	 ORDER BY BIANMA DESC
+	</select>
+	<!-- 通过ID获取数据 -->
+	<select id="getbianma" parameterType="pd" resultType="pd">
+		select SEQ_KONGZHIQI.nextval as BIANMA from dual 
+	</select>
+	
+	<select id="findBybianma" parameterType="pd" resultType="pd">
+		select *  from t_kongzhiqi q where q.BIANMA=#{BIANMA}
+	</select>
+	<select id="getIdentify" parameterType="pd" resultType="pd">
+		SELECT * FROM t_kongzhiqi K where K.SNHAO = #{SNHAO} AND K.TONGDAOHAO=#{TONGDAOHAO} and K.PROJECT_BIANMA = #{DTTOP_BM} 
+	</select>
+	
+	<select id="getgzz" parameterType="pd" resultType="pd">
+		select BIANMA, GONGZUOZHANMC
+ 		 from t_gongzuozhan g
+		 where g.project_bianma =
+        (select xiangmubm
+          from v_t_project p
+         where p.ID =#{jdid} )
+	</select>
+	
+	<select id="getlxj" parameterType="pd" resultType="pd">
+		select BIANHAO,MINGCHENG
+  		from t_luxiangji T
+		 where T.project_bianma =
+       (select xiangmubm
+          from v_t_project p
+         where p.ID = #{jdid})
+
+	</select>
+	<select id="getxmbm" parameterType="pd" resultType="pd">
+		select xiangmubm
+          from v_t_project p
+         where p.ID = #{jdid}
+
+	</select>
+	
+	
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into 
+		t_kongzhiqi
+		(
+		"BIANMA",
+		"MINGCHENG",
+		"IPDIZHI",
+		"TONGDAOHAO",
+		"GONGZUOZHAN_BIANAM",
+		"LUXIANGJI_BIANMA",
+		"LUXIANGJI_TDH",
+		"LEIXING",
+		"DUANKOUHAO",
+		"CHUANKOUHAO",
+		"CHUANKOUBTL",
+		"DAILIIPDZ",
+		"DAILIDKH",
+		"KAOQINJIMAC",
+		"CJSJ",
+		"PROJECT_BIANMA",
+		"MENGANGRULE_PKID",
+		"SNHAO"
+		) values (
+		
+		#{BIANMA},
+		#{MINGCHENG},
+		#{IPDIZHI},
+		#{TONGDAOHAO},
+		#{GZZBM},
+		#{LXJBM},
+		#{LXJTDH},
+		#{TONGXUNLX},
+		#{DUANKOUHAO},
+		#{CHUANKOUHAO},
+		#{CHUANKOUBTL},
+		#{DAILIIPDZ},
+		#{DAILIDKH},
+		#{KAOQINJIMAC},
+		SYSDATE,
+		#{PROJECT_BIANMA},
+		#{MENGANGRULE_PKID},
+		#{SNHAO}
+		)
+	</insert>
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		t_kongzhiqi
+		set 
+			"MINGCHENG" = #{MINGCHENG},
+			"IPDIZHI" = #{IPDIZHI},
+			"TONGDAOHAO" = #{TONGDAOHAO},
+			"GONGZUOZHAN_BIANAM" = #{GZZBM},
+			"LUXIANGJI_BIANMA" = #{LXJBM},
+			"LUXIANGJI_TDH" = #{LXJTDH},
+			"LEIXING" = #{TONGXUNLX},
+			"DUANKOUHAO" = #{DUANKOUHAO},
+			"CHUANKOUHAO" = #{CHUANKOUHAO},
+			"CHUANKOUBTL" = #{CHUANKOUBTL},
+			"DAILIIPDZ" = #{DAILIIPDZ},
+			"DAILIDKH" = #{DAILIDKH},
+			"KAOQINJIMAC" = #{KAOQINJIMAC},
+			"CJSJ" = sysdate,
+			"MENGANGRULE_PKID"=#{MENGANGRULE_PKID},
+			"SNHAO"=#{SNHAO}
+		where 
+			"BIANMA" = #{BIANMA}
+	</update>
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		t_kongzhiqi
+		where 
+			"BIANMA" = #{BIANMA}
+	</delete>
+	<!--根据项目名称查记录数，用于判断相同项目下是控制器名称的去重 -->
+	<select id="MCIsDuplicated" parameterType="pd" resultType="int">
+		SELECT COUNT(*) FROM T_KONGZHIQI WHERE PROJECT_BIANMA=#{PROJECT_BIANMA} AND MINGCHENG=#{MINGCHENG}
+	</select>
+	
+	<!--查询当前项目下的门区  -->
+	<select id="listMenQu" parameterType="pd" resultType="pd">
+		SELECT PKID,MENGANGMC FROM T_MENGANG_RULE WHERE XIANGMUBM=#{XIANGMUBM} AND ZHUANGTAI=1
+	</select>
+</mapper>

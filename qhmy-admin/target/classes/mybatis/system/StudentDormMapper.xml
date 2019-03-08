@@ -1,0 +1,1641 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="StudentDormMapper">
+	
+	<!-- 查询学生宿舍  -->
+	<select id="getStudentDormTree" parameterType="pd" resultType="vo">
+  		SELECT CD.PKID AS id,CD.SD_NAME AS NAME,CD.PARENT_PKID AS PARENTID,CD.SD_LEVEL AS TYPE FROM T_STUDENT_DORM CD WHERE CD.SD_LEVEL !='5'
+        ORDER BY 
+        to_number(regexp_substr(sd_name,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+    
+    
+    <!-- 查询学生宿舍树数据  -->
+    <select id="getSchoolsListTree" parameterType="pd" resultType="vo">
+	    SELECT DEP.DEPARTMENT_ID AS ID,DEP.NAME AS NAME,'NULL' AS PARENTID,'0' AS TYPE 
+	    FROM SYS_DEPARTMENT DEP 
+	    WHERE DEP.LEIBIE=1 AND (DEP.PARENT_ID IS NULL OR DEP.PARENT_ID='null') 
+	    AND DEP.ZHUANGTAI=1
+	    ORDER BY DEP.CJSJ ASC
+    </select>
+    
+    <!-- 查询学生宿舍卡片数据  -->
+    <select id="getStudentDormList" parameterType="pd" resultType="pd">
+  		  SELECT 
+  		  	SD.PKID,
+  		  	SD.PARENT_PKID,
+  		  	SD.T_STUDENT_PKID,
+  		  	SD.SD_NAME,
+  		  	SD.SD_LEVEL,
+  		  	SD.SD_PREFIX,
+  		  	SD.STATUS,
+  		  	SD.CJSJ,
+  		  	SD.XGSJ,
+  		  	SD.SD_SEX,
+  		  	(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 2 
+  		  	START WITH  SD1.PARENT_PKID=#{pkid}
+      		CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS LOUCOUNT,
+  		  	(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 3 
+  		  	START WITH  SD1.PARENT_PKID=#{pkid}
+      		CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS CENGCOUNT,
+  		  	(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 4 
+  		  	START WITH  SD1.PARENT_PKID=#{pkid}
+      		CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS FANGCOUNT,
+  		  	(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 5 
+  		  	START WITH  SD1.PARENT_PKID=#{pkid}
+      		CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS CHUANGCOUNT,
+      		(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 5 AND SD1.T_STUDENT_PKID IS NOT NULL
+  		  	START WITH  SD1.PARENT_PKID=#{pkid}
+      		CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS CHUANGCOUNT_RUZHU
+  		  	
+		  FROM T_STUDENT_DORM SD
+		  
+		  
+		  WHERE 1=1 
+		  AND SD.PARENT_PKID=#{pkid}
+		  ORDER BY to_number(regexp_substr(sd_name,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+    
+    <!-- 查询学生宿舍级别  -->
+	<select id="getStudentDormLevel" parameterType="pd" resultType="pd">
+  		  SELECT SD.SD_LEVEL FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PKID=#{pkid} AND ROWNUM=1
+    </select>
+        <!-- 查询学生宿舍  -->
+	<select id="getStudentDorm" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PKID=#{pkid} AND ROWNUM=1
+    </select>
+    
+    <!-- 插入学生宿舍  -->
+    <insert id="insertStudentDorm" parameterType="pd" useGeneratedKeys="false">
+    	insert into T_STUDENT_DORM
+		  (PKID, PARENT_PKID,T_STUDENT_DORM_TYPE_PKID, SD_NAME, SD_LEVEL, SD_PREFIX, STATUS,CJSJ,XGSJ,SD_SEX)
+		values
+		  (#{PKID}, #{PARENT_PKID,jdbcType=VARCHAR},#{T_STUDENT_DORM_TYPE_PKID,jdbcType=VARCHAR}, #{SD_NAME,jdbcType=VARCHAR}
+		  , #{SD_LEVEL,jdbcType=VARCHAR}
+		  , #{SD_PREFIX,jdbcType=VARCHAR}
+		  , #{STATUS,jdbcType=VARCHAR},sysdate,sysdate, #{SD_SEX,jdbcType=VARCHAR})
+    
+    </insert>
+    
+     <!-- 查询学生宿舍  -->
+	<select id="getStudentDormBySdName" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PARENT_PKID=#{PARENT_PKID} AND SD.SD_NAME=#{SD_NAME} AND ROWNUM=1
+    </select>
+    
+    <select id="getStudentDormByPkid" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PKID=#{PKID} AND ROWNUM=1
+    </select>
+    
+    <update id="updateStudentDormSexByParentPkid" parameterType="pd">
+    	UPDATE T_STUDENT_DORM SD SET SD.SD_SEX=#{SD_SEX} WHERE SD.PARENT_PKID=#{PARENT_PKID}
+    </update>
+    
+    <!-- 查询学生宿舍类型  -->
+    <select id="getStudentDormTypeList" parameterType="pd" resultType="pd">
+  		  SELECT SD.PKID,SD.DT_NO,SD.DT_NAME
+		  FROM T_STUDENT_DORM_TYPE SD
+		  WHERE 1=1 
+<!-- 		  AND SD.IS_USE='1' -->
+		  ORDER BY SD.CJSJ DESC
+    </select>
+    <select id="getStudentDormTypeListUsed" parameterType="pd" resultType="pd">
+    	SELECT SD.PKID,SD.DT_NO,SD.DT_NAME
+		  FROM T_STUDENT_DORM_TYPE SD
+		  WHERE 1=1 
+ 		  AND SD.IS_USE='1'
+		  ORDER BY SD.CJSJ DESC
+    </select>
+     <!-- 查询学生最大床位  -->
+	<select id="getStudentDormMaxCHUANG" parameterType="pd" resultType="pd">
+		SELECT * FROM (
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PARENT_PKID=#{PARENT_PKID} AND SD.SD_LEVEL='5' ORDER BY SD_NAME DESC
+  		) WHERE ROWNUM=1
+    </select>
+    
+    <!-- 更新宿舍 -->
+    <update id="updateStudentDorm" parameterType="pd">
+    	UPDATE T_STUDENT_DORM SD SET SD.XGSJ=sysdate
+    	<if test="SD_NAME != null and SD_NAME != ''">
+    		,SD.SD_NAME=#{SD_NAME,jdbcType=VARCHAR} 
+    	</if>
+    	<if test="SD_PREFIX != null and SD_PREFIX != ''">
+    		,SD.SD_PREFIX=#{SD_PREFIX,jdbcType=VARCHAR}
+    	</if>
+    	<if test="SD_SEX != null and SD_SEX != ''">
+    		,SD.SD_SEX=#{SD_SEX,jdbcType=VARCHAR}
+    	</if>
+    	WHERE SD.PKID=#{PKID}
+    </update>
+    
+    <!-- 通过parentPKID查询被占用的床位  -->
+	<select id="getInUseChuangListByParentPkid" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PARENT_PKID=#{pkid} AND SD.SD_LEVEL='5' AND SD.STATUS='1'
+    </select>
+    
+    <!-- 删除宿舍信息 -->
+    <delete id="deleteStudentDorm" parameterType="pd">
+    	DELETE FROM T_STUDENT_DORM SD WHERE SD.PKID=#{pkid}
+    </delete>
+    
+    <!-- 删除宿舍信息 -->
+    <delete id="deleteStudentDormChild" parameterType="pd">
+    	DELETE FROM T_STUDENT_DORM SD WHERE SD.PARENT_PKID=#{pkid}
+    </delete>
+    
+    <!-- 根据某一子节点查询第一级节点  -->
+    <select id="getStudentDormTopFirst" parameterType="pd" resultType="pd">
+  		 select sd.PKID,
+	     sd.PARENT_PKID SCHOOL_PKID
+		 from t_student_dorm sd
+		 where sd.sd_level='1'
+		 start with sd.pkid = #{PARENT_PKID} 
+		 connect by prior sd.PARENT_PKID= sd.PKID 
+    </select>
+    
+    <!-- 查询宿舍资源表  -->
+    <select id="getRoomResourceLock" parameterType="pd" resultType="pd">
+  		 select *
+		 from t_room_resource rr
+		 where 1=1 
+		 <if test="DEPARTMENT_PKID != null and DEPARTMENT_PKID !=''">
+		  	AND rr.DEPARTMENT_PKID=#{DEPARTMENT_PKID} 
+		 </if>
+		 and rr.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID} 
+		 and rr.SEX_TYPE=#{SEX_TYPE} 
+		 and rownum=1
+		 for update
+    </select>
+    
+    <!-- 插入宿舍院校专业关系表  -->
+    <insert id="insertDormDepartment" parameterType="pd" useGeneratedKeys="false">
+    	insert into T_DORM_DEPARTMENT
+		  (PKID, DORM_ID,DEPARTMENT_ID, ALLOT_TYPE, CJSJ, XGSJ)
+		values
+		  (#{PKID}, #{DORM_ID,jdbcType=VARCHAR},#{DEPARTMENT_ID,jdbcType=VARCHAR}, #{ALLOT_TYPE,jdbcType=VARCHAR}
+		  ,sysdate,sysdate)
+    </insert>
+    
+    <!-- 插入宿舍资源表  -->
+    <insert id="insertRoomResource" parameterType="pd" useGeneratedKeys="false">
+    	insert into T_ROOM_RESOURCE
+		  (ROOM_SUM_NUM, ROOM_ALREADY_USED,ROOM_ALREADY_ORDER, T_STUDENT_DORM_TYPE_PKID, SEX_TYPE, CJSJ, XGSJ,DEPARTMENT_PKID)
+		values
+		  (#{ROOM_SUM_NUM}, #{ROOM_ALREADY_USED,jdbcType=VARCHAR},#{ROOM_ALREADY_ORDER,jdbcType=VARCHAR}, #{T_STUDENT_DORM_TYPE_PKID,jdbcType=VARCHAR}
+		  , #{SEX_TYPE,jdbcType=VARCHAR},sysdate,sysdate, #{DEPARTMENT_PKID,jdbcType=VARCHAR})
+    </insert>
+    
+    <!-- 更新宿舍资源表，宿舍总床位数 -->
+    <update id="updateRoomResourceSum" parameterType="pd">
+    	UPDATE T_ROOM_RESOURCE SD SET SD.XGSJ=sysdate
+    	,SD.ROOM_SUM_NUM = #{ROOM_SUM_NUM}
+    	where 1=1 
+    	<if test="DEPARTMENT_PKID !=null and DEPARTMENT_PKID !=''">
+    		AND SD.DEPARTMENT_PKID=#{DEPARTMENT_PKID} 
+    	</if>
+    	and SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID} 
+		 and SD.SEX_TYPE=#{SEX_TYPE} 
+    </update>
+    <!-- 删除宿舍院校专业关系表 -->
+    <delete id="deleteDormDepartment" parameterType="pd">
+    	DELETE FROM T_DORM_DEPARTMENT SD WHERE SD.DORM_ID=#{DORM_ID}
+    </delete>
+    
+    <delete id="deleteDormDepartmentByPkid" parameterType="pd">
+    	DELETE FROM T_DORM_DEPARTMENT SD WHERE SD.PKID=#{PKID}
+    </delete>
+    
+    <!-- 通过parentPKID查询所有床位  -->
+	<select id="getChuangListByParentPkid" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PARENT_PKID=#{pkid} AND SD.SD_LEVEL='5'
+    </select>
+    
+    <!-- 通过parentPKID查询该节点的上一节点  -->
+	<select id="getLastStudentDormByPkid" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PKID=#{pkid} and rownum=1
+    </select>
+    
+    <!-- 更新宿舍资源表，已预定数 -->
+    <update id="updateRoomResourceOrder" parameterType="pd">
+    	UPDATE T_ROOM_RESOURCE SD SET SD.XGSJ=sysdate
+    	,SD.ROOM_SUM_NUM = #{ROOM_SUM_NUM}
+    	,SD.ROOM_ALREADY_ORDER = #{ROOM_ALREADY_ORDER}
+    	where SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID} 
+		 and SD.SEX_TYPE=#{SEX_TYPE} 
+    </update>
+    
+    <!-- 插入资源操作记录表  -->
+    <insert id="insertRoomResourceLogForOrder" parameterType="pd" useGeneratedKeys="false">
+    	insert into T_ROOM_RESOURCE_LOG
+		  (T_STUDENT_PKID, T_PAY_ITEM_PKID,HANDLE_TYPE, CANCEL, PAY_DATE, CJSJ,XGSJ)
+		values
+		  (#{T_STUDENT_PKID,jdbcType=VARCHAR}, #{T_PAY_ITEM_PKID,jdbcType=VARCHAR},#{HANDLE_TYPE,jdbcType=VARCHAR}, #{CANCEL,jdbcType=VARCHAR},sysdate,sysdate,sysdate)
+    </insert>
+    
+    <!-- 作废宿舍操作记录 -->
+    <update id="updateRoomResourceLogForCancel" parameterType="pd">
+    	UPDATE T_ROOM_RESOURCE_LOG SD SET SD.XGSJ=sysdate
+    	,SD.CANCEL = #{CANCEL}
+    	,SD.CANCEL_DATE = sysdate
+    	where SD.T_STUDENT_PKID=#{T_STUDENT_PKID} 
+		 and SD.T_PAY_ITEM_PKID=#{T_PAY_ITEM_PKID} 
+    </update>
+    
+    <!-- 查询学生宿舍计划树数据  -->
+    <select id="getSchoolsListPlanTree" parameterType="pd" resultType="vo">
+	    SELECT DEP.DEPARTMENT_ID AS ID,DEP.NAME AS NAME,'NULL' AS PARENTID,'0' AS TYPE 
+	      FROM SYS_DEPARTMENT DEP 
+	      WHERE DEP.LEIBIE=1 AND (DEP.PARENT_ID IS NULL OR DEP.PARENT_ID='null')
+	      AND DEP.ZHUANGTAI=1
+	      AND (DEP.DEPARTMENT_ID IN (
+	        SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+	                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+	                 CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+	                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+	      ) 
+	      OR (DEP.DEPARTMENT_ID in (select distinct(t.department_id) as department_id from sys_department t where t.leibie=1
+														start with t.department_id in (
+									                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+									                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+														)
+														connect by prior t.PARENT_ID= t.DEPARTMENT_ID))
+	      )
+	      ORDER BY DEP.CJSJ ASC
+	    <!-- SELECT DEP.DEPARTMENT_ID AS ID,DEP.NAME AS NAME,'NULL' AS PARENTID,'0' AS TYPE 
+	    FROM SYS_DEPARTMENT DEP 
+	    WHERE DEP.LEIBIE=1 AND (DEP.PARENT_ID IS NULL OR DEP.PARENT_ID='null')
+	    AND DEP.ZHUANGTAI=1
+	    AND DEP.DEPARTMENT_ID IN (
+	    	select sd.DEPARTMENT_ID
+			 from SYS_DEPARTMENT sd
+			 where sd.leibie='1' AND sd.ZHUANGTAI=1
+			 start with sd.DEPARTMENT_ID IN (
+			 	SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+                 CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+			 )
+			 connect by prior sd.PARENT_ID= sd.DEPARTMENT_ID
+	    ) 
+	    ORDER BY DEP.CJSJ ASC -->
+    </select>
+    
+    <!-- 查询学生宿舍计划左侧树 -->
+    <select id="getStudentDormPlanTree" parameterType="pd" resultType="vo">
+    
+    	select SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,SD.PKID AS ISXM,SD.STATUS AS state
+    	from T_STUDENT_DORM SD
+		where SD.SD_LEVEL != '5' AND SD.PKID in
+		<foreach item="item" index="index" collection="list" open="(" separator="," close=")">
+			<if test="(index % 999) == 998"> NULL ) OR SD.PKID IN (</if>#{item}
+		</foreach>
+		ORDER BY to_number(regexp_substr(SD.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+		
+    	<!-- SELECT TT.* FROM(
+				SELECT DISTINCT(SD.PKID),SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,SD.SD_LEVEL AS ISXM,SD.STATUS AS state
+				FROM T_STUDENT_DORM SD 
+				LEFT JOIN T_DORM_DEPARTMENT DD
+				ON SD.PKID = DD.DORM_ID 
+				WHERE 1=1
+				
+				START WITH SD.PKID IN (
+						SELECT TD.DORM_ID FROM T_DORM_DEPARTMENT TD
+		                 JOIN T_STUDENT_DORM SD1
+		                 ON TD.DORM_ID=SD1.PKID AND SD1.SD_LEVEL=5 
+		                 WHERE 1=1
+	                     AND TD.DEPARTMENT_ID IN(
+	                     	SELECT SD.DEPARTMENT_ID FROM SYS_DEPARTMENT SD 
+                              START WITH SD.DEPARTMENT_ID IN(
+                                    SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                                                  WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+                                                   CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                                                  WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+                              )
+                              connect by prior sd.DEPARTMENT_ID= sd.PARENT_ID
+	                      )
+				)
+				 connect by prior sd.PARENT_PKID= sd.PKID
+				 ) TT 
+				 WHERE TT.TYPE !='5'
+				 ORDER BY to_number(regexp_substr(TT.NAME,'[0-9]*[0-9]',1)) ASC -->
+    
+    	   <!-- SELECT SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE FROM T_STUDENT_DORM SD WHERE SD.SD_LEVEL !='5' 
+		   START WITH  SD.PARENT_PKID IN(
+ 					查询最顶级学校节点PKID
+                  select sd.department_id SCHOOL_PKID
+                 from sys_department sd
+                 where sd.LEIBIE='1'
+                 start with sd.department_id in 
+                 (
+                 SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+                 CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+                 )
+                 connect by prior sd.PARENT_ID= sd.department_id 
+		   )
+		   CONNECT BY PRIOR SD.PKID = SD.PARENT_PKID
+		   ORDER BY level,SD.SD_NAME ASC -->
+    </select>
+    
+    
+    <select id="getStudentDormPlanTree2" parameterType="pd" resultType="vo">
+    
+    	select SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,SD.PKID AS ISXM,SD.STATUS AS state
+    	from T_STUDENT_DORM SD
+		where SD.SD_LEVEL != '5'
+		ORDER BY to_number(regexp_substr(SD.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+    
+    <select id="getStudentDormPlanTree2listPage" parameterType="page" resultType="vo">
+    
+    	select SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,DD.PKID AS ISXM,SD.STATUS AS state
+    	from T_STUDENT_DORM SD
+    	LEFT JOIN T_DORM_DEPARTMENT DD
+		ON SD.PKID = DD.DORM_ID 
+		where SD.SD_LEVEL != '5' AND SD.PKID in
+		<foreach item="item" index="index" collection="list" open="(" separator="," close=")">
+			<if test="(index % 999) == 998"> NULL ) OR SD.PKID IN (</if>#{item}
+		</foreach>
+		ORDER BY to_number(regexp_substr(SD.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+    
+    <select id="getStudentDormPlanTree3" parameterType="pd" resultType="pd">
+    	SELECT SD1.PKID DORM_ID,sd1.tree_nodes
+		FROM T_STUDENT_DORM SD1
+		WHERE 1 = 1
+		<!-- AND SD1.IS_ALLOT=1 -->
+		<!-- AND SD1.STATUS=0 -->
+		AND SD1.SD_LEVEL = 5
+		
+    	<!-- SELECT max(TD.DORM_ID) as DORM_ID,sd1.tree_nodes
+			FROM T_DORM_DEPARTMENT TD
+			JOIN T_STUDENT_DORM SD1
+			ON TD.DORM_ID = SD1.PKID
+			WHERE 1 = 1
+			AND SD1.SD_LEVEL = 5
+			AND exists(
+			select 1 from
+			(SELECT SD.DEPARTMENT_ID
+			FROM SYS_DEPARTMENT SD
+			START WITH SD.DEPARTMENT_ID IN
+			(
+			SELECT DISTINCT REGEXP_SUBSTR((SELECT UD.DEPARTMENT_PKID
+			FROM T_USERDORM_DEPARTMENT UD
+			WHERE UD.USER_ID=#{USER_ID}),
+			'[^,]+',
+			1,
+			LEVEL) as TOKEN
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR((SELECT UD.DEPARTMENT_PKID
+			FROM T_USERDORM_DEPARTMENT UD
+			WHERE UD.USER_ID=#{USER_ID}),
+			'[^,]+',
+			1,
+			LEVEL) IS NOT NULL
+			)
+			connect by prior sd.DEPARTMENT_ID = sd.PARENT_ID) T where
+			T.DEPARTMENT_ID=TD.DEPARTMENT_ID
+			)
+			group by SD1.Parent_Pkid,sd1.tree_nodes -->
+    </select>
+    
+    <select id="getLouList" parameterType="pd" resultType="pd">
+    	select sd.* from t_student_dorm sd
+	    where sd.sd_level='2'
+	    start with sd.pkid=#{PKID}
+	    connect by prior sd.PKID= sd.PARENT_PKID
+    </select>
+    <select id="getCengList" parameterType="pd" resultType="pd">
+    	select sd.* from t_student_dorm sd
+	    where sd.sd_level='3'
+	    start with sd.pkid=#{PKID}
+	    connect by prior sd.PKID= sd.PARENT_PKID
+    </select>
+    <select id="getFangList" parameterType="pd" resultType="pd">
+    	select sd.* from t_student_dorm sd
+	    where sd.sd_level='4'
+	    start with sd.pkid=#{PKID}
+	    connect by prior sd.PKID= sd.PARENT_PKID
+    </select>
+    <select id="getChuangList" parameterType="pd" resultType="pd">
+	    
+	    SELECT count(1) as COUNTT FROM 
+			(
+				SELECT DISTINCT(SD.PKID),SD.SD_LEVEL,SD.PARENT_PKID,SD.STATUS,SD.T_STUDENT_DORM_TYPE_PKID,SD.SYS_DICTIONARIES_PKID,DD.ALLOT_TYPE,S.NIANJI
+				FROM (
+				select sd.* from t_student_dorm sd
+	    where sd.sd_level='5'
+	    start with sd.pkid=#{PKID}
+	    connect by prior sd.PKID= sd.PARENT_PKID
+				) SD 
+				LEFT JOIN T_STUDENT S
+				ON SD.T_STUDENT_PKID=S.PKID
+				LEFT JOIN T_DORM_DEPARTMENT DD
+				ON SD.PKID = DD.DORM_ID AND DD.ALLOT_TYPE='0'
+				WHERE 1=1
+				
+				START WITH SD.PKID IN (
+				SELECT TD.DORM_ID FROM T_DORM_DEPARTMENT TD
+				                 JOIN T_STUDENT_DORM SD1
+				                 ON TD.DORM_ID=SD1.PKID AND SD1.SD_LEVEL=5 
+				                
+				                 WHERE 1=1 AND TD.ALLOT_TYPE='0'
+				                 <choose>
+				                 	<when test='SD_LEVEL != null and SD_LEVEL =="5"'>
+				                 		<choose>
+						                 	<when test="DEPARTMENT_PKIDList != null and DEPARTMENT_PKIDList.size() > 0">
+						                 		AND TD.DEPARTMENT_ID IN 
+						                 		(
+						                 			SELECT UDD.department_id FROM (
+						                 				<!-- 分配节点下的所有子和孙的节点 -->
+								                     	select distinct(t.department_id) as department_id from sys_department t
+														start with t.department_id in (
+									                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+									                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+														)
+														connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+						                 			) UDD WHERE UDD.department_id IN
+						                 			<foreach item="item" index="index" collection="DEPARTMENT_PKIDList" open="(" separator="," close=")"> 
+													   #{DEPARTMENT_PKIDList[${index}]} 
+													  </foreach>
+						                 		)
+						                 	</when>
+						                 	<otherwise>
+						                 		AND TD.DEPARTMENT_ID IN(
+							                        <!-- 分配节点下的所有子和孙的节点 -->
+							                     	select distinct(t.department_id) as department_id from sys_department t
+													start with t.department_id in (
+								                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+								                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+								                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+								                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+													)
+													connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+							                    )
+						                 	</otherwise>
+						                 </choose>
+				                 	</when>
+				                 	<otherwise>
+				                 		AND TD.DEPARTMENT_ID IN(
+					                       <!-- 分配节点下的所有子和孙的节点 -->
+					                     	select distinct(t.department_id) as department_id from sys_department t
+											start with t.department_id in (
+						                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+						                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+						                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+						                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+											)
+											connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+							            )
+				                 	</otherwise>
+				                 </choose>
+				                 
+				                 
+				                      
+				)
+				 connect by prior sd.PARENT_PKID= sd.PKID
+			) SD
+		  WHERE 1=1 
+  		  AND SD.SD_LEVEL=#{SD_LEVEL}
+  		  <if test='SD_LEVEL != null and SD_LEVEL =="5"'>
+				<if test="STATUS != null and STATUS !=''">
+		  		  	AND SD.STATUS=#{STATUS}
+		  		  </if>
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				    AND SD.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="RUXUENIANFEN != null and RUXUENIANFEN != ''">
+				    AND SD.NIANJI = #{RUXUENIANFEN}
+				</if>
+			</if>
+  		  
+    </select>
+    
+    <!-- 查询入学年份集合 -->
+    <select id="getRuxuenianfenList" parameterType="pd" resultType="pd">
+    	select * from sys_dictionaries t where t.parent_id='GRADE'<!--  and t.is_used='Y' --> order by t.NAME DESC
+    </select>
+    
+    <!-- 查询当前登录用户所拥有权限的院校专业下拉框树 -->
+    <select id="getDepartmentPlanTree" parameterType="pd" resultType="vo">
+    
+    
+    SELECT DD.DEPARTMENT_ID AS ID,DD.NAME AS NAME,DD.PARENT_ID AS PARENTID,DD.LEIBIE AS TYPE
+    FROM (
+				      SELECT DISTINCT(SD.DEPARTMENT_ID) as DEPARTMENT_ID FROM SYS_DEPARTMENT SD 
+				      START WITH SD.DEPARTMENT_ID IN(
+				            SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+				                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+				                           CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+				                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+				      )
+				      connect by prior sd.DEPARTMENT_ID= sd.PARENT_ID
+                    ) T1
+                    JOIN (
+                    SELECT DT.DEPARTMENT_ID,DT.NAME,DT.PARENT_ID,DT.LEIBIE FROM SYS_DEPARTMENT DT 
+                    WHERE DT.ZHUANGTAI=1
+                    START WITH DT.DEPARTMENT_ID=#{pkid}
+                    connect by prior DT.DEPARTMENT_ID= DT.PARENT_ID
+                    ) DD
+                    ON T1.DEPARTMENT_ID=DD.DEPARTMENT_ID
+		order by dd.name
+    
+    	<!-- SELECT DD.DEPARTMENT_ID AS ID,DD.NAME AS NAME,DD.PARENT_ID AS PARENTID,DD.LEIBIE AS TYPE
+    	FROM (
+		      SELECT * FROM SYS_DEPARTMENT SD 
+		      START WITH SD.DEPARTMENT_ID IN(
+		            SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+		                           CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+		      )
+		
+		      connect by prior sd.PARENT_ID= sd.DEPARTMENT_ID
+		
+		      UNION
+		
+		      SELECT * FROM SYS_DEPARTMENT SD 
+		      START WITH SD.DEPARTMENT_ID IN(
+		            SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+		                           CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                          WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+		      )
+		
+		      connect by prior sd.DEPARTMENT_ID= sd.PARENT_ID
+		
+		) DD
+		WHERE DD.ZHUANGTAI=1
+		START WITH DD.DEPARTMENT_ID=#{pkid}
+		connect by prior DD.DEPARTMENT_ID= DD.PARENT_ID -->
+    
+    	<!-- SELECT SD.DEPARTMENT_ID AS ID,SD.NAME AS NAME,SD.PARENT_ID AS PARENTID,SD.LEIBIE AS TYPE 
+       FROM SYS_DEPARTMENT SD
+       WHERE SD.ZHUANGTAI=1
+       START WITH SD.DEPARTMENT_ID IN(
+         SELECT DEP.DEPARTMENT_ID 
+        FROM SYS_DEPARTMENT DEP 
+        WHERE DEP.LEIBIE=1 AND (DEP.PARENT_ID IS NULL OR DEP.PARENT_ID='null')
+        AND DEP.ZHUANGTAI=1
+        AND DEP.DEPARTMENT_ID IN (
+	        select sh.DEPARTMENT_ID FROM (
+	        	select sd.DEPARTMENT_ID
+		         from SYS_DEPARTMENT sd
+		         where sd.leibie='1' AND sd.ZHUANGTAI=1
+		         start with sd.DEPARTMENT_ID IN (
+		          		SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+		                 CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+		         )
+		         connect by prior sd.PARENT_ID= sd.DEPARTMENT_ID
+	        ) sh where 1=1
+	        <if test="pkid != null and pkid !=''">
+	        	and sh.DEPARTMENT_ID=#{pkid}
+	        </if>
+        ) 
+       )
+       connect by prior sd.DEPARTMENT_ID= sd.PARENT_ID -->
+    </select>
+    
+    <!-- 宿舍配置查询床数量  -->
+    <select id="getStudentDormChuangCountByParentPkid" parameterType="pd" resultType="pd">
+  		  SELECT count(1) as CHUANGCOUNT
+	      FROM T_STUDENT_DORM SD
+	      where 1=1 and sd.sd_level='5'
+	      start with SD.PARENT_PKID=#{pkid}
+	      connect by prior sd.PARENT_PKID= sd.PKID
+		 
+    </select>
+    
+    <!-- 宿舍计划查询学生宿舍卡片数据  -->
+    <select id="getStudentDormPlanList" parameterType="pd" resultType="pd">
+  		  SELECT SD.*,
+	        (SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 2 
+	          START WITH  SD1.PARENT_PKID=#{pkid}
+	          CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS LOUCOUNT,
+	          (SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 3 
+	          START WITH  SD1.PARENT_PKID=#{pkid}
+	          CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS CENGCOUNT,
+	          (SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL = 4 
+	          START WITH  SD1.PARENT_PKID=#{pkid}
+	          CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID) AS FANGCOUNT,
+	          '0' AS CHUANGCOUNT,
+	          '0' AS CHUANGCOUNT_RUZHU
+	          
+	      FROM T_STUDENT_DORM SD
+	      where SD.PARENT_PKID=#{pkid}
+		  
+		  ORDER BY SD.SD_NAME ASC
+    </select>
+    
+    <!-- 宿舍计划查询当前用户拥有权限的床集合  -->
+    <select id="getStudentDormPlanChuangList" parameterType="pd" resultType="pd">
+    
+    		SELECT SD1.*,TD1.DORM_ID,S.TOUXIANG,S.XINGMING,SDT.DT_NAME,
+    		(CASE WHEN TD1.SCHOOLNAME IS NULL THEN '' ELSE TD1.SCHOOLNAME END) DEPARTMENT_NAME,
+  		 	 (S.XINGMING || '-' || (CASE WHEN S.XINGBIE = 'W' THEN '女' ELSE '男' END) || 
+  		  	 (CASE WHEN BM.XUEHAO IS NOT NULL  THEN  ('-' || BM.XUEHAO) ELSE '' END) || 
+  		   (CASE WHEN CL.CLASS_NAME IS NOT NULL  THEN   ('-' || CL.CLASS_NAME) ELSE '' END) || 
+  		   (CASE WHEN TD1.SCHOOLNAME IS NOT NULL  THEN   ('-' || TD1.SCHOOLNAME) ELSE '' END)
+  		   ) XINGMINGS,to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) as sdNameOrder
+			FROM T_STUDENT_DORM SD1
+			LEFT JOIN 
+			(
+				SELECT TD1.*,PS.SCHOOLNAME FROM T_DORM_RELATION TD1
+				JOIN SYS_DICTIONARIES BX ON TD1.CLASSTYPE_ID=BX.DICTIONARIES_ID
+				JOIN T_PART_SCHOOL PS ON PS.PKID=TD1.PARTSCHOOL_ID
+			) TD1 ON SD1.PKID=TD1.DORM_ID
+			LEFT JOIN T_STUDENT S
+			ON SD1.T_STUDENT_PKID=S.PKID
+			LEFT JOIN T_STUDENT_BM BM
+			ON BM.STUDENT_PKID=S.PKID AND BM.ZHUANGTAI=1
+			AND SD1.T_STUDENT_BM_PKID = BM.PKID
+			LEFT JOIN T_CLASS CL ON CL.PKID=BM.BANJI_TYPE_PKID
+			LEFT JOIN T_STUDENT_DORM_TYPE SDT ON SDT.PKID=SD1.T_STUDENT_DORM_TYPE_PKID
+			WHERE SD1.SD_LEVEL='5'
+			<if test="STATUS != null and STATUS !=''">
+				AND SD1.STATUS=#{STATUS}
+			</if>
+			  <if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+			  		AND SD1.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+			  </if>
+			  <if test="SD_SEX != null and SD_SEX != ''">
+			  		AND SD1.SD_SEX = #{SD_SEX}
+			  </if>
+			  <if test="BANXING != null and BANXING != ''">
+			  		AND TD1.CLASSTYPE_ID = #{BANXING}
+			  </if>
+			  <if test="WENHUAKEXUEXIAO != null and WENHUAKEXUEXIAO != ''">
+			  		AND TD1.PARTSCHOOL_ID = #{WENHUAKEXUEXIAO}
+			  </if>
+			START WITH SD1.PARENT_PKID = #{pkid2}
+			CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID
+			ORDER BY to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+				
+  		<!--   SELECT SD1.*,TD1.DORM_ID,SD1.TOUXIANG,SD1.XINGMING,
+  		  (SD1.XINGMING || '-' || SD1.XINGBIE || 
+  		  (CASE WHEN SD1.XUEHAO != null AND SD1.XUEHAO !='' THEN  ('-' || SD1.XUEHAO) ELSE '' END) || 
+  		   (CASE WHEN SD1.CLASS_NAME != null AND SD1.CLASS_NAME !='' THEN   ('-' || SD1.CLASS_NAME) ELSE '' END) || 
+  		   (CASE WHEN TD1.SCHOOLNAME != null AND TD1.SCHOOLNAME !='' THEN   ('-' || TD1.SCHOOLNAME) ELSE '' END)
+  		   ) XINGMINGS 
+  		  FROM (
+				SELECT SD1.PKID,SD1.PARENT_PKID,SD1.T_STUDENT_DORM_TYPE_PKID,SD1.SYS_DICTIONARIES_PKID,SDT.DT_NAME,
+				SD1.T_STUDENT_PKID,SD1.SD_NAME,SD1.SD_LEVEL,SD1.SD_PREFIX,SD1.STATUS,SD1.CJSJ,SD1.XGSJ,SD1.TREE_NODES,S.TOUXIANG,S.XINGMING,S.XINGBIE,BM.XUEHAO,CL.CLASS_NAME,
+				SD1.SD_SEX,to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) as sdNameOrder
+				FROM T_STUDENT_DORM SD1
+				LEFT JOIN T_STUDENT S
+				ON SD1.T_STUDENT_PKID=S.PKID
+				LEFT JOIN T_STUDENT_BM BM
+				ON BM.STUDENT_PKID=S.PKID
+				LEFT JOIN T_CLASS CL ON CL.PKID=S.BANJI
+				LEFT JOIN T_STUDENT_DORM_TYPE SDT ON SDT.PKID=SD1.T_STUDENT_DORM_TYPE_PKID
+				WHERE SD1.SD_LEVEL='5'
+				<if test="STATUS != null and STATUS !=''">
+					AND SD1.STATUS=#{STATUS}
+				</if>
+				  <if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				  		AND SD1.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				  </if>
+				  <if test="SD_SEX != null and SD_SEX != ''">
+				  		AND SD1.SD_SEX = #{SD_SEX}
+				  </if>
+				START WITH SD1.PARENT_PKID = #{pkid2}
+				CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID
+				ORDER BY sdNameOrder ASC
+		) SD1
+		JOIN (
+				SELECT TD.PKID,TD.DORM_ID,TD.CLASSTYPE_ID,TD.PARTSCHOOL_ID,TD.CJSJ,TD.XGSJ,PS.SCHOOLNAME,
+				SDT.NAME BANXING,
+				to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) as sdNameOrder FROM T_DORM_RELATION TD
+                 JOIN T_STUDENT_DORM SD1
+                 ON TD.DORM_ID=SD1.PKID 
+                 LEFT JOIN T_STUDENT S
+				 ON SD1.T_STUDENT_PKID=S.PKID
+				LEFT JOIN T_STUDENT_BM BM
+				ON BM.STUDENT_PKID=S.PKID
+				 JOIN SYS_DICTIONARIES SDT ON TD.CLASSTYPE_ID=SDT.DICTIONARIES_ID
+				 JOIN T_PART_SCHOOL PS ON PS.PKID=TD.PARTSCHOOL_ID
+                
+				<if test="STATUS != null and STATUS != ''">
+				  		AND SD1.STATUS = #{STATUS}
+				  </if>
+				  <if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				  		AND SD1.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				  </if>
+				  <if test="BANXING != null and BANXING != ''">
+				  		AND TD.CLASSTYPE_ID = #{BANXING}
+				  </if>
+				  <if test="WENHUAKEXUEXIAO != null and WENHUAKEXUEXIAO != ''">
+				  		AND TD.PARTSCHOOL_ID = #{WENHUAKEXUEXIAO}
+				  </if>
+				  <if test="SD_SEX != null and SD_SEX != ''">
+				  		AND SD1.SD_SEX = #{SD_SEX}
+				  </if>
+                 WHERE 1=1 and SD1.SD_LEVEL=5
+                 ORDER BY sdNameOrder ASC
+                 
+		) TD1 ON SD1.PKID=TD1.DORM_ID -->
+    </select>
+    
+    <!-- 查询学生宿舍计划分配框宿舍树 -->
+    <select id="getStudentDormPlanTreeForAllot" parameterType="pd"  resultType="pd">
+		SELECT SD1.PKID DORM_ID,sd1.tree_nodes
+		FROM T_STUDENT_DORM SD1
+		WHERE 1 = 1
+		AND (SD1.IS_ALLOT IS NULL OR SD1.IS_ALLOT=0)
+		AND SD1.STATUS=0
+		AND SD1.SD_LEVEL = 5
+		
+    </select>
+    <select id="getStudentDormPlanTreeForAllotBySex" parameterType="pd" resultType="pd">
+		SELECT SD.PKID DORM_ID,SD.TREE_NODES
+		FROM T_STUDENT_DORM SD 
+		JOIN T_DORM_RELATION DR ON DR.DORM_ID = SD.PKID
+		WHERE 1=1 
+		AND SD.STATUS = 0
+		AND SD.SD_LEVEL = 5
+		 <if test="SD_SEX != null and SD_SEX != ''">
+			AND SD.SD_SEX = #{SD_SEX}
+		</if>
+		<if test="CLASSTYPE_PKID != null and CLASSTYPE_PKID != ''">
+			AND DR.CLASSTYPE_ID = #{CLASSTYPE_PKID}
+		</if>
+		<if test="SCHOOL_PKID != null and SCHOOL_PKID != ''">
+			AND DR.PARTSCHOOL_ID = #{SCHOOL_PKID}
+		</if>
+		
+		
+		
+    </select>
+    
+    <select id="getStudentDorminfotree" parameterType="pd" resultType="pd">
+		SELECT SD.PKID DORM_ID,SD.TREE_NODES
+		FROM T_STUDENT_DORM SD 
+		JOIN T_DORM_RELATION DR ON DR.DORM_ID = SD.PKID
+		WHERE 1=1 
+		AND SD.SD_LEVEL = 5 and sd.STATUS=0
+		 <if test="SD_SEX != null and SD_SEX != ''">
+			AND SD.SD_SEX = #{SD_SEX}
+		</if>
+		<if test="CLASSTYPE_PKID != null and CLASSTYPE_PKID != ''">
+			AND DR.CLASSTYPE_ID = #{CLASSTYPE_PKID}
+		</if>
+		<if test="SCHOOL_PKID != null and SCHOOL_PKID != ''">
+			AND #{SCHOOL_PKID}
+			IN (SELECT  REGEXP_SUBSTR (DR.PARTSCHOOL_ID,'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+			CONNECT BY REGEXP_SUBSTR (DR.PARTSCHOOL_ID,'[^,]+',1,LEVEL) IS NOT NULL)
+			<!-- EXISTS 
+			(SELECT 1 FROM (SELECT  REGEXP_SUBSTR (DR.PARTSCHOOL_ID,'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+			CONNECT BY REGEXP_SUBSTR (DR.PARTSCHOOL_ID,'[^,]+',1,LEVEL) IS NOT NULL)	
+			T1 WHERE T1.TOKEN = #{SCHOOL_PKID} 
+			)-->
+		</if>
+		
+		
+		
+    </select>
+    
+    <select id="getStudentDorminfotreestu" parameterType="pd" resultType="pd">
+		SELECT SD.PKID DORM_ID,SD.TREE_NODES
+		FROM T_STUDENT_DORM SD 
+		<!-- JOIN T_DORM_RELATION DR ON DR.DORM_ID = SD.PKID -->
+		WHERE 1=1 
+		AND SD.SD_LEVEL = 5 
+		 <if test="SD_SEX != null and SD_SEX != ''">
+			AND SD.SD_SEX = #{SD_SEX}
+		</if>
+		<!-- <if test="CLASSTYPE_PKID != null and CLASSTYPE_PKID != ''">
+			AND DR.CLASSTYPE_ID = #{CLASSTYPE_PKID}
+		</if>
+		<if test="SCHOOL_PKID != null and SCHOOL_PKID != ''">
+			AND DR.PARTSCHOOL_ID = #{SCHOOL_PKID}
+		</if> -->
+		
+		
+		
+    </select>
+    
+    <select id="getStuDormTree_summery" parameterType="java.util.List" resultType="vo">
+    	select SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,SD.PKID AS ISXM,SD.STATUS AS state
+    	from T_STUDENT_DORM SD
+		where 1=1  and
+		<foreach item="item" index="index" collection="list" open="(" separator="or" close=")">
+			 SD.PKID = #{item}
+		</foreach>
+		ORDER BY to_number(regexp_substr(SD.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+    
+     <select id="getStuDormTree" parameterType="java.util.List" resultType="vo">
+    	select SD.PKID AS id,SD.SD_NAME AS NAME,SD.PARENT_PKID AS PARENTID,SD.SD_LEVEL AS TYPE,SD.PKID AS ISXM,nvl(SD.STATUS,'0') AS state
+    	from T_STUDENT_DORM SD
+		where 1=1 and  
+		<foreach item="item" index="index" collection="list" open="(" separator="or" close=")">
+			 SD.PKID = #{item}
+		</foreach>
+		ORDER BY to_number(regexp_substr(SD.SD_NAME,'[-10-9]+*[-10-9]+',1)) ASC
+    </select>
+  <!--   <insert id="insertTempTree" parameterType="java.util.List" useGeneratedKeys="false">
+    	insert into TEST (id)
+	   	 <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")"> 
+	   	 select #{item} from dual
+	   	 </foreach>
+    </insert>
+    <delete id="deleteTempTree" parameterType="java.util.List">
+    	delete from TEST
+    </delete> -->
+    <!-- 查询学生宿舍计划回收框宿舍树 -->
+    <select id="getStudentDormPlanTreeForRecovery" parameterType="pd" resultType="pd">
+    
+    	SELECT SD1.PKID DORM_ID,sd1.tree_nodes
+		FROM T_STUDENT_DORM SD1
+		WHERE 1 = 1
+		AND SD1.IS_ALLOT=1
+		AND SD1.STATUS=0
+		AND SD1.SD_LEVEL = 5
+    </select>
+    
+    <select id="getDepartmentForRecovery" parameterType="pd" resultType="pd">
+    	select distinct(t.department_id) as department_id,t.name,t.leibie from sys_department t
+									                  start with t.department_id in (
+									                     SELECT DEPARTMENT_ID FROM (
+									                                  SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                                 WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+									                                  CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                                 WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+									                                 ) T1
+									                                 JOIN (
+									                                 SELECT DEPARTMENT_ID FROM SYS_DEPARTMENT DT 
+									                                 WHERE DT.ZHUANGTAI=1
+									                                 START WITH DT.DEPARTMENT_ID=#{pkid}
+									                                 connect by prior DT.DEPARTMENT_ID= DT.PARENT_ID
+									                                 ) T2
+									                                 ON T1.TOKEN=T2.DEPARTMENT_ID
+									                  )
+									                  connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+									                  order by t.leibie
+    </select>
+    <!-- 查询所有床集合 -->
+    <select id="getDormDepartmentList" parameterType="pd" resultType="pd">
+    	   SELECT * FROM (
+	    	   SELECT * FROM T_DORM_DEPARTMENT DD 
+	    	   WHERE 1=1 AND DD.ALLOT_TYPE='0'
+	    	   <if test="STUDENT_DORM_PKIDList != null and STUDENT_DORM_PKIDList.size() > 0">
+	    	   		AND DD.DORM_ID IN 
+					<foreach item="item" index="index" collection="STUDENT_DORM_PKIDList" open="(" separator="," close=")"> 
+					   #{STUDENT_DORM_PKIDList[${index}]} 
+					  </foreach>
+	    	   </if>
+    	   ) DD
+    	   <if test="DEPARTMENT_IDList != null and DEPARTMENT_IDList.size() > 0">
+    	   		WHERE DD.DEPARTMENT_ID IN 
+				<foreach item="item" index="index" collection="DEPARTMENT_IDList" open="(" separator="," close=")"> 
+				   #{DEPARTMENT_IDList[${index}]} 
+				  </foreach>
+    	   </if>
+    </select>
+    
+    <!-- 查询所有床集合 -->
+    <select id="getDormDepartmentsList" parameterType="pd" resultType="pd">
+    	   SELECT SD.* FROM T_STUDENT_DORM SD
+	    	   WHERE 1=1 AND SD.STATUS='0' AND SD.SD_LEVEL='5'
+	    	   <if test="STUDENT_DORM_PKIDList != null and STUDENT_DORM_PKIDList.size() > 0">
+    	   		AND SD.PKID IN 
+				<foreach item="item" index="index" collection="STUDENT_DORM_PKIDList" open="(" separator="," close=")"> 
+				   <if test="(index % 999) == 998"> NULL ) OR SD.PKID IN (</if>#{STUDENT_DORM_PKIDList[${index}]} 
+				  </foreach>
+    	   </if>
+    </select>
+    
+    <!-- 删除床和班型学校绑定关系 -->
+    <delete id="deleteDormRelation"  parameterType="pd">
+    	DELETE FROM T_DORM_RELATION DD WHERE 1=1 AND DD.DORM_ID=#{DORM_ID}
+    </delete>
+    
+    <update id="updateStudentDormIsallot" parameterType="pd">
+    	UPDATE T_STUDENT_DORM SD SET SD.IS_ALLOT=#{IS_ALLOT} WHERE 1=1
+    	AND SD.PKID=#{PKID}
+    </update>
+    
+    <update id="updateDormRelationByPkid" parameterType="pd">
+    	UPDATE T_DORM_RELATION DD 
+    	SET 
+    	DD.XGSJ=sysdate,
+    	DD.CLASSTYPE_ID=#{BANXING},
+    	DD.PARTSCHOOL_ID=#{WENHUAKEXUEXIAO}
+    	WHERE 1=1 
+    	<if test="DORM_PKIDList != null and DORM_PKIDList > 0">
+   	   		AND DD.PKID IN 
+			<foreach item="item" index="index" collection="DORM_PKIDList" open="(" separator="," close=")"> 
+			   <if test="(index % 999) == 998"> NULL ) OR DD.PKID IN (</if>#{DORM_PKIDList[${index}]} 
+			  </foreach>
+   	   </if>
+    </update>
+    
+    <insert id="insertDormRelation" parameterType="pd">
+    	INSERT INTO T_DORM_RELATION (PKID,DORM_ID,CLASSTYPE_ID,PARTSCHOOL_ID,CJSJ,XGSJ) VALUES (#{PKID},#{DORM_ID},#{CLASSTYPE_ID},#{PARTSCHOOL_ID},SYSDATE,SYSDATE)
+    </insert>
+    
+    <!-- 查询所有床集合 -->
+    <select id="getDormDepartmentsListByUser" parameterType="pd" resultType="pd">
+    	   SELECT TD.PKID AS DORM_ID FROM T_DORM_DEPARTMENT TD 
+				                 WHERE 1=1
+				                 AND TD.ALLOT_TYPE=0
+			                     AND TD.DEPARTMENT_ID IN(
+			                         SELECT DEPARTMENT_ID FROM (
+			                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+			                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+			                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+			                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+			                         ) T1
+			                         JOIN (
+			                         SELECT DEPARTMENT_ID FROM SYS_DEPARTMENT DT 
+			                         WHERE DT.ZHUANGTAI=1
+			                         START WITH DT.DEPARTMENT_ID=#{pkid}
+			                         connect by prior DT.DEPARTMENT_ID= DT.PARENT_ID
+			                         ) T2
+			                         ON T1.TOKEN=T2.DEPARTMENT_ID
+			                      )
+    </select>
+    
+    <select id="getSysDepartment" parameterType="pd" resultType="pd">
+    	   SELECT * FROM SYS_DEPARTMENT DD 
+	    	   WHERE 1=1 
+	    	   AND DD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+    </select>
+    
+    <!-- 分配宿舍信息 -->
+    <update id="allotDormDepartment" parameterType="pd">
+    	UPDATE T_DORM_DEPARTMENT SD SET SD.XGSJ=sysdate
+    	,SD.ALLOT_TYPE='1'
+    	WHERE 1=1 
+    	<if test="STUDENT_DORM_PKIDList != null and STUDENT_DORM_PKIDList.size() > 0">
+    	   		AND SD.PKID IN 
+				<foreach item="item" index="index" collection="STUDENT_DORM_PKIDList" open="(" separator="," close=")"> 
+				   #{STUDENT_DORM_PKIDList[${index}]} 
+				  </foreach>
+    	   </if>
+    	AND SD.ALLOT_TYPE='0'
+    </update>
+    
+    <update id="changeDepartmentIdByPkid" parameterType="pd">
+    	UPDATE T_DORM_DEPARTMENT DD 
+    	SET 
+    	DD.XGSJ=sysdate,
+    	DD.ALLOT_TYPE='0',
+    	DD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+    	WHERE 1=1 
+    	AND DD.PKID=#{PKID}
+    </update>
+    
+    <!-- 查询该用户下该学校下拥有的院校专业权限 -->
+    <select id="getDormDepartmentByUserList" parameterType="pd" resultType="pd">
+    	SELECT * FROM (
+	    	SELECT DT.* FROM SYS_DEPARTMENT DT
+	    	JOIN
+	    	(
+		    	SELECT * FROM (
+			    	   SELECT TT.DEPARTMENT_ID,D.LEIBIE FROM (
+			    	   
+				    	   SELECT DEPARTMENT_ID FROM (
+				            SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+				           WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+				            CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+				           WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+				           ) T1
+				           JOIN (
+				           SELECT DEPARTMENT_ID FROM SYS_DEPARTMENT DT 
+				           WHERE DT.ZHUANGTAI=1
+				           START WITH DT.DEPARTMENT_ID={pkid}
+				           connect by prior DT.DEPARTMENT_ID= DT.PARENT_ID
+				           ) T2
+				           ON T1.TOKEN=T2.DEPARTMENT_ID
+			           ) AS TT
+			           JOIN SYS_DEPARTMENT D
+			           ON TT.DEPARTMENT_ID = D.DEPARTMENT_ID
+		           ) ORDER BY LEIBIE DESC
+	       ) DT2
+	       ON DT.DEPARTMENT_ID=DT2.DEPARTMENT_ID
+	       WHERE DT.ZHUANGTAI=1
+           
+           ) DT3 WHERE 1=1
+           START WITH 
+           <if test="chuangDepartmentList != null and chuangDepartmentList.size() > 0">
+    	   		DT3.DEPARTMENT_ID IN
+				<foreach item="item" index="index" collection="chuangDepartmentList" open="(" separator="," close=")"> 
+				   #{chuangDepartmentList[${index}]} 
+				  </foreach>
+    	   </if>
+           connect by prior DT3.PARENT_ID= DT3.DEPARTMENT_ID
+    </select>
+    
+    <!--  -->
+    <select id="getDepartmentByID" parameterType="pd" resultType="pd">
+    	   SELECT * FROM SYS_DEPARTMENT D WHERE D.DEPARTMENT_ID=#{DEPARTMENT_ID} AND D.ZHUANGTAI=1
+    </select>
+    
+    
+    <!-- 查询该用户下该学校下拥有的院校专业权限 -->
+    <select id="getDepartmentByUserList" parameterType="pd" resultType="pd">
+    	SELECT DEPARTMENT_ID FROM (
+	        SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+	       WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+	        CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+	       WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+       ) T1
+       JOIN (
+	       SELECT DEPARTMENT_ID FROM SYS_DEPARTMENT DT 
+	       WHERE DT.ZHUANGTAI=1
+	       START WITH DT.DEPARTMENT_ID=#{pkid}
+	       connect by prior DT.DEPARTMENT_ID= DT.PARENT_ID
+       ) T2
+       ON T1.TOKEN=T2.DEPARTMENT_ID
+    </select>
+    
+    <select id="getDepartmentChildList" parameterType="pd" resultType="pd">
+    	SELECT DEP.DEPARTMENT_ID FROM SYS_DEPARTMENT DEP
+      	WHERE 1=1 <!-- AND DEP.DEPARTMENT_ID != #{DEPARTMENT_ID} -->
+      	AND DEP.ZHUANGTAI=1
+      	START WITH DEP.DEPARTMENT_ID=#{DEPARTMENT_ID}
+       CONNECT BY PRIOR DEP.DEPARTMENT_ID = DEP.PARENT_ID
+    </select>
+    
+    <select id="getDepartmentChildNoList" parameterType="pd" resultType="pd">
+    	SELECT DEP.DEPARTMENT_ID FROM SYS_DEPARTMENT DEP
+      	WHERE 1=1 AND DEP.ZHUANGTAI=1 AND DEP.DEPARTMENT_ID != #{DEPARTMENT_ID}
+      	START WITH DEP.DEPARTMENT_ID=#{DEPARTMENT_ID}
+       CONNECT BY PRIOR DEP.DEPARTMENT_ID = DEP.PARENT_ID
+    </select>
+    
+    <!-- 查询所有床集合 -->
+    <select id="getDormDepartmentParentList" parameterType="pd" resultType="pd">
+    	  SELECT * FROM T_DORM_DEPARTMENT DD 
+	    	   WHERE 1=1 <!-- AND DD.ALLOT_TYPE='1' --> AND DD.DORM_ID=#{DORM_ID} AND DD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+    </select>
+    
+    <update id="updateDormDepartment" parameterType="pd">
+    	UPDATE T_DORM_DEPARTMENT DD SET DD.ALLOT_TYPE='0' WHERE DD.DORM_ID=#{DORM_ID} AND DD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+    </update>
+    
+    <delete id="deleteDormDepartments" parameterType="pd">
+    	DELETE FROM T_DORM_DEPARTMENT DD WHERE DD.DORM_ID=#{DORM_ID} AND DD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+    </delete>
+    
+    <select id="getStudentDormTop" parameterType="pd" resultType="pd">
+    	SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 
+    	AND SD.SD_LEVEL='1'
+        AND ROWNUM=1
+    	START WITH SD.PKID=#{pkid}
+        CONNECT BY PRIOR SD.PARENT_PKID = SD.PKID
+    </select>
+    
+    
+    <select id="getDepartmentParentList" parameterType="pd" resultType="pd">
+    	SELECT * FROM SYS_DEPARTMENT SD WHERE 1=1 AND SD.ZHUANGTAI=1 AND SD.DEPARTMENT_ID != #{DEPARTMENT_ID}
+    	START WITH SD.DEPARTMENT_ID=#{DEPARTMENT_ID}
+        CONNECT BY PRIOR SD.PARENT_ID = SD.DEPARTMENT_ID
+    </select>
+    
+    <select id="getStudentDormByPkidList" parameterType="pd" resultType="pd">
+    	SELECT * FROM T_STUDENT_DORM SD WHERE 1=1
+    	<if test="STUDENT_DORM_PKIDList != null and STUDENT_DORM_PKIDList.size() > 0">
+    	   		AND SD.PKID IN 
+				<foreach item="item" index="index" collection="STUDENT_DORM_PKIDList" open="(" separator="," close=")"> 
+				   #{STUDENT_DORM_PKIDList[${index}]} 
+				  </foreach>
+    	   </if>
+    </select>
+        
+    <!-- 通过PKID查询学生未被占用的宿舍  -->
+	<select id="getStudentDormByPkidNotUse" parameterType="pd" resultType="pd">
+  		  SELECT * FROM T_STUDENT_DORM SD WHERE 1=1 AND SD.PKID=#{PKID} AND SD.STATUS=0 AND ROWNUM=1
+    </select>
+    
+    <select id="getStudentDormChildCount" parameterType="pd" resultType="pd">
+  		  SELECT count(1) as COUNTT FROM 
+			(
+				SELECT DISTINCT(SD.PKID),SD.SD_LEVEL,SD.PARENT_PKID,SD.STATUS,SD.T_STUDENT_DORM_TYPE_PKID,SD.SYS_DICTIONARIES_PKID,DD.ALLOT_TYPE,S.NIANJI
+				FROM T_STUDENT_DORM SD 
+				LEFT JOIN T_STUDENT S
+				ON SD.T_STUDENT_PKID=S.PKID
+				LEFT JOIN T_DORM_DEPARTMENT DD
+				ON SD.PKID = DD.DORM_ID AND DD.ALLOT_TYPE='0'
+				WHERE 1=1
+				
+				START WITH SD.PKID IN (
+				SELECT TD.DORM_ID FROM T_DORM_DEPARTMENT TD
+				                 JOIN T_STUDENT_DORM SD1
+				                 ON TD.DORM_ID=SD1.PKID AND SD1.SD_LEVEL=5 
+				                
+				                 WHERE 1=1 AND TD.ALLOT_TYPE='0'
+				                 <choose>
+				                 	<when test='SD_LEVEL != null and SD_LEVEL =="5"'>
+				                 		<choose>
+						                 	<when test="DEPARTMENT_PKIDList != null and DEPARTMENT_PKIDList.size() > 0">
+						                 		AND TD.DEPARTMENT_ID IN 
+						                 		(
+						                 			SELECT UDD.department_id FROM (
+						                 				<!-- 分配节点下的所有子和孙的节点 -->
+								                     	select distinct(t.department_id) as department_id from sys_department t
+														start with t.department_id in (
+									                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+									                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+									                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+														)
+														connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+						                 			) UDD WHERE UDD.department_id IN
+						                 			<foreach item="item" index="index" collection="DEPARTMENT_PKIDList" open="(" separator="," close=")"> 
+													   #{DEPARTMENT_PKIDList[${index}]} 
+													  </foreach>
+						                 		)
+						                 	</when>
+						                 	<otherwise>
+						                 		AND TD.DEPARTMENT_ID IN(
+							                        <!-- 分配节点下的所有子和孙的节点 -->
+							                     	select distinct(t.department_id) as department_id from sys_department t
+													start with t.department_id in (
+								                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+								                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+								                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+								                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+													)
+													connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+							                    )
+						                 	</otherwise>
+						                 </choose>
+				                 	</when>
+				                 	<otherwise>
+				                 		AND TD.DEPARTMENT_ID IN(
+					                       <!-- 分配节点下的所有子和孙的节点 -->
+					                     	select distinct(t.department_id) as department_id from sys_department t
+											start with t.department_id in (
+						                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+						                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+						                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+						                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+											)
+											connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+							            )
+				                 	</otherwise>
+				                 </choose>
+				                 
+				                 
+				                      
+				)
+				 connect by prior sd.PARENT_PKID= sd.PKID
+			) SD
+		  WHERE 1=1 
+  		  AND SD.PKID != #{PKID}
+  		  AND SD.SD_LEVEL=#{SD_LEVEL}
+  		  <if test='SD_LEVEL != null and SD_LEVEL =="5"'>
+				<if test="STATUS != null and STATUS !=''">
+		  		  	AND SD.STATUS=#{STATUS}
+		  		  </if>
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				    AND SD.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="RUXUENIANFEN != null and RUXUENIANFEN != ''">
+				    AND SD.NIANJI = #{RUXUENIANFEN}
+				</if>
+			</if>
+  		  START WITH SD.PKID=#{PKID}
+          CONNECT BY PRIOR SD.PKID = SD.PARENT_PKID
+          
+    </select>
+    
+    <select id="getdepList" parameterType="pd" resultType="pd">
+  	 select (select XUEYUANDNAME(d.department_id)
+           from sys_department d
+          where d.department_id = t.department_id) name,t.department_id DEPARTMENT_PKID,#{NIANJI} nianji
+  from sys_department t
+ where 1=1 
+  <if test="DEPARTMENT_PKID!=null and DEPARTMENT_PKID!=''">
+		  	AND t.department_id in (
+ SELECT REGEXP_SUBSTR(#{DEPARTMENT_PKID},'[^,]+', 1, LEVEL) FROM DUAL
+CONNECT BY REGEXP_SUBSTR(#{DEPARTMENT_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL
+ )
+	</if>
+   and t.LEIBIE =2
+
+  	
+    </select>
+    
+    
+    
+    <select id="getdateList" parameterType="pd" resultType="pd">
+      select o.*,
+         (select XUEYUANDNAME(d.department_id)
+            from sys_department d
+           where d.department_id = #{DEPARTMENT_PKID}) xymc,
+         (
+          
+          select count(*)
+            from T_DORM_DEPARTMENT v
+           where v.department_id in
+                 (select t.department_id
+                    from sys_department t
+                   start with t.department_id = #{DEPARTMENT_PKID}
+                  connect by prior t.department_id = t.parent_id)
+             and v.allot_type = 0
+             and (select t_student_dorm_type_pkid
+                    from T_STUDENT_DORM i
+                   where i.PKID = v.dorm_id
+                     ) =
+                 o.t_student_dorm_type_pkid
+             and o.sd_sex =
+                 (select SD_SEX from T_STUDENT_DORM n where n.PKID = v.dorm_id)
+          
+          ) zs,
+         (select count(*)
+            from T_STUDENT_DORM m
+           where m.pkid in (select DORM_ID
+                              from T_DORM_DEPARTMENT v
+                             where v.department_id in(select t.department_id
+                    from sys_department t
+                   start with t.department_id = #{DEPARTMENT_PKID}
+                  connect by prior t.department_id = t.parent_id))
+             and m.STATUS = 1
+             and m.SD_LEVEL = 5
+             and m.T_STUDENT_PKID =
+                 (select i.PKID
+                    from t_student i
+                   where i.NIANJI = #{NIANJI}
+                     and i.pkid = m.T_STUDENT_PKID)
+             and m.T_STUDENT_DORM_TYPE_PKID = o.t_student_dorm_type_pkid
+             and m.sd_sex = o.sd_sex) zy
+    from (select (select p.dt_name
+                    from t_student_dorm_type p
+                   where p.pkid = r.t_student_dorm_type_pkid) sslx,
+                 r.t_student_dorm_type_pkid,
+                 r.sd_sex
+            from T_DORM_DEPARTMENT t
+             join T_STUDENT_DORM r on t.dorm_id = r.pkid
+           where  t.department_id in (select e.department_id from sys_department e   start with e.department_id = #{DEPARTMENT_PKID}
+                  connect by prior e.department_id = e.parent_id)) o
+   group by o.sslx, o.sd_sex, o.t_student_dorm_type_pkid
+    
+    
+   
+    
+    
+    
+    
+    
+    
+    <!--  select o.*,
+        (select XUEYUANDNAME(d.department_id)
+           from sys_department d
+          where d.department_id = #{DEPARTMENT_PKID}) xymc,
+        (select count(*)
+           from T_DORM_DEPARTMENT v
+          where v.department_id in
+                (select t.department_id
+                   from sys_department t
+                  start with t.department_id = #{DEPARTMENT_PKID}
+                 connect by prior t.department_id = t.parent_id)
+            and v.allot_type = 0
+            and (select t_student_dorm_type_pkid
+                   from T_STUDENT_DORM i
+                  where i.PKID = v.dorm_id and i.SYS_DICTIONARIES_PKID=(select e.DICTIONARIES_ID from sys_dictionaries e where e.BIANMA=#{NIANJI})) = o.t_student_dorm_type_pkid
+            and o.sd_sex =
+                (select SD_SEX from T_STUDENT_DORM n where n.PKID = v.dorm_id)
+         
+         ) zs,
+        (select count(*)
+           from T_STUDENT_DORM m
+          where m.pkid in (select DORM_ID
+                             from T_DORM_DEPARTMENT v
+                            where v.department_id = #{DEPARTMENT_PKID})
+            and m.STATUS = 1
+            and m.SD_LEVEL = 5
+             and m.SYS_DICTIONARIES_PKID=(select i.DICTIONARIES_ID from sys_dictionaries i where i.BIANMA=#{NIANJI})
+            and m.T_STUDENT_DORM_TYPE_PKID = o.t_student_dorm_type_pkid
+            and m.sd_sex = o.sd_sex) zy
+   from (select (select p.dt_name
+                   from t_student_dorm_type p
+                  where p.pkid = r.t_student_dorm_type_pkid) sslx,
+                r.t_student_dorm_type_pkid,
+                r.sd_sex,
+                u.nianji
+           from T_DORM_DEPARTMENT t
+           left join T_STUDENT_DORM r on t.dorm_id = r.pkid
+           left join t_student u on u.pkid = r.t_student_pkid
+                                and u.nianji = #{NIANJI}
+          where t.department_id = #{DEPARTMENT_PKID}) o
+  group by o.sslx, o.sd_sex, o.nianji, o.t_student_dorm_type_pkid -->
+    </select>
+    
+    <!-- 级联查询宿舍 -->
+    <select id="getInUseStudentDormCountCascade" parameterType="pd" resultType="pd">
+    	SELECT COUNT(1) AS CCOUNT FROM T_STUDENT_DORM SD
+    	WHERE SD.STATUS='1'
+		START WITH SD.PKID=#{pkid}
+		CONNECT BY PRIOR SD.PKID = SD.PARENT_PKID
+    </select>
+    
+    <!-- 级联查询宿舍 -->
+    <select id="getStudentDormListCascade" parameterType="pd" resultType="pd">
+    	SELECT * FROM T_STUDENT_DORM SD
+		START WITH SD.PKID=#{pkid}
+		CONNECT BY PRIOR SD.PKID = SD.PARENT_PKID
+    </select>
+    
+    <select id="getCollege" parameterType="pd" resultType="vo">
+    	SELECT SD.DEPARTMENT_ID AS id,SD.NAME AS NAME,'NULL' AS PARENTID,'0' AS TYPE,'' AS ISXM,'' AS state FROM SYS_DEPARTMENT SD WHERE SD.DEPARTMENT_ID=#{pkid}
+    </select>
+    
+    
+    <!-- 宿舍计划查询当前用户拥有权限的节点数量  -->
+    <select id="getStudentDormCount" parameterType="pd" resultType="pd">
+    SELECT 
+COUNT(DISTINCT(select substr(SD.TREE_NODES,instr(SD.TREE_NODES,',',#{num})+1,instr(SD.TREE_NODES,',',instr(SD.TREE_NODES,',',#{num})+1)-instr(SD.TREE_NODES,',',#{num})-1) from dual) ) AS COUNTT
+ FROM 
+ (
+  		  SELECT SD1.*,TD1.DORM_ID,TD1.ALLOT_TYPE FROM (
+				SELECT SD1.PKID,SD1.PARENT_PKID,SD1.T_STUDENT_DORM_TYPE_PKID,SD1.SYS_DICTIONARIES_PKID,
+				SD1.T_STUDENT_PKID,SD1.SD_NAME,SD1.SD_LEVEL,SD1.SD_PREFIX,SD1.STATUS,SD1.CJSJ,SD1.XGSJ,SD1.TREE_NODES,
+				SD1.SD_SEX,S.NIANJI AS JINXIAONIANFEN ,to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) as sdNameOrder
+				FROM T_STUDENT_DORM SD1
+				LEFT JOIN T_STUDENT S
+				ON SD1.T_STUDENT_PKID=S.PKID
+				WHERE SD1.SD_LEVEL='5'
+				<if test="STATUS != null and STATUS !=''">
+					AND SD1.STATUS=#{STATUS}
+				</if>
+				  <if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				  		AND SD1.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				  </if>
+				  <if test="RUXUENIANFEN != null and RUXUENIANFEN != ''">
+				  		AND S.NIANJI = #{RUXUENIANFEN}
+				  </if>
+				START WITH SD1.PARENT_PKID = #{pkid2}
+				CONNECT BY PRIOR SD1.PKID = SD1.PARENT_PKID
+				ORDER BY sdNameOrder ASC
+		) SD1
+		JOIN (
+				SELECT TD.PKID,TD.DORM_ID,TD.DEPARTMENT_ID,TD.CJSJ,TD.XGSJ,TD.ALLOT_TYPE,S.NIANJI AS JINXIAONIANFEN ,
+				to_number(regexp_substr(SD1.SD_NAME,'[-10-9]+*[-10-9]+',1)) as sdNameOrder FROM T_DORM_DEPARTMENT TD
+                 JOIN T_STUDENT_DORM SD1
+                 ON TD.DORM_ID=SD1.PKID 
+                 LEFT JOIN T_STUDENT S
+				 ON SD1.T_STUDENT_PKID=S.PKID
+                
+				<if test="STATUS != null and STATUS != ''">
+				  		AND SD1.STATUS = #{STATUS}
+				  </if>
+				  <if test="ALLOT_TYPE != null and ALLOT_TYPE != ''">
+				  		AND TD.ALLOT_TYPE = #{ALLOT_TYPE}
+				  </if>
+				  <if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID != ''">
+				  		AND SD1.T_STUDENT_DORM_TYPE_PKID = #{T_STUDENT_DORM_TYPE_PKID}
+				  </if>
+				  <if test="RUXUENIANFEN != null and RUXUENIANFEN != ''">
+				  		AND S.NIANJI = #{RUXUENIANFEN}
+				  </if>
+                 WHERE 1=1 AND TD.ALLOT_TYPE='0' and SD1.SD_LEVEL=5
+                 <choose>
+                 	<when test="DEPARTMENT_PKIDList != null and DEPARTMENT_PKIDList.size() > 0">
+                 		AND TD.DEPARTMENT_ID IN 
+                 		(
+                 			SELECT UDD.department_id FROM (
+                 				<!-- 分配节点下的所有子和孙的节点 -->
+		                     	select distinct(t.department_id) as department_id from sys_department t
+								start with t.department_id in (
+			                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+			                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+			                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+			                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+								)
+								connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+                 			) UDD WHERE UDD.department_id IN
+                 			<foreach item="item" index="index" collection="DEPARTMENT_PKIDList" open="(" separator="," close=")"> 
+							   #{DEPARTMENT_PKIDList[${index}]} 
+							  </foreach>
+                 		)
+						
+                 	</when>
+                 	<otherwise>
+                 		AND TD.DEPARTMENT_ID IN(
+	                        <!-- 分配节点下的所有子和孙的节点 -->
+	                     	select distinct(t.department_id) as department_id from sys_department t
+							start with t.department_id in (
+		                          SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+		                          CONNECT BY REGEXP_SUBSTR ((SELECT UD.DEPARTMENT_PKID FROM T_USERDORM_DEPARTMENT UD
+		                         WHERE UD.USER_ID=#{USER_ID}),'[^,]+',1,LEVEL) IS NOT NULL
+							)
+							connect by prior t.DEPARTMENT_ID= t.PARENT_ID
+	                    )
+                 	</otherwise>
+                 </choose>
+                 ORDER BY sdNameOrder ASC
+                 
+		) TD1 ON SD1.PKID=TD1.DORM_ID
+		
+		) 
+  SD WHERE  SD.TREE_NODES LIKE CONCAT(#{pkid2}||',','%')
+    </select>
+    <select id="getDormTreeNodes" parameterType="pd" resultType="pd">
+    	select WM_CONCAT(parent_pkid) TREE_NODES from(
+		select   m.parent_pkid  from t_student_dorm m start with m.pkid=#{PKID} connect by prior m.parent_pkid=m.pkid
+		order by level desc
+		)
+    </select>
+    <update id="updateDormTreeNodes" parameterType="pd">
+    	update t_student_dorm d set TREE_NODES = #{TREE_NODES} 
+    	where d.pkid = #{PKID}
+    </update>
+    <select id="getDormRestrictedarea" parameterType="pd" resultType="pd">
+    	select AREATYPE from t_dorm_restrictedarea where rownum=1
+    </select>
+    
+    <select id="getDormDepartment" parameterType="pd" resultType="pd">
+    	select * from t_dorm_department t where t.dorm_id=#{DORM_ID}
+    </select>
+    
+    <!-- 获取宿舍计划所有拥有权限的房间列表 -->
+    <select id="getStudentDormTableList" parameterType="page" resultType="pd">
+    	SELECT DISTINCT(SD.PKID),SD.PARENT_PKID,
+		GETWHOLEROOMNAME_FUNC(SD.PKID) AS ROOM_NAME,
+		SD.SD_NAME,SD.SD_SEX,
+		(CASE WHEN SD.SD_SEX = '1' THEN '男' ELSE '女' END) SD_SEX_NAME, 
+		SDT.DT_NAME,
+		(SELECT COUNT(1) FROM T_STUDENT_DORM SD1 WHERE SD1.SD_LEVEL='5' START WITH SD1.PARENT_PKID=SD.PKID CONNECT BY PRIOR SD.PKID=SD.PARENT_PKID) CHUANGCOUNTTOTAL,
+		(
+		SELECT WM_CONCAT(DISTINCT(SDT.SCHOOLNAME)) FROM T_STUDENT_DORM SD1
+			JOIN T_DORM_RELATION DD ON DD.DORM_ID=SD1.PKID
+			JOIN T_PART_SCHOOL SDT ON DD.PARTSCHOOL_ID=SDT.PKID
+			 WHERE SD1.SD_LEVEL='5' 
+			 START WITH SD1.PARENT_PKID=SD.PKID CONNECT BY PRIOR SD1.PKID=SD1.PARENT_PKID
+		)
+		DEPARTMENT_NAMES
+		FROM T_STUDENT_DORM SD
+		LEFT JOIN T_STUDENT_DORM_TYPE SDT ON SD.T_STUDENT_DORM_TYPE_PKID=SDT.PKID
+		WHERE 1=1 
+		AND SD.SD_LEVEL='4'
+		<!--  AND SD.PKID in
+		<foreach item="item" index="index" collection="list_nodes" open="(" separator="," close=")">
+			<if test="(index % 999) == 998"> NULL ) OR SD.PKID IN (</if>#{list_nodes[${index}]}
+		</foreach> -->
+		ORDER BY ROOM_NAME ASC
+		
+    </select>
+    
+    <select id="getStudentDormByParentPkidCascade" parameterType="page" resultType="pd">
+    	SELECT SD.PKID FROM T_STUDENT_DORM SD
+		WHERE 1=1 
+		START WITH SD.PARENT_PKID = #{pkid}
+		connect by prior SD.PKID= SD.PARENT_PKID
+		
+    </select>
+    
+    <select id="getStudentDormByPkidCascade" parameterType="page" resultType="pd">
+    	SELECT SD.PKID FROM T_STUDENT_DORM SD
+		WHERE 1=1 
+		START WITH SD.PKID = #{pkid}
+		connect by prior SD.PKID= SD.PARENT_PKID
+		
+    </select>
+    
+    <!-- 公寓使用统计列表 -->
+    <select id="getApartmentStatisticslist" parameterType="pd" resultType="pd">
+    	SELECT A.SD_NAME XIAOQU,B.SD_NAME SUSHELOU,C.SD_NAME LOUCENG,COUNT(E.PKID) ZONGCHUANGWEI,
+		       COUNT(CASE E.SD_SEX WHEN '1' THEN 1 ELSE NULL END) TOTALNAN,
+		       COUNT(CASE E.SD_SEX WHEN '0' THEN 1 ELSE NULL END) TOTALNV,
+		       COUNT(CASE E.STATUS WHEN '1' THEN 1 ELSE NULL END) ZONGZHANYONG,
+		       COUNT(CASE WHEN E.STATUS = '1' AND E.SD_SEX = '1' THEN 1 ELSE NULL END) ZHANYONGNAN,
+		       COUNT(CASE WHEN E.STATUS = '1' AND E.SD_SEX = '0' THEN 1 ELSE NULL END) ZHANYONGNV,
+		       COUNT(CASE E.STATUS WHEN '0' THEN 1 ELSE NULL END) ZONGKONGXIAN,
+		       COUNT(CASE WHEN E.STATUS = '0' AND E.SD_SEX = '1' THEN 1 ELSE NULL END) KONGXIANNAN,
+		       COUNT(CASE WHEN E.STATUS = '0' AND E.SD_SEX = '0' THEN 1 ELSE NULL END) KONGXIANNV,
+		       CONCAT(TO_CHAR(COUNT(CASE E.STATUS WHEN '1' THEN 1 ELSE NULL END)/COUNT(E.PKID)*100,'990.99'),'%') RUZHULV
+		FROM T_STUDENT_DORM A 
+		JOIN T_STUDENT_DORM B ON B.PARENT_PKID = A.PKID
+		JOIN T_STUDENT_DORM C ON C.PARENT_PKID = B.PKID
+		JOIN T_STUDENT_DORM D ON D.PARENT_PKID = C.PKID
+		JOIN T_STUDENT_DORM E ON E.PARENT_PKID = D.PKID
+		JOIN SYS_DEPARTMENT S ON S.DEPARTMENT_ID = A.PARENT_PKID
+		WHERE A.SD_LEVEL = '1' 
+    	<if test="PARENT_PKIDS != null and PARENT_PKIDS != ''">
+			AND
+			<foreach item="item" index="index" collection="PARENT_PKIDS" open="(" separator="or" close=")">
+				C.PKID = #{PARENT_PKIDS[${index}]} 
+			</foreach>
+		</if>
+		GROUP BY A.SD_NAME,B.SD_NAME,C.SD_NAME
+		ORDER BY A.SD_NAME,to_number(regexp_substr(translate(B.SD_NAME,'一二三四五六七八九十','123456789a'),'[-10-9]+*[-10-9]+',1)),B.SD_NAME,
+                       	   to_number(regexp_substr(translate(C.SD_NAME,'一二三四五六七八九十','123456789a'),'[-10-9]+*[-10-9]+',1)),C.SD_NAME
+    </select>
+    <select id="getDormList" parameterType="pd" resultType="pd">
+    	select d.department_id as pkid,d.parent_id ,d.name from sys_department d where d.leibie = '1'
+		union all
+		select t.pkid ,t.parent_pkid as parent_id,t.sd_name as name from t_student_dorm t where t.sd_level in ('0','1','2','3')
+    </select>
+     <select id="getDormtree" parameterType="pd" resultType="pd">
+		select d.department_id as pkid,d.parent_id ,d.name from sys_department d where d.leibie = '1'
+		union all
+		select t.pkid ,t.parent_pkid as parent_id,t.sd_name as name from t_student_dorm t  
+	
+	
+    </select>
+    
+    <select id="getBanxingList" parameterType="pd" resultType="pd">
+    	select t.* from sys_dictionaries t where t.parent_id='CLASSTYPE' 
+		ORDER BY T.ORDER_BY,T.CJSJ desc
+    </select>
+    
+    <select id="getWenhuakexuexiaoList" parameterType="pd" resultType="pd">
+    	SELECT T.PKID, SCHOOLNAME,DINGJIN,CJSJ,XGSJ
+		FROM T_PART_SCHOOL T WHERE T.ZHUANGTAI = 1 
+		 <if test="SFHZXX != null and SFHZXX != ''">
+    	 and t.ishezuo=#{SFHZXX}
+    	</if>
+		order by T.SCHOOLNAME,FUN_SPELLCODE(SUBSTR(T.SCHOOLNAME,1,1)),
+		 cast(REGEXP_SUBSTR(T.SCHOOLNAME, '[0-9]+') as int)
+		 
+    </select>
+    
+    <select id="gettiaosuStudentDorm" parameterType="pd"  resultType="pd">
+		  SELECT SD1.PKID DORM_ID,sd1.tree_nodes,m.PARTSCHOOL_ID
+    FROM T_STUDENT_DORM SD1 left join T_DORM_RELATION m on m.dorm_id=SD1.PKID
+    WHERE 1 = 1
+    <if test="BANXING != null and BANXING != ''">
+    and m.classtype_id= #{BANXING}
+    </if>
+   <!--  <if test="HZXX != null and HZXX != ''">
+    and m.partschool_id = #{HZXX}
+    and instr(#{HZXX},m.partschool_id) &gt; 0
+    </if> -->
+     <if test="SD_SEX != null and SD_SEX != ''">
+    and SD1.SD_SEX= #{SD_SEX}
+    </if>
+		AND SD1.STATUS=0
+		AND SD1.SD_LEVEL = 5
+		
+    </select>
+    
+    
+    
+    
+    <select id="getDormrztjlistPage" parameterType="page" resultType="pd">
+		  select p.*,
+         case
+           when p.rztime is null then
+            '合计'
+           else
+            p.rztime
+         end RZSJ
+    from (SELECT to_char(b.rztime, 'YYYY-MM-DD') rztime,
+                 count(*) ZS,
+                 nvl(SUM(DECODE(t.xingbie, 'M', 1)), '0') nan,
+                 nvl(SUM(DECODE(t.xingbie, 'W', 1)), '0') nv
+            FROM T_STUDENT_BM B
+            JOIN T_STUDENT T ON T.PKID = B.STUDENT_PKID
+                            AND B.IS_RZ = 'Y'
+           where 1 = 1 and B.Zhuangtai='1' and b.zxzt='ZX'
+           and EXISTS (SELECT * FROM t_student_dorm m WHERE m.t_student_pkid=t.pkid and m.t_student_bm_pkid=b.pkid) 
+           <if test="pd.DATESTART != null and pd.DATESTART != ''">
+    		and to_char(b.rztime, 'YYYY-MM-DD') &gt;= #{pd.DATESTART}
+    		</if>
+    		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+    		and to_char(b.rztime, 'YYYY-MM-DD') &lt;= #{pd.DATEEND}
+    		</if>
+           group by cube(to_char(b.rztime, 'YYYY-MM-DD'))
+           order by to_char(b.rztime, 'YYYY-MM-DD')) p
+	</select>
+	
+	<select id="printDormrztj" parameterType="pd" resultType="pd">
+		  select p.*,
+         case
+           when p.rztime is null then
+            '合计'
+           else
+            p.rztime
+         end RZSJ
+    from (SELECT to_char(b.rztime, 'YYYY-MM-DD') rztime,
+                 count(*) ZS,
+                 nvl(SUM(DECODE(t.xingbie, 'M', 1)), '0') nan,
+                 nvl(SUM(DECODE(t.xingbie, 'W', 1)), '0') nv
+            FROM T_STUDENT_BM B
+            JOIN T_STUDENT T ON T.PKID = B.STUDENT_PKID
+                            AND B.IS_RZ = 'Y'
+           where 1 = 1
+           <if test="DATESTART != null and DATESTART != ''">
+    		and to_char(b.rztime, 'YYYY-MM-DD') &gt;= #{DATESTART}
+    		</if>
+    		<if test="DATEEND != null and DATEEND != ''">
+    		and to_char(b.rztime, 'YYYY-MM-DD') &lt;= #{DATEEND}
+    		</if>
+           group by cube(to_char(b.rztime, 'YYYY-MM-DD'))
+           order by to_char(b.rztime, 'YYYY-MM-DD')) p
+	</select>
+    
+    
+    
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TableColumnMapper">
+	<select id="getCurrentUserTableShowCollums" parameterType="pd" resultType="pd">
+		select * from t_tables_column where user_id=#{user_id} and table_name=#{table_name}
+	</select>
+	
+	<update id="updateShowCols" parameterType="pd">
+		update t_tables_column set table_show_cols=#{table_show_cols},xgsj=sysdate where user_id=#{user_id} and table_name=#{table_name}
+	</update>
+	
+	<insert id="saveShowCols" parameterType="pd">
+		
+		INSERT INTO t_tables_column
+          (pkid, user_id, table_name, table_show_cols)
+        VALUES
+          (SYS_GUID(), #{user_id}, #{table_name}, #{table_show_cols})
+	</insert>
+	
+	<select id="getCurrentUserTableShowCollumsList" parameterType="pd" resultType="pd">
+		select * from t_tables_column where user_id=#{USER_ID}
+	</select>
+	
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SignUpMapper">
+	<select id="getSignUplistPage" parameterType="page" resultType="pd">
+		select * from sys_dictionaries d
+		where d.PARENT_ID = 'SXBS'
+		<if test="pd.keyWord != null and pd.keyWord != ''">
+			and d.name LIKE CONCAT(CONCAT('%', #{pd.keyWord}),'%')
+		</if>
+		order by d.bianma
+	</select>
+	<select id="getsignup" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries d
+		where d.DICTIONARIES_ID = #{PKID}
+	</select>
+	<update id="updateSignUp" parameterType="pd" >
+		update sys_dictionaries d set
+		NAME = #{NAME},
+		BZ = #{BEIZHU},
+		IS_USED = #{IS_USED}
+		WHERE D.DICTIONARIES_ID = #{PKID}
+	</update>
+	<select id="getBianMa" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_SIGNUP.nextval,3,'0') as SIGNUP_BIANMA from dual
+	</select>
+	<insert id="saveSignUp" parameterType="pd">
+		insert into sys_dictionaries
+		(DICTIONARIES_ID, NAME,BIANMA, ORDER_BY, PARENT_ID, BZ, 
+		IS_USED, CJSJ)
+		values
+		(sys_guid(),#{NAME},#{SIGNUP_BIANMA},1,'SXBS',#{BEIZHU,jdbcType=VARCHAR},
+		#{IS_USED},SYSDATE)
+	</insert>
+	<update id="updateIsUse" parameterType="pd" >
+		update sys_dictionaries d
+		set IS_USED = #{IS_USED}
+		where d.DICTIONARIES_ID = #{PKID}
+	</update>
+	<select id="getsignup_NAME" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries D 
+		where D.NAME = #{NAME}
+		AND D.PARENT_ID = 'SXBS'
+		AND ROWNUM = 1
+	</select>
+	<delete id="deleteSignUp" parameterType="pd" >
+		delete from sys_dictionaries d
+		where d.DICTIONARIES_ID = #{PKID}
+	</delete>
+	<select id="getStuSignUp" parameterType="pd" resultType="pd">
+		select * from t_student s
+		where s.SHENGXUEBIAOSHI_PKID = #{PKID}
+		AND ROWNUM = 1
+	</select>
+</mapper>

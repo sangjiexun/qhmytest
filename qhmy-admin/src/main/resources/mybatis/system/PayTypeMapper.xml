@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PayTypeMapper">
+    <!--列表  -->
+	<select id="payTypelistPage" parameterType="page" resultType="pd">
+	select * from t_pay_style where 1=1
+	<if test="pd.seText!=null and pd.seText !=''">
+		and PAY_STYLE_NAME like CONCAT(CONCAT('%', #{pd.seText}),'%')
+	</if>
+	order by paixu	
+	</select>
+	
+	<!-- 新增 -->
+	<insert id="addPayType" parameterType="pd">
+	INSERT INTO t_pay_style
+	( pkid,is_use, pay_style_name, pay_style_bianma, interface_name, remark,define_type,paixu,BILL_TYPE)
+	VALUES
+	( #{pkid},#{is_use}, #{pay_style_name}, SEQ_PAYTYPE.NEXTVAL,
+	#{interface_name,jdbcType=VARCHAR}, #{remark},'自定义',#{paixu,jdbcType=NUMERIC},#{BILL_TYPE,jdbcType=VARCHAR})
+		
+	</insert>
+	
+	<!-- 修改 -->
+	<update id="editPayType" parameterType="pd">
+	UPDATE t_pay_style
+	SET 
+	is_use = #{is_use},
+	pay_style_name = #{pay_style_name,jdbcType=VARCHAR},
+	BILL_TYPE = #{BILL_TYPE,jdbcType=VARCHAR},
+	
+	xgsj = sysdate,
+	remark = #{remark,jdbcType=VARCHAR},
+	paixu=#{paixu,jdbcType=NUMERIC}
+	WHERE pkid=#{pkid}
+	</update>
+	<update id="updateDJLQ" parameterType="pd">
+		update t_pay_style
+		set IS_DJLQ = #{IS_DJLQ}
+		WHERE pkid=#{pkid}
+	</update>
+	<!-- 删除 -->
+	<delete id="delPayType" parameterType="pd">
+		delete from t_pay_style WHERE pkid=#{pkid}
+	</delete>
+	
+	<!-- 根据pkid查询 -->
+	<select id="getPayTypeByPkid" parameterType="pd" resultType="pd">
+		select * from t_pay_style where pkid=#{pkid}
+	</select>
+	
+	<!--查询缴费类型有没有被使用  -->
+	<select id="getPayItems" parameterType="pd" resultType="pd">
+		select * from t_pay_item where PAY_TYPE_PKID=#{pkid}
+	</select>
+	
+	<!-- 根据缴费类型查询  -->
+	<select id="getPayItemsByName" parameterType="pd" resultType="pd">
+		select * from t_pay_style  where pay_style_name=#{pay_style_name}
+	</select>
+	<update id="updatePaixu" parameterType="pd">
+		update t_pay_style set paixu=#{paixu} where pkid=#{pkid}
+	</update>
+</mapper>

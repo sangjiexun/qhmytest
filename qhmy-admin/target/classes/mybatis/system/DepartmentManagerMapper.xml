@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DepartmentManagerMapper">
+
+<!--begin 组织机构 sql -->
+    
+	
+	<!-- 分页查询组织机构  -->
+	<select id="departmentlistPage" parameterType="page" resultType="pd">
+  		  SELECT CD.*, C.COLLEGES_NAME, U.USERNAME
+		    FROM T_COLLEGES_DEPARTMENT CD
+		  INNER JOIN T_COLLEGES C
+		      ON (C.PKID = CD.COLLEGES_PKID)
+		  LEFT JOIN SYS_USER U
+		      ON (U.USER_ID = CD.CREATER)
+		  WHERE 1=1 
+		  <if test="pd.seText!=null and pd.seText!=''">
+		  	AND CD.DEPARTMENT_NAME LIKE CONCAT(CONCAT('%', #{pd.seText}),'%')
+		  </if>
+		  
+		  <if test="pd.PKID!=null and pd.PKID!=''">
+		  	START WITH  CD.PKID=#{pd.PKID}
+      		CONNECT BY PRIOR CD.PKID = CD.PARENT_PKID
+		  </if>
+		  
+		  <if test="pd.PKID==null or pd.PKID==''">
+		  	START WITH  CD.PARENT_PKID='1qwe2asd3zxc'
+      		CONNECT BY PRIOR CD.PKID = CD.PARENT_PKID
+		  </if>
+		  
+		  ORDER BY level,CD.CJSJ DESC
+    </select>
+    <!-- end 分页查询组织机构  -->
+    
+    <!-- 查询组织机构  -->
+	<select id="departmentList" parameterType="pd" resultType="vo">
+  		  SELECT CD.PKID AS id,CD.DEPARTMENT_NAME AS NAME,CD.PARENT_PKID AS PARENTID
+		    FROM T_COLLEGES_DEPARTMENT CD
+    </select>
+    <!-- end 查询组织机构  -->
+    
+    <!-- 保存 -->
+    <insert id="save" parameterType="pd" useGeneratedKeys="false">
+		insert into t_colleges_department
+		  (pkid, department_name, remark, colleges_pkid, creater, parent_pkid)
+		values
+		  (#{pkid}, #{department_name,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR}, '11111', #{creater}, #{parent_pkid})
+	</insert>
+	<!-- end 保存 -->
+	<select id="getDeptIdByName" parameterType="pd" resultType="pd">
+		SELECT * FROM T_COLLEGES_DEPARTMENT WHERE DEPARTMENT_NAME = #{DEPARTMENT_NAME} AND ROWNUM = 1
+	</select>
+	<select id="getDepartmentList" parameterType="pd" resultType="pd">
+		SELECT  PKID ,PARENT_PKID as PARENT_ID, DEPARTMENT_NAME,COLLEGES_PKID FROM T_COLLEGES_DEPARTMENT
+	</select>
+	<!-- 更新 -->
+	<update id="update" parameterType="pd">
+		UPDATE T_COLLEGES_DEPARTMENT CD SET 
+		CD.DEPARTMENT_NAME=#{department_name},
+		<!-- CD.BIANMA=trim(#{BIANMA}), -->
+		CD.XGSJ=SYSDATE,
+		CD.REMARK=#{remark,jdbcType=VARCHAR},
+		CD.PARENT_PKID=#{parent_pkid,jdbcType=VARCHAR}
+		WHERE PKID=#{pkid}
+	</update>
+	<!-- end 更新 -->
+    
+    
+    <!-- 查询组织机构  -->
+	<select id="queryDepartment" parameterType="pd" resultType="pd">
+  		  SELECT CD.*,
+  		    (SELECT D.DEPARTMENT_NAME FROM T_COLLEGES_DEPARTMENT D WHERE D.PKID=CD.PARENT_PKID AND ROWNUM=1) as PARENT_NAME
+		    FROM T_COLLEGES_DEPARTMENT CD WHERE 1=1 
+		  <if test="pkid!=null and pkid!=''">
+		  	AND CD.PKID=#{pkid}
+		  </if>
+    </select>
+    <!-- end 查询组织机构  -->
+    
+    
+    <!-- 删除 组织机构  -->
+    <delete id="departmentDel">
+    	DELETE FROM T_COLLEGES_DEPARTMENT CD WHERE 1=1 AND CD.PKID=#{pkid}
+    </delete>
+    <!-- end 删除 组织机构  -->
+    
+    <!-- 验证唯一  -->
+	<select id="getlistbyname" parameterType="pd" resultType="pd">
+  		 select * from sys_department t where t.name=trim(#{name})
+    </select>
+    <!-- end 验证唯一  -->
+    
+    <!-- 验证唯一  -->
+	<select id="getcdlistbyname" parameterType="pd" resultType="pd">
+  		 select * from T_COLLEGES_DEPARTMENT t where t.department_name=trim(#{department_name})
+  		 <if test="parent_pkid !=null and parent_pkid !=''">
+		  	AND t.parent_pkid=#{parent_pkid}
+		  </if>
+    </select>
+    <!-- end 验证唯一  -->
+    
+    <select id="getlistbyBianma" parameterType="pd" resultType="pd">
+    	select * from sys_department t where t.BIANMA=trim(#{BIANMA}) and rownum = 1
+    </select>
+    
+    <select id="CheckUser" parameterType="pd" resultType="pd">
+  		select * from sys_user t where t.department_id=#{pkid}
+    </select>
+    
+<!--end 组织机构 sql  -->
+</mapper>

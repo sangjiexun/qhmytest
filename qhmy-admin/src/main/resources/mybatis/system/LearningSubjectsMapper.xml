@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="LearningSubjectsMapper">
+	
+	<insert id="save" parameterType="pd">
+	     insert into T_LEARNING_SUBJECTS(PKID,NAME,IS_QY)
+     values(#{PKID},#{NAME},#{IS_QY})
+	</insert>
+	
+    <delete id="del" parameterType="pd">
+   delete from T_LEARNING_SUBJECTS S WHERE S.PKID=#{PKID}
+    </delete>
+    
+    <select id="getSubById" resultType="pd" parameterType="pd">
+   SELECT * FROM T_LEARNING_SUBJECTS S WHERE S.PKID='${PKID}' AND ROWNUM=1    
+   </select>
+    
+      <select id="getSubByName" resultType="java.lang.Integer" parameterType="pd">
+       SELECT COUNT(*) COUNT FROM T_LEARNING_SUBJECTS S WHERE S.NAME='${NAME}' AND ROWNUM=1    
+   </select>
+    
+    
+	<update id="update" parameterType="pd">
+	     update T_LEARNING_SUBJECTS S set 
+	     S.NAME=#{NAME}
+	     ,S.IS_QY=#{IS_QY}
+	     ,S.XGSJ=SYSDATE
+	      WHERE S.PKID=#{PKID}
+	</update>
+	
+	<select id="sublistPage" parameterType="page" resultType="pd" >
+        select * from T_LEARNING_SUBJECTS S WHERE 1=1  
+     	    <if test="pd.NAME!=null and pd.NAME!=''">
+     	        AND S.NAME LIKE '%${pd.NAME}%'
+     	    </if>
+     	   
+     	  ORDER BY S.CJSJ DESC
+	</select>
+	
+	
+	<update id="updateForIsqy" parameterType="pd">
+	     update T_LEARNING_SUBJECTS S set S.IS_QY=#{IS_QY},S.XGSJ=SYSDATE WHERE S.PKID=#{PKID}
+
+	</update>
+	
+	
+	<select id="del_yanzheng" parameterType="pd" resultType="pd">
+	SELECT COUNT(*) COUN FROM T_STUDENT STU
+WHERE 1 = 1
+AND STU.KEMU LIKE '%${PKID}%'
+	</select>
+</mapper>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="JkcsMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_CONFIG"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"PARAM_ID",
+		"PARAM_NAME",
+		"PARAM_VALUE",
+		"PARAM_COMMENT",
+		"DEPARTMENT_ID",
+		"IS_USED"
+	</sql>
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{PARAM_ID},	
+			#{PARAM_NAME},
+			#{PARAM_VALUE},	
+			#{PARAM_COMMENT},
+			#{DEPARTMENT_ID},	
+			#{IS_USED}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd" useGeneratedKeys="false"> 
+       	insert into sys_config (param_id,param_name,param_value,param_comment,is_used,department_id)  
+ 		select sys_config_sq.nextval,param_name,param_value,param_comment,is_used,department_id
+        from (select 
+                  #{PARAM_NAME,jdbcType=VARCHAR} param_name,
+                  #{PARAM_VALUE,jdbcType=VARCHAR} param_value,
+                  #{PARAM_COMMENT,jdbcType=VARCHAR} param_comment,
+                  #{IS_USED,jdbcType=VARCHAR} is_used,
+                  u.department_id department_id
+                   from( select 
+                          t.name name ,t.department_id department_id
+                         from 
+                          sys_config s, sys_department t
+   
+                           where 
+                            s.department_id = t.department_id
+                             and t.department_type_id = 1) u
+                     group by u.department_id
+                     having count(1) &gt;= 1)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"PARAM_ID" = #{PARAM_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"PARAM_NAME" = #{PARAM_NAME,jdbcType=VARCHAR},	
+				"PARAM_VALUE" = #{PARAM_VALUE,jdbcType=VARCHAR},
+<!-- 				"PARAM_COMMENT" = #{PARAM_COMMENT,jdbcType=VARCHAR},	 -->
+<!-- 				"DEPARTMENT_ID" = #{DEPARTMENT_ID}, -->
+				"IS_USED" = #{IS_USED,jdbcType=VARCHAR},	
+				"PARAM_ID" = #{PARAM_ID,jdbcType=VARCHAR}
+			where 
+				"PARAM_ID" = #{PARAM_ID,jdbcType=VARCHAR}
+				and (#{IS_USED,jdbcType=VARCHAR} = '1' or "IS_USED" = '1')
+	</update>
+	<update id="goEdit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"PARAM_NAME" = #{PARAM_NAME},	
+				"PARAM_VALUE" = #{PARAM_VALUE},
+				"PARAM_COMMENT" = #{PARAM_COMMENT},	
+<!-- 				"DEPARTMENT_ID" = #{DEPARTMENT_ID}, -->
+				"IS_USED" = #{IS_USED},	
+				"PARAM_ID" = #{PARAM_ID}
+			where 
+				"PARAM_ID" = #{PARAM_ID}
+				and "IS_USED" = '1'
+	</update>
+	
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select s.param_name,
+			   s.param_value, 
+			   s.param_comment, 
+			   s.is_used,
+			   t.name,
+			   s.PARAM_ID
+  		from 
+  			   sys_config s, sys_department t
+ 		where 
+ 			   s.department_id = t.department_id
+ 			   and t.department_type_id = 1	
+		 	   and "PARAM_ID" = #{PARAM_ID}
+ 			 
+	</select>
+	<select id="findQYName" parameterType="pd" resultType="pd">
+		 select u.name name 
+		 from ( select 
+         			t.name name
+      			from 
+          			 sys_config s, sys_department t
+   
+     			where 
+         			s.department_id = t.department_id
+         			and t.department_type_id = 1) u
+         group by u.name
+    	 having count(1) >= 1 
+ 			 
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select s.param_name,
+			   s.param_value, 
+			   s.param_comment, 
+			   s.is_used,
+			   t.name,
+			   s.PARAM_ID
+  		from 
+  			   sys_config s, sys_department t
+ 		where 
+ 			   s.department_id = t.department_id
+ 			   and t.department_type_id = 1
+ 		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+		and
+			(
+				"PARAM_NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				"PARAM_VALUE" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			)
+				
+		</if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select s.param_name,
+			   s.param_value, 
+			   s.param_comment, 
+			   s.is_used,
+			   t.name,
+			   s.PARAM_ID
+  		from 
+  			   sys_config s, sys_department t
+ 		where 
+ 			   s.department_id = t.department_id
+ 			   and t.department_type_id = 1
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"PARAM_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

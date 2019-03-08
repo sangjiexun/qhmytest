@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CheckInMapper">
+	
+	<select id="stulistPage" parameterType="page" resultType="pd">
+	    SELECT 
+     TM.PKID,
+     (SELECT P.SCHOOLNAME FROM T_PART_SCHOOL P WHERE P.ZHUANGTAI=1 AND P.PKID=T.WHKXUEXIAO) WHKSCHOOL,
+     (CASE WHEN T.XINGBIE='M' THEN '男' WHEN T.XINGBIE='W' THEN '女' END) XINGBIE,
+     T.XINGMING,
+       TM.XUEHAO,
+         (SELECT D.NAME
+          FROM SYS_DICTIONARIES D
+         WHERE D.PARENT_ID = 'GRADE' AND D.IS_USED='Y'
+           AND D.DICTIONARIES_ID = TM.RXNIANFEN_PKID) RXNIANFEN_PKID,
+        (SELECT CLA.CLASS_NAME FROM T_CLASS CLA WHERE CLA.PKID=TM.BANJI) BANJI,
+       (SELECT D.NAME
+          FROM sys_dictionaries D
+         WHERE D.DICTIONARIES_ID = TM.BANJI_TYPE_PKID) BANJI_TYPE,
+         NVL((SELECT GETWHOLEROOMNAME_FUNC(DO.PKID) FROM DUAL),'N') DORMNAME,
+         NVL(TM.IS_RZ,'N') IS_RZ,
+         
+         T.TOUXIANG
+      
+  FROM T_STUDENT T
+  JOIN T_STUDENT_BM TM ON T.PKID = TM.STUDENT_PKID
+ left JOIN T_STUDENT_DORM DO ON do.t_student_bm_pkid=tm.pkid
+ WHERE 1 = 1  AND TM.ZHUANGTAI = 1 AND TM.is_tongguo=1
+	
+		<if test="pd.seText!=null and pd.seText !=''">
+			and  (
+			     T.SHENFENZHENGHAO LIKE '%${pd.seText}%'
+			      or
+			     TM.XUEHAO LIKE '%${pd.seText}%'
+			      or 
+			     T.xingming LIKE '%${pd.seText}%'
+			)
+		</if>
+		ORDER BY TM.CJSJ DESC
+	</select>
+
+
+	<update id="updateRz" parameterType="pd">
+	update t_student_bm b set b.is_rz='Y',b.xgsj=sysdate,b.rztime=sysdate where b.pkid='${PKID}'
+	</update>
+
+</mapper>

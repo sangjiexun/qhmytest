@@ -1,0 +1,1170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="StuInfoMapper">
+	<!-- 学生信息列表 -->	
+	<select id="stulistPage" parameterType="page" resultType="pd">
+	     SELECT T.PKID,TM.XUEHAO,T.SHENFENZHENGHAO,T.XINGMING,T.SHOUJI,T.ONE_JHRDW,T.ONE_JHRZW,T.TWO_JHRDW,
+	     	   T.TWO_JHRZW,T.JIATINGZHUZHI,T.YOUZHENGBIANMA,T.ONE_JHR,T.ONE_JHRGX_PKID,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.ONE_JHRGX_PKID) ONE_JHRGX,
+	           T.ONE_JHRDH,T.TWO_JHR,T.TWO_JHRGX_PKID,TM.IS_TONGGUO AS TONGGUO,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.TWO_JHRGX_PKID) TWO_JHRGX,
+	           T.TWO_JHRDH,T.BINGSHI,T.LJQHTJ_PKID,T.TUIJIANREN,T.WHKXUEXIAO,T.GYRXSJ,T.BANJI,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.LJQHTJ_PKID) LJQHTJ,         
+	           (CASE WHEN TM.ZXZT = 'ZX' then '在学' WHEN TM.ZXZT = 'TX' then '退学'  WHEN TM.ZXZT = 'BY' then '毕业' ELSE ''END) ZXZT,
+	           (CASE WHEN T.XINGBIE = 'W' then '女' WHEN T.XINGBIE = 'M' then '男'  ELSE ''END) XINGBIE,
+	           (CASE WHEN TM.IS_RZ = 'Y' then '已入住'  ELSE '未入住'END) RZZT,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.BANJI) BANJINAME,
+	           T.WENLIKE,T.BZRSCHOOL,T.BZRPHONE,T.STARTMEISHU,T.KEMU,T.PICI_PKID,T.IS_BD,
+	           T.CJSJ,T.XGSJ,T.WX_OPENID,T.TOUXIANG,T.ZHUANGTAI,T.SFZ_IMG ,T.GZ_BANJI ,
+	           TM.PKID AS TMPKID,TM.STUDENT_PKID,TM.CENGCI_PKID,TM.RXNIANFEN_PKID,TM.OLD_BANJI, 
+	           (SELECT CENGCI_NAME FROM T_CENGCI C WHERE C.PKID = TM.CENGCI_PKID) CENGCI,
+	           (SELECT SCHOOLNAME FROM T_PART_SCHOOL TP WHERE TP.PKID = T.WHKXUEXIAO) WHKXUEXIAONAME,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.OLD_BANJI) OLD_BANJINAME,        
+	           TM.BANJI_TYPE_PKID,(CASE WHEN TM.IS_TONGGUO = '0' then '不通过' WHEN TM.IS_TONGGUO = '1' then '通过'  ELSE '未审核'END) IS_TONGGUO,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.BANJI_TYPE_PKID) BANJI_TYPE,
+	           T.YJ_BANJI_TYPE_PKID,TM.LKFS,TM.KSNUMBER,to_char(TM.SHTGSJ,'YYYY-MM-DD') AS SHTGSJ,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) ELSE ''END) YJ_BANJI_TYPE,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID   then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) ELSE ''END) YJ_NIANFEN,
+	           <!-- (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) YJ_BANJI_TYPE,  -->
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.RXNIANFEN_PKID) RXNIANFEN,          
+	           <!-- (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) YJ_NIANFEN,   -->        
+	           (SELECT D.NAME FROM SYS_USER D WHERE D.USER_ID = TM.CAOZUOREN) CAOZUOREN,
+	            NVL((SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID),0) TOTALMONEY,         
+	           TM.XK_MARK,TM.REMARKS1,TM.REMARKS2,TM.REMARKS3,to_char(TM.BD_DATE,'YYYY-MM-DD') AS BD_DATE,to_char(TM.CJSJ,'YYYY-MM-DD') AS CJSJTM,TM.XGSJ AS XGSJTM     
+	      FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TM ON T.PKID = TM.STUDENT_PKID
+
+		WHERE 1=1  AND TM.ZHUANGTAI = 1
+		<if test="pd.grade_str!=null and pd.grade_str != ''">
+			AND TM.RXNIANFEN_PKID  in 
+			<foreach item="item" index="index" collection="pd.gradeArray" open="(" separator="," close=")"> 
+			#{pd.gradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.banxing_str!=null and pd.banxing_str != ''">
+			AND TM.BANJI_TYPE_PKID  in 
+			<foreach item="item" index="index" collection="pd.banxingArray" open="(" separator="," close=")"> 
+			#{pd.banxingArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.banji_str!=null and pd.banji_str != ''">
+			AND TM.BANJI  in 
+			<foreach item="item" index="index" collection="pd.banjiArray" open="(" separator="," close=")"> 
+			#{pd.banjiArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.partschool_str!=null and pd.partschool_str != ''">
+			AND T.WHKXUEXIAO  in 
+			<foreach item="item" index="index" collection="pd.partschoolArray" open="(" separator="," close=")"> 
+			#{pd.partschoolArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.cengci_str!=null and pd.cengci_str != ''">
+			AND TM.CENGCI_PKID  in 
+			<foreach item="item" index="index" collection="pd.cengciArray" open="(" separator="," close=")"> 
+			#{pd.cengciArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="pd.yjgrade_str!=null and pd.yjgrade_str != ''">
+			AND T.YJ_NIANFEN  in 
+			<foreach item="item" index="index" collection="pd.yjgradeArray" open="(" separator="," close=")"> 
+			#{pd.yjgradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+			AND T.YJ_STUBM_PKID = TM.PKID
+		</if>
+		<if test="pd.meiyuan_str!=null and pd.meiyuan_str != ''">
+			<!-- AND TM.XK_MARK  in 
+			<foreach item="item" index="index" collection="pd.meiyuanArray" open="(" separator="," close=")"> 
+			#{pd.meiyuanArray[${index}],jdbcType=VARCHAR}  
+			</foreach> -->
+			AND compareabc(TM.XK_MARK,#{pd.meiyuan_str}) > 0  
+		</if>
+		<if test="pd.LKFSQI!=null and pd.LKFSQI !=''">
+			and TO_NUMBER(TM.LKFS) &gt;= #{pd.LKFSQI}
+		</if>
+		<if test="pd.LKFSZHI!=null and pd.LKFSZHI !=''">
+			and TO_NUMBER(TM.LKFS) &lt;= #{pd.LKFSZHI}
+		</if>
+		<if test="pd.GYRXSJBEGIN!=null and pd.GYRXSJBEGIN!=''">
+			and to_date(T.GYRXSJ,'yyyy-MM') &gt;=to_date(#{pd.GYRXSJBEGIN},'yyyy-MM')
+		</if>
+		<if test="pd.GYRXSJEND!=null and pd.GYRXSJEND!=''">
+			and to_date(T.GYRXSJ,'yyyy-MM') &lt; to_date(#{pd.GYRXSJEND},'yyyy-MM')+1
+		</if>
+		<if test="pd.CJSJTMBEGIN!=null and pd.CJSJTMBEGIN!=''">
+			and TM.CJSJ &gt;=to_date(#{pd.CJSJTMBEGIN},'yyyy-MM-dd')
+		</if>
+		<if test="pd.CJSJTMEND!=null and pd.CJSJTMEND!=''">
+			and TM.CJSJ &lt; to_date(#{pd.CJSJTMEND},'yyyy-MM-dd')+1
+		</if>
+		<if test="pd.IS_TONGGUO!=null and pd.IS_TONGGUO !=''">
+			and TM.IS_TONGGUO = #{pd.IS_TONGGUO}
+		</if>
+		<if test="pd.IS_RUZHU!=null and pd.IS_RUZHU !='' and pd.IS_RUZHU =='YY'">
+			and TM.IS_RZ = 'Y'
+		</if>
+		<if test="pd.IS_RUZHU!=null and pd.IS_RUZHU !='' and pd.IS_RUZHU =='NN'">
+			and TM.IS_RZ IS NULL
+		</if>
+		<if test="pd.zxzt!=null and pd.zxzt !=''">
+			and TM.ZXZT = #{pd.zxzt}
+		</if>
+		<if test="pd.IS_ISPAY!=null and pd.IS_ISPAY !=''and pd.IS_ISPAY =='YY'">
+			and (SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID) &gt; 0
+		</if>
+		<if test="pd.IS_ISPAY!=null and pd.IS_ISPAY !=''and pd.IS_ISPAY =='NN'">
+			and (SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID)= 0
+		</if>
+		<if test="pd.XUEHAOQ!=null and pd.XUEHAOQ !=''">
+			and TM.XUEHAO &gt;= #{pd.XUEHAOQ}
+		</if>
+		<if test="pd.XUEHAOZ!=null and pd.XUEHAOZ !=''">
+			and TM.XUEHAO &lt;= #{pd.XUEHAOZ}
+		</if>
+		<if test="pd.seText!=null and pd.seText !=''">
+			and  (
+			     T.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			      or
+			     TM.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			      or 
+			     T.XINGMING LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			      or 
+			     TM.REMARKS1 LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			      or 
+			     TM.REMARKS2 LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			      or 
+			     TM.REMARKS3 LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+			
+			)
+		</if>
+		<if test="pd.sortName =='XUEHAO' and pd.sortOrder == 'asc'">
+			ORDER BY TM.XUEHAO
+		</if>
+		<if test="pd.sortName =='XUEHAO' and pd.sortOrder == 'desc'">
+			ORDER BY TM.XUEHAO DESC
+		</if>
+		<if test="pd.sortName =='WHKXUEXIAONAME' and pd.sortOrder == 'asc'">
+			 ORDER BY  
+			 WHKXUEXIAONAME,FUN_SPELLCODE(SUBSTR(WHKXUEXIAONAME,1,2)),
+			 cast(REGEXP_SUBSTR(WHKXUEXIAONAME, '[0-9]+') as int)
+		</if>
+		<if test="pd.sortName =='WHKXUEXIAONAME' and pd.sortOrder == 'desc'">
+			ORDER BY  
+		 	WHKXUEXIAONAME DESC,FUN_SPELLCODE(SUBSTR(WHKXUEXIAONAME,1,2)) DESC,
+		 	cast(REGEXP_SUBSTR(WHKXUEXIAONAME, '[0-9]+') as int)
+		 	DESC
+		</if>
+		<if test="pd.sortName =='RXNIANFEN' and pd.sortOrder == 'asc'">
+			 ORDER BY  
+			 RXNIANFEN
+		</if>
+		<if test="pd.sortName =='RXNIANFEN' and pd.sortOrder == 'desc'">
+			ORDER BY  
+		 	RXNIANFEN DESC
+		</if>
+		<if test="pd.sortName =='BANJI_TYPE' and pd.sortOrder == 'asc'">
+			 ORDER BY  
+			 BANJI_TYPE
+		</if>
+		<if test="pd.sortName =='BANJI_TYPE' and pd.sortOrder == 'desc'">
+			ORDER BY  
+		 	BANJI_TYPE DESC
+		</if>
+		<if test="pd.sortName =='YJ_BANJI_TYPE' and pd.sortOrder == 'asc'">
+			ORDER BY  
+			YJ_BANJI_TYPE
+		</if>
+		<if test="pd.sortName =='YJ_BANJI_TYPE' and pd.sortOrder == 'desc'">
+			ORDER BY  
+		 	YJ_BANJI_TYPE DESC
+		</if>
+		<if test="pd.sortName =='YJ_NIANFEN' and pd.sortOrder == 'asc'">
+			ORDER BY  
+			YJ_NIANFEN
+		</if>
+		<if test="pd.sortName =='YJ_NIANFEN' and pd.sortOrder == 'desc'">
+			ORDER BY  
+		 	YJ_NIANFEN DESC
+		</if>
+		<if test="pd.sortName == null or pd.sortName == '' or pd.sortName == 'null'">
+			ORDER BY TM.CJSJ DESC
+		</if>
+	</select>
+	
+	<!-- 学生信息列表 -->	
+	<select id="exportStuInfoToExcel" parameterType="pd" resultType="pd">
+	    SELECT T.PKID,TM.XUEHAO,T.SHENFENZHENGHAO,T.XINGMING,T.SHOUJI,T.ONE_JHRDW,T.ONE_JHRZW,T.TWO_JHRDW,
+	     	   T.TWO_JHRZW,
+	           T.JIATINGZHUZHI,T.YOUZHENGBIANMA,T.ONE_JHR,T.ONE_JHRGX_PKID,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.ONE_JHRGX_PKID) ONE_JHRGX,
+	           T.ONE_JHRDH,T.TWO_JHR,T.TWO_JHRGX_PKID,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.TWO_JHRGX_PKID) TWO_JHRGX,
+	           T.TWO_JHRDH,T.BINGSHI,T.LJQHTJ_PKID,T.TUIJIANREN,T.WHKXUEXIAO,T.GYRXSJ,T.BANJI,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.LJQHTJ_PKID) LJQHTJ,         
+	           (CASE WHEN TM.ZXZT = 'ZX' then '在学' WHEN TM.ZXZT = 'TX' then '退学'  WHEN TM.ZXZT = 'BY' then '毕业' ELSE ''END) ZXZT,
+	           (CASE WHEN T.XINGBIE = 'W' then '女' WHEN T.XINGBIE = 'M' then '男'  ELSE ''END) XINGBIE,
+	           <!-- (CASE WHEN TM.RZZT = '0' then '未入住' WHEN TM.RZZT = '1' then '已入住'  ELSE ''END) RZZT, -->
+	           (CASE WHEN TM.IS_RZ = 'Y' then '已入住'  ELSE '未入住'END) RZZT,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.BANJI) BANJINAME,
+	           T.WENLIKE,T.BZRSCHOOL,T.BZRPHONE,T.STARTMEISHU,T.KEMU,T.PICI_PKID,T.IS_BD,
+	           T.CJSJ,T.XGSJ,T.WX_OPENID,T.TOUXIANG,T.ZHUANGTAI,T.SFZ_IMG ,T.GZ_BANJI ,
+	           TM.PKID AS TMPKID,TM.STUDENT_PKID,TM.CENGCI_PKID,TM.RXNIANFEN_PKID,TM.OLD_BANJI,
+	           (SELECT CENGCI_NAME FROM T_CENGCI C WHERE C.PKID = TM.CENGCI_PKID) CENGCI, 
+	           (SELECT SCHOOLNAME FROM T_PART_SCHOOL TP WHERE TP.PKID = T.WHKXUEXIAO) WHKXUEXIAONAME,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.OLD_BANJI) OLD_BANJINAME,        
+	           TM.BANJI_TYPE_PKID,(CASE WHEN TM.IS_TONGGUO = '0' then '不通过' WHEN TM.IS_TONGGUO = '1' then '通过'  ELSE '未审核'END) IS_TONGGUO,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.BANJI_TYPE_PKID) BANJI_TYPE,
+	           T.YJ_BANJI_TYPE_PKID,TM.LKFS,TM.KSNUMBER,to_char(TM.SHTGSJ,'YYYY-MM-DD') AS SHTGSJ,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) ELSE ''END) YJ_BANJI_TYPE,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID   then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) ELSE ''END) YJ_NIANFEN,
+	           <!-- (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) YJ_BANJI_TYPE,   -->
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.RXNIANFEN_PKID) RXNIANFEN,  
+	           <!-- (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) YJ_NIANFEN, -->
+	            (SELECT D.NAME FROM SYS_USER D WHERE D.USER_ID = TM.CAOZUOREN) CAOZUOREN,          
+	            NVL((SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID),0) TOTALMONEY, 
+	           TM.XK_MARK,TM.REMARKS1,TM.REMARKS2,TM.REMARKS3,to_char(TM.BD_DATE,'YYYY-MM-DD') AS BD_DATE,to_char(TM.CJSJ,'YYYY-MM-DD') AS CJSJTM,TM.XGSJ AS XGSJTM    
+	      FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TM ON T.PKID = TM.STUDENT_PKID
+
+		WHERE 1=1   AND TM.ZHUANGTAI = 1
+		<if test="grade_str!=null and grade_str != ''">
+			AND TM.RXNIANFEN_PKID  in 
+			<foreach item="item" index="index" collection="gradeArray" open="(" separator="," close=")"> 
+			#{gradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="banxing_str!=null and banxing_str != ''">
+			AND TM.BANJI_TYPE_PKID  in 
+			<foreach item="item" index="index" collection="banxingArray" open="(" separator="," close=")"> 
+			#{banxingArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="banji_str!=null and banji_str != ''">
+			AND TM.BANJI  in 
+			<foreach item="item" index="index" collection="banjiArray" open="(" separator="," close=")"> 
+			#{banjiArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="partschool_str!=null and partschool_str != ''">
+			AND T.WHKXUEXIAO  in 
+			<foreach item="item" index="index" collection="partschoolArray" open="(" separator="," close=")"> 
+			#{partschoolArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="cengci_str!=null and cengci_str != ''">
+			AND TM.CENGCI_PKID  in 
+			<foreach item="item" index="index" collection="cengciArray" open="(" separator="," close=")"> 
+			#{cengciArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+		</if>
+		<if test="yjgrade_str!=null and yjgrade_str != ''">
+			AND T.YJ_NIANFEN  in 
+			<foreach item="item" index="index" collection="yjgradeArray" open="(" separator="," close=")"> 
+			#{yjgradeArray[${index}],jdbcType=VARCHAR}  
+			</foreach>
+			AND T.YJ_STUBM_PKID = TM.PKID
+		</if>
+		<if test="meiyuan_str!=null and meiyuan_str != ''">
+			AND compareabc(TM.XK_MARK,#{meiyuan_str}) > 0  
+		</if>
+		<if test="LKFSQI!=null and LKFSQI !=''">
+			and TO_NUMBER(TM.LKFS) &gt;= #{LKFSQI}
+		</if>
+		<if test="LKFSZHI!=null and LKFSZHI !=''">
+			and TO_NUMBER(TM.LKFS) &lt;= #{LKFSZHI}
+		</if>
+		<if test="GYRXSJBEGIN!=null and GYRXSJBEGIN!=''">
+			and to_date(T.GYRXSJ,'yyyy-MM') &gt;=to_date(#{GYRXSJBEGIN},'yyyy-MM')
+		</if>
+		<if test="GYRXSJEND!=null and GYRXSJEND!=''">
+			and to_date(T.GYRXSJ,'yyyy-MM') &lt; to_date(#{GYRXSJEND},'yyyy-MM')+1
+		</if>
+		<if test="CJSJTMBEGIN!=null and CJSJTMBEGIN!=''">
+			and TM.CJSJ &gt;=to_date(#{CJSJTMBEGIN},'yyyy-MM-dd')
+		</if>
+		<if test="CJSJTMEND!=null and CJSJTMEND!=''">
+			and TM.CJSJ &lt; to_date(#{CJSJTMEND},'yyyy-MM-dd')+1
+		</if>
+		<if test="IS_TONGGUO!=null and IS_TONGGUO !=''">
+			and TM.IS_TONGGUO = #{IS_TONGGUO}
+		</if>
+		
+		<if test="IS_RUZHU and IS_RUZHU !='' and IS_RUZHU =='YY'">
+			and TM.IS_RZ = 'Y'
+		</if>
+		<if test="IS_RUZHU and IS_RUZHU !='' and IS_RUZHU =='NN'">
+			and TM.IS_RZ IS NULL
+		</if>
+		<if test="zxzt!=null and zxzt !=''">
+			and TM.ZXZT = #{zxzt}
+		</if>
+		<if test="IS_ISPAY!=null and IS_ISPAY !=''and IS_ISPAY =='YY'">
+			and (SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID) &gt; 0
+		</if>
+		<if test="IS_ISPAY!=null and IS_ISPAY !=''and IS_ISPAY =='NN'">
+			and (SELECT SUM(AMOUNTCOLLECTION) FROM T_PAY_ITEM_LIST B WHERE B.STUDENT_BM_PKID=TM.PKID) = 0
+		</if>
+		<if test="XUEHAOQ!=null and XUEHAOQ !=''">
+			and TM.XUEHAO &gt;= #{XUEHAOQ}
+		</if>
+		<if test="XUEHAOZ!=null and XUEHAOZ !=''">
+			and TM.XUEHAO &lt;= #{XUEHAOZ}
+		</if>
+		<if test="seText!=null and seText !=''">
+			and  (
+			     T.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			      or
+			     TM.XUEHAO LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			      or 
+			     T.XINGMING LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			      or 
+			     TM.REMARKS1 LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			      or 
+			     TM.REMARKS2 LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			      or 
+			     TM.REMARKS3 LIKE CONCAT(CONCAT('%', #{seText}),'%') 
+			
+			)
+		</if>
+		<if test="sortName =='XUEHAO' and sortOrder == 'asc'">
+			ORDER BY TM.XUEHAO
+		</if>
+		<if test="sortName =='XUEHAO' and sortOrder == 'desc'">
+			ORDER BY TM.XUEHAO DESC
+		</if>
+		<if test="sortName =='WHKXUEXIAONAME' and sortOrder == 'asc'">
+			 ORDER BY  
+			 WHKXUEXIAONAME,FUN_SPELLCODE(SUBSTR(WHKXUEXIAONAME,1,2)),
+			 cast(REGEXP_SUBSTR(WHKXUEXIAONAME, '[0-9]+') as int)
+		</if>
+		<if test="sortName =='WHKXUEXIAONAME' and sortOrder == 'desc'">
+			ORDER BY  
+		 	WHKXUEXIAONAME DESC,FUN_SPELLCODE(SUBSTR(WHKXUEXIAONAME,1,2)) DESC,
+		 	cast(REGEXP_SUBSTR(WHKXUEXIAONAME, '[0-9]+') as int)
+		 	DESC
+		</if>
+		<if test="sortName =='RXNIANFEN' and sortOrder == 'asc'">
+			 ORDER BY  
+			 RXNIANFEN
+		</if>
+		<if test="sortName =='RXNIANFEN' and sortOrder == 'desc'">
+			ORDER BY  
+		 	RXNIANFEN DESC
+		</if>
+		<if test="sortName =='BANJI_TYPE' and sortOrder == 'asc'">
+			 ORDER BY  
+			 BANJI_TYPE
+		</if>
+		<if test="sortName =='BANJI_TYPE' and sortOrder == 'desc'">
+			ORDER BY  
+		 	BANJI_TYPE DESC
+		</if>
+		<if test="sortName =='YJ_BANJI_TYPE' and sortOrder == 'asc'">
+			ORDER BY  
+			YJ_BANJI_TYPE
+		</if>
+		<if test="sortName =='YJ_BANJI_TYPE' and sortOrder == 'desc'">
+			ORDER BY  
+		 	YJ_BANJI_TYPE DESC
+		</if>
+		<if test="sortName =='YJ_NIANFEN' and sortOrder == 'asc'">
+			ORDER BY  
+			YJ_NIANFEN
+		</if>
+		<if test="sortName =='YJ_NIANFEN' and sortOrder == 'desc'">
+			ORDER BY  
+		 	YJ_NIANFEN DESC
+		</if>
+		<if test="sortName == null or sortName == '' or sortName == 'null'">
+			ORDER BY TM.CJSJ DESC
+		</if>
+	</select>
+	
+	<!-- 查询班级数据 -->
+	<select id="getBasicClassList" parameterType="pd" resultType="pd">
+		SELECT T.PKID, 
+		 (SELECT D.NAME FROM SYS_DICTIONARIES D WHERE D.DICTIONARIES_ID = T.SYS_DICTIONARIES_PKID) GRADE,
+		 (SELECT D.NAME FROM SYS_DICTIONARIES D WHERE D.DICTIONARIES_ID = T.BANXING_PKID) BANXING,
+		T.SYS_DICTIONARIES_PKID, T.SYS_DEPARTMENT_PKID, T.SYS_USER_PKID,T.IS_USE,
+		T.REMARKS,T.CLASS_NAME,T.CJSJ,T.XGSJ,T.CLASS_BIANMA,T.BANXING_PKID,T.BANRONGLIANG
+		FROM T_CLASS T
+		WHERE T.SYS_DICTIONARIES_PKID =#{SYS_DICTIONARIES_PKID} AND T.BANXING_PKID = #{BANXING_PKID}
+	</select>
+	
+	<!-- 查询合作学校 -->
+	<select id="getPartSchoolList" parameterType="pd" resultType="pd">
+		SELECT T.PKID, SCHOOLNAME,DINGJIN,CJSJ,XGSJ FROM T_PART_SCHOOL T
+		<if test="ZHUANGTAI != null and ZHUANGTAI !=''">
+			WHERE T.ZHUANGTAI = #{ZHUANGTAI}
+		</if>
+		order by T.SCHOOLNAME,FUN_SPELLCODE(SUBSTR(SCHOOLNAME,1,1)),
+		cast(REGEXP_SUBSTR(SCHOOLNAME, '[0-9]+') as int)
+		
+	</select>
+	
+	<!-- 获取层次列表 -->
+	<select id="getCengCi" parameterType="pd" resultType="pd">
+		SELECT PKID,CENGCI_NAME,CENGCI_BIANMA,XUENIANZHI FROM T_CENGCI
+		<if test="is_use != null and is_use !=''">
+			WHERE is_use = #{is_use}
+		</if>
+	</select>
+	
+	<!-- 美院列表 校考成绩 -->
+	<select id="getMeiYuan" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_MEI_DEPARTMENT
+		<if test="IS_QY != null and IS_QY !=''">
+			WHERE IS_QY = #{IS_QY}
+		</if>
+	</select>
+	
+	<!-- 批量(不)通过-->
+	<update id="batchTongGuo" parameterType="pd">
+		UPDATE T_STUDENT_BM T SET T.IS_TONGGUO = #{status} ,
+		<if test="SHTGSJ != null and SHTGSJ !=''">T.SHTGSJ=SYSDATE,</if>
+		T.IS_TONGGUO_REASON=#{IS_TONGGUO_REASON},
+		T.XGSJ = SYSDATE
+		WHERE T.PKID IN (SELECT REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL)
+		FROM DUAL CONNECT BY REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		AND T.IS_TONGGUO = '2'
+	</update>
+	<!-- 批量毕业或退学-->
+	<update id="batchByOrTuiXue" parameterType="pd">
+		UPDATE T_STUDENT_BM T SET T.ZXZT = #{status} ,T.XGSJ = SYSDATE
+		WHERE T.PKID IN (SELECT REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL)
+		FROM DUAL CONNECT BY REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL) IS NOT NULL)
+	</update>
+	
+		<!-- 在学-->
+	<update id="batchByOrFuXue" parameterType="pd">
+		UPDATE T_STUDENT_BM T SET T.ZXZT = 'ZX' ,T.XGSJ = SYSDATE
+		WHERE T.PKID IN (SELECT REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL)
+		FROM DUAL CONNECT BY REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL) IS NOT NULL)
+	</update>
+	<!-- 根据入学年份和班型获取班级列表 -->
+	<select id="getBanJi" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CLASS  
+		WHERE 1 = 1
+		<if test="IS_USE != null and IS_USE !=''">
+			and IS_USE=#{IS_USE}
+		</if>
+		AND SYS_DICTIONARIES_PKID IN 
+		<foreach item="item" index="index" collection="gradeArray" open="(" separator="," close=")"> 
+			#{gradeArray[${index}],jdbcType=VARCHAR}  
+		</foreach>
+		AND BANXING_PKID IN 
+		<foreach item="item" index="index" collection="banxingArray" open="(" separator="," close=")"> 
+			#{banxingArray[${index}],jdbcType=VARCHAR}  
+		</foreach>
+	</select>
+	
+	<!--根据pkid 查学生信息  -->
+	<select id="getStuInfoByPkid" parameterType="pd" resultType="pd">
+		  SELECT T.PKID,TM.XUEHAO,T.SHENFENZHENGHAO,T.XINGMING,T.SHOUJI,T.ONE_JHRDW,T.ONE_JHRZW,T.TWO_JHRDW,
+	     	   T.TWO_JHRZW,
+	           T.JIATINGZHUZHI,T.YOUZHENGBIANMA,T.ONE_JHR,T.ONE_JHRGX_PKID,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.ONE_JHRGX_PKID) ONE_JHRGX1,
+	           T.ONE_JHRDH,T.TWO_JHR,T.TWO_JHRGX_PKID,TM.IS_TONGGUO AS TONGGUO,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.TWO_JHRGX_PKID) TWO_JHRGX,
+	           T.TWO_JHRDH,T.BINGSHI,T.LJQHTJ_PKID,T.TUIJIANREN,T.WHKXUEXIAO,
+	           T.GYRXSJ GYRXSJ,T.STARTMEISHU,T.YJ_STUBM_PKID,
+			   to_date(T.GYRXSJ,'yyyy-mm') GYRXSJE,
+	           T.BANJI,to_date(T.STARTMEISHU,'yyyy-mm') STARTMEISHUE,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.LJQHTJ_PKID) LJQHTJ,         
+	           (CASE WHEN TM.ZXZT = 'ZX' then '在学' WHEN TM.ZXZT = 'TX' then '退学'  WHEN TM.ZXZT = 'BY' then '毕业' ELSE ''END) ZXZT,
+	           (CASE WHEN T.XINGBIE = 'W' then '女' WHEN T.XINGBIE = 'M' then '男'  ELSE ''END) XINGBIE,
+	           (CASE WHEN TM.IS_RZ = '0' then '未入住' WHEN TM.IS_RZ = '1' then '已入住'  ELSE ''END) RZZT,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.BANJI) BANJINAME,
+	           T.WENLIKE,T.BZRSCHOOL,T.BZRPHONE,T.KEMU,T.PICI_PKID,T.IS_BD,
+	           T.CJSJ,T.XGSJ,T.WX_OPENID,T.TOUXIANG,T.ZHUANGTAI,T.SFZ_IMG ,T.GZ_BANJI ,
+	           TM.PKID AS TMPKID,TM.STUDENT_PKID,TM.CENGCI_PKID,TM.RXNIANFEN_PKID,TM.OLD_BANJI, 
+	           (SELECT CENGCI_NAME FROM T_CENGCI C WHERE C.PKID = TM.CENGCI_PKID) CENGCI,
+	           (SELECT SCHOOLNAME FROM T_PART_SCHOOL C WHERE C.PKID = T.WHKXUEXIAO) WHKXUEXIAONAME,
+	           (SELECT TC.CLASS_NAME FROM T_CLASS TC WHERE TC.PKID = TM.OLD_BANJI) OLD_BANJINAME,        
+	           TM.BANJI_TYPE_PKID,(CASE WHEN TM.IS_TONGGUO = '0' then '未通过' WHEN TM.IS_TONGGUO = '1' then '通过'  ELSE ''END) IS_TONGGUO,
+	           (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.BANJI_TYPE_PKID) BANJI_TYPE,
+	           <!-- T.YJ_BANJI_TYPE_PKID, -->TM.LKFS,TM.KSNUMBER,<!-- T.YJ_NIANFEN, -->
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID then
+	             T.YJ_BANJI_TYPE_PKID ELSE ''END) YJ_BANJI_TYPE_PKID,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID   then
+	            T.YJ_NIANFEN ELSE ''END) YJ_NIANFEN,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) ELSE ''END) YJ_BANJI_TYPE,
+	           (CASE WHEN T.YJ_STUBM_PKID = '' then '' WHEN T.YJ_STUBM_PKID is null  then '' 
+	            WHEN TM.PKID = T.YJ_STUBM_PKID   then
+	             (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) ELSE ''END) YJ_NIANFEN_NAME,
+	           <!-- (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_BANJI_TYPE_PKID) YJ_BANJI_TYPE, -->  
+	            (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = TM.RXNIANFEN_PKID) RXNIANFEN,  
+	           <!--  (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = T.YJ_NIANFEN) YJ_NIANFEN_NAME,     -->      
+	           TM.XK_MARK,TM.REMARKS1,TM.REMARKS2,TM.REMARKS3,TM.BD_DATE,TM.CJSJ AS CJSJTM,TM.XGSJ AS XGSJTM     
+	      FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TM ON T.PKID = TM.STUDENT_PKID
+		WHERE  TM.PKID=#{TMPKID}
+	</select>
+	
+		<!--年级字典  -->
+	<select id="getGrades" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES WHERE PARENT_ID='GRADE' AND IS_USED ='Y' ORDER BY NAME DESC
+	</select>
+	
+		<!--班型字典  -->
+	<select id="getBan" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES WHERE PARENT_ID='CLASSTYPE' AND IS_USED ='Y' ORDER BY NAME DESC
+	</select>
+	
+	
+	<!--合作学校 -->
+	<select id="gethzxx" parameterType="pd" resultType="pd">
+		select * from T_PART_SCHOOL l where l.zhuangtai='1' 
+		ORDER BY  SCHOOLNAME,FUN_SPELLCODE(SUBSTR(SCHOOLNAME,1,2)),
+		 cast(REGEXP_SUBSTR(SCHOOLNAME, '[0-9]+') as int)
+		 
+	</select>
+	
+	<!--班级 -->
+	<select id="getbanji" parameterType="pd" resultType="pd">
+		select * from T_CLASS l  order by cjsj DESC
+	</select>
+	
+		<!--树结构  查询所有的学院节点  -->
+	<select id="getZuzhis" resultType="pd" parameterType="pd">
+		SELECT T.DEPARTMENT_ID,T.NAME,T.PARENT_ID,T.LEIBIE,T.XUESHENGLEIXING_PKID,T.PAIXU  FROM SYS_DEPARTMENT T  
+		where 1=1 
+		<if test="JIHUOZT != null and JIHUOZT !=''">
+			AND JIHUOZT = #{JIHUOZT}		
+		</if>
+		<if test="COLLEGES_NAME_EN != null and COLLEGES_NAME_EN !=''">
+			<!-- AND T.XUESHENGLEIXING_PKID like  '%' || #{XSLX_PKID} || '%' -->
+			AND T.DEPARTMENT_ID IN (
+				SELECT D.DEPARTMENT_ID
+		           FROM SYS_DEPARTMENT D
+		          START WITH D.DEPARTMENT_ID IN
+		                     (SELECT S.DEPARTMENT_ID
+		                        FROM SYS_DEPARTMENT S
+		                       WHERE S.JIHUOZT = 'Y'
+		                         AND S.LEIBIE = '4'
+		                         AND S.XUESHENGLEIXING_PKID  like  '%' || #{XSLX_PKID} || '%')
+		         CONNECT BY PRIOR D.PARENT_ID = D.DEPARTMENT_ID
+			) AND T.LEIBIE!='1'
+		</if>
+		<if test="userAllDepts!=null">
+			AND T.DEPARTMENT_ID IN 
+			<foreach item="item" index="index" collection="userAllDepts" open="(" separator="," close=")"> 
+			   #{userAllDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+			</foreach>
+	    </if>
+		<!-- where t.colleges_pkid='' -->
+		order by T.PAIXU,T.NAME
+	</select>
+	<!--取字典类中数据 -->
+	<select id="getFromSYS_DICT" resultType="pd" parameterType="pd">
+		SELECT DICTIONARIES_ID,BIANMA,NAME,IS_USED FROM SYS_DICTIONARIES WHERE PARENT_ID=#{PARENT_ID}
+		<if test="is_use_d != null and is_use_d !=''">
+			and (IS_USED = 'Y' or IS_USED = '1')
+		</if>
+		ORDER BY BIANMA
+	</select>
+	
+	<select id="getDictionariesById" parameterType="pd" resultType="pd">
+		SELECT * FROM sys_dictionaries sd WHERE sd.dictionaries_id = #{dictionaries_id}
+	</select>
+
+	
+	<!-- 批量删除学生名单 表记录-->
+	<delete id="batchdeleteStuPayItemLists" parameterType="pd">
+		delete from t_pay_item_list where student_pkid in 
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+		<!-- 批量删除 学生信息-->
+	<delete id="deleteAll" parameterType="String">
+		update
+		T_STUDENT_BM 
+		set ZHUANGTAI=0 ,XGSJ=SYSDATE
+		where 
+			PKID  in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	    <!-- 编辑学生数据 -->
+	<update id="updateStuYJByBMpkid" parameterType="pd">
+		UPDATE T_STUDENT 
+			SET 
+			YJ_STUBM_PKID = '',
+			YJ_NIANFEN = '',
+			YJ_BANJI_TYPE_PKID = '',
+			XGSJ = SYSDATE
+	  WHERE YJ_STUBM_PKID=#{YJ_STUBM_PKID}
+	
+	</update>
+	
+	<!-- 根据pkid查询校考成绩-->
+	<select id="getDepListById" resultType="pd" parameterType="String">
+       SELECT * FROM  SYS_MEI_DEPARTMENT SMD WHERE SMD.PKID = #{PKID}
+    </select>
+    
+	<!-- 根据pkid查询校考成绩-->
+	<select id="getDepList" resultType="pd" parameterType="String">
+       SELECT PKID,NAME FROM  SYS_MEI_DEPARTMENT SMD WHERE 1 = 1
+       <if test="IS_QY != null and IS_QY !=''">
+			AND IS_QY = #{IS_QY}
+		</if>
+    </select>
+    
+	<!-- 获取学习科目-->
+	<select id="getLearnSubList" resultType="pd" parameterType="pd">
+       SELECT * FROM T_LEARNING_SUBJECTS T WHERE 1 = 1
+       <if test="IS_QY != null and IS_QY !=''">
+			AND T.IS_QY = #{IS_QY}
+		</if>
+    </select>
+    
+    <!-- 根据pkid获取学习科目-->
+    <select id="getSubById" resultType="pd" parameterType="pd">
+    	SELECT * FROM T_LEARNING_SUBJECTS S WHERE S.PKID = #{PKID}
+    </select>
+    
+    <!-- 根据pkid获取学习科目-->
+    <select id="getSubByName" resultType="pd" parameterType="pd">
+    	SELECT * FROM T_LEARNING_SUBJECTS S WHERE S.NAME = #{NAME} AND S.IS_QY = 'Y'
+    </select>
+   
+    <!-- 编辑学生数据 -->
+	<update id="updateStuInfo" parameterType="pd">
+		update t_student 
+			set 
+			SHENFENZHENGHAO=UPPER(#{SHENFENZHENGHAO}),
+			XINGMING=#{XINGMING},
+			XINGBIE=#{XINGBIE},
+			SHOUJI=#{SHOUJI},
+			ONE_JHR=#{ONE_JHR},			
+			ONE_JHRGX_PKID=#{ONE_JHRGX_PKID},
+			ONE_JHRDH=#{ONE_JHRDH},
+			ONE_JHRDW = #{ONE_JHRDW,jdbcType=VARCHAR},
+			ONE_JHRZW = #{ONE_JHRZW,jdbcType=VARCHAR},
+			WHKXUEXIAO=#{WHKXUEXIAO},
+			JIATINGZHUZHI=#{JIATINGZHUZHI},
+			YOUZHENGBIANMA=#{YOUZHENGBIANMA},
+			TWO_JHR=#{TWO_JHR},
+			TWO_JHRGX_PKID=#{TWO_JHRGX},
+			TWO_JHRDH=#{TWO_JHRDH},
+			TWO_JHRDW=#{TWO_JHRDW,jdbcType=VARCHAR},
+			TWO_JHRZW=#{TWO_JHRZW,jdbcType=VARCHAR},
+			BINGSHI=#{BINGSHI},
+			LJQHTJ_PKID=#{LJQHTJ},
+			TUIJIANREN=#{TUIJIANREN},
+			GYRXSJ = #{GYRXSJ},
+			GZ_BANJI=#{GZ_BANJI},
+			WENLIKE=#{WENLIKE},
+			BZRSCHOOL=#{BZRSCHOOL},
+			BZRPHONE=#{BZRPHONE},
+			STARTMEISHU=#{STARTMEISHU},
+			KEMU=#{KEMU},
+			<!-- 之前有预交现在无预交 -->
+			<if test="cengciFlag ==1 and isYj==1 and (YJ_NIANFEN=='' or YJ_NIANFEN==null)">
+				YJ_BANJI_TYPE_PKID='',
+				YJ_NIANFEN='',
+			</if>
+			<!-- 之前有预交现在有预交 -->
+			<if test="cengciFlag ==1 and isYj==1 and YJ_NIANFEN!='' and YJ_NIANFEN!=null">
+				YJ_BANJI_TYPE_PKID=#{YJ_BANJI_TYPE},
+				YJ_NIANFEN=#{YJ_NIANFEN},
+			</if>
+			<!-- 之前无预交现在有预交 -->
+			<if test="cengciFlag ==1 and isYj==0 and YJ_NIANFEN!='' and YJ_NIANFEN!=null">
+				YJ_NIANFEN=#{YJ_NIANFEN},
+				YJ_BANJI_TYPE_PKID=#{YJ_BANJI_TYPE},
+			</if>
+			<if test="cengciFlag ==2 and isYj==1">
+				YJ_NIANFEN='',
+			</if>
+			<if test="cengciFlag ==2 and isYj==1">
+				YJ_BANJI_TYPE_PKID='',
+			</if>
+			TOUXIANG=#{STUTOUXIANG},
+			SFZ_IMG=#{SFZTOUXIANG},
+			<if test="YJ_STUBM_PKID != null and YJ_STUBM_PKID !=''">
+				YJ_STUBM_PKID = #{YJ_STUBM_PKID,jdbcType=VARCHAR},
+			</if>
+			<!-- YJ_STUBM_PKID = #{YJ_STUBM_PKID,jdbcType=VARCHAR},cengciFlag -->
+			
+			XGSJ = SYSDATE
+		where PKID=#{PKID}
+	
+	</update>
+    <!-- 编辑学生数据 -->
+	<update id="updateStuBmInfo" parameterType="pd">
+		UPDATE T_STUDENT_BM 
+			SET 
+			CENGCI_PKID=#{CENGCI},
+			RXNIANFEN_PKID=#{RXNIANFEN},
+			BANJI_TYPE_PKID=#{BANJI_TYPE},
+			<!-- ZXZT=#{ZXZT}, -->
+			OLD_BANJI=#{OLD_BANJINAME},
+			LKFS=#{LKFS},
+			XK_MARK=#{XK_MARK},
+			KSNUMBER=#{KSNUMBER},
+			REMARKS1=#{REMARKS1},
+			REMARKS2=#{REMARKS2},
+			REMARKS3=#{REMARKS3},
+			XGSJ = SYSDATE
+	  WHERE PKID=#{TMPKID}
+	
+	</update>
+	
+	<!-- 根据身份证号 入学年份 班型查询学生数据-->
+	<select id="getStuBySfzRnBx" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_STUDENT T LEFT JOIN T_STUDENT_BM TB ON T.PKID = TB.STUDENT_PKID 
+		  WHERE T.SHENFENZHENGHAO = #{SHENFENZHENGHAO} 
+		    AND TB.RXNIANFEN_PKID = #{RXNIANFEN} 
+			AND TB.BANJI_TYPE_PKID = #{BANJI_TYPE} 
+			AND TB.ZHUANGTAI ='1'
+	</select>
+	
+	<!-- 根据身份证号 查询学生数据-->
+	<select id="getStuBySfzNum" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_STUDENT T
+		  WHERE T.SHENFENZHENGHAO = #{SHENFENZHENGHAO} 
+		    
+	</select>
+	
+	<!-- 根据中文名称匹配字典项-->
+	<select id="getSysDictyionaries" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES D 
+		WHERE D.NAME=#{NAME} 
+		AND D.PARENT_ID =#{PARENT_ID} 
+		AND  (IS_USED = 'Y' or IS_USED = '1')
+	</select>
+	
+	<!-- 根据中文名称匹配层次-->
+	<select id="getCengCiByName" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CENGCI WHERE IS_USE = '1' AND CENGCI_NAME = #{CENGCI} AND ROWNUM = 1
+	</select>
+	
+	<!-- 根据学生pkid 入学年份pkid 班型pkid 查询学生宿舍-->
+	<select id="getDormByXRB" parameterType="pd" resultType="pd">
+		SELECT TS.PKID FROM  T_STUDENT_DORM TS LEFT JOIN T_DORM_RELATION TD ON TS.PKID = TD.DORM_ID
+		 WHERE TS.T_STUDENT_PKID = #{T_STUDENT_PKID}  
+		   AND TS.SYS_DICTIONARIES_PKID = #{SYS_DICTIONARIES_PKID} 
+		   AND TD.CLASSTYPE_ID = #{CLASSTYPE_ID}
+	</select>
+	<!-- 根据学生副表pkid查询学生宿舍-->
+	<select id="getDormByBmPkid" parameterType="pd" resultType="pd">
+		SELECT TS.PKID FROM  T_STUDENT_DORM TS LEFT JOIN T_DORM_RELATION TD ON TS.PKID = TD.DORM_ID
+		 WHERE TS.T_STUDENT_BM_PKID = #{T_STUDENT_BM_PKID}
+	</select>
+	
+	 <!-- 根据宿舍pkid修改宿舍占用信息(清空占用) -->
+	<update id="updateDormByPkid" parameterType="pd">
+	 UPDATE T_STUDENT_DORM 
+			SET 
+			SYS_DICTIONARIES_PKID = '',
+			T_STUDENT_PKID = '',
+			T_STUDENT_BM_PKID ='',
+            STATUS = '0',
+			XGSJ = SYSDATE
+	  WHERE PKID=#{PKID}	
+	</update>
+	
+	<!-- 根据中文名称匹配校考成绩（美院）-->
+	<select id="getMeiByName" parameterType="String" resultType="pd">
+		SELECT * FROM SYS_MEI_DEPARTMENT WHERE IS_QY = 'Y' AND NAME = #{XKMARK} AND ROWNUM = 1
+	</select>
+		<!--批量插入学生名单  -->
+	<insert id="batchSaveStu" parameterType="java.util.List" useGeneratedKeys="false">
+		INSERT INTO 
+		T_STUDENT
+		(
+			PKID,	
+			SHENFENZHENGHAO,
+			XINGMING,
+			XINGBIE,
+			SHOUJI,
+			JIATINGZHUZHI,
+			YOUZHENGBIANMA,
+			ONE_JHR,
+			ONE_JHRGX_PKID,
+			ONE_JHRDH,
+			TWO_JHR,
+			TWO_JHRGX_PKID,
+			TWO_JHRDH,
+			BINGSHI,
+			LJQHTJ_PKID,
+			TUIJIANREN,
+			WHKXUEXIAO,
+			GYRXSJ,
+			WENLIKE,
+			BZRSCHOOL,
+			BZRPHONE,
+			STARTMEISHU,
+			KEMU,
+			GZ_BANJI,
+			YJ_NIANFEN,
+			YJ_BANJI_TYPE_PKID,
+			PWD,
+			YJ_STUBM_PKID
+		)
+	 <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+			select 
+			#{item.PKID,jdbcType=VARCHAR},
+			UPPER(#{item.SHENFENZHENGHAO,jdbcType=VARCHAR}),
+			#{item.XINGMING,jdbcType=VARCHAR},
+			#{item.XINGBIE,jdbcType=VARCHAR},
+			#{item.SHOUJI,jdbcType=VARCHAR},
+			#{item.JIATINGZHUZHI,jdbcType=NUMERIC},
+			#{item.YOUZHENGBIANMA,jdbcType=VARCHAR},
+			#{item.ONE_JHR,jdbcType=VARCHAR},
+			#{item.ONE_JHRGX_PKID,jdbcType=VARCHAR},
+			#{item.ONE_JHRDH,jdbcType=VARCHAR},
+			#{item.TWO_JHR,jdbcType=DATE},
+			#{item.TWO_JHRGX_PKID,jdbcType=VARCHAR},
+			#{item.TWO_JHRDH,jdbcType=DATE},
+			#{item.BINGSHI,jdbcType=VARCHAR},
+			#{item.LJQHTJ_PKID,jdbcType=VARCHAR},
+			#{item.TUIJIANREN,jdbcType=VARCHAR},
+			#{item.WHKXUEXIAO,jdbcType=VARCHAR},
+			#{item.GYRXSJ,jdbcType=VARCHAR},
+			#{item.WENLIKE,jdbcType=VARCHAR},
+			#{item.BZRSCHOOL,jdbcType=VARCHAR},
+			#{item.BZRPHONE,jdbcType=VARCHAR},
+			#{item.STARTMEISHU,jdbcType=VARCHAR},
+			#{item.KEMU,jdbcType=VARCHAR},
+			#{item.GZ_BANJI,jdbcType=VARCHAR},
+			#{item.YJ_NIANFEN,jdbcType=VARCHAR},
+			#{item.YJ_BANJI_TYPE_PKID,jdbcType=VARCHAR},
+			#{item.PWD,jdbcType=VARCHAR},
+			#{item.YJ_STUBM_PKID,jdbcType=VARCHAR}
+			from dual
+		</foreach>
+	</insert>
+	
+	<!--批量插入学生名单副表  -->
+	<insert id="batchSaveStuBM" parameterType="java.util.List" useGeneratedKeys="false">
+		INSERT INTO 
+		T_STUDENT_BM
+		(
+			PKID,
+			STUDENT_PKID,
+			CENGCI_PKID,
+			RXNIANFEN_PKID,
+			<!-- OLD_BANJI, -->
+			XUEHAO,
+			CAOZUOREN,
+			BANJI_TYPE_PKID,
+			LKFS,
+			KSNUMBER,
+			XK_MARK,
+			REMARKS1,
+			REMARKS2,
+			REMARKS3,
+			ZXZT,
+			IS_TONGGUO,
+			SHTGSJ,
+			PWD
+		)
+	 <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+			select 
+			#{item.TMPKID,jdbcType=VARCHAR},
+			#{item.PKID,jdbcType=VARCHAR},
+			#{item.CENGCI_PKID,jdbcType=VARCHAR},
+			#{item.RXNIANFEN_PKID,jdbcType=VARCHAR},
+			<!-- #{item.OLD_BANJI,jdbcType=NUMERIC}, -->
+			#{item.XUEHAO,jdbcType=VARCHAR},
+			#{item.CAOZUOREN,jdbcType=VARCHAR},
+			#{item.BANJI_TYPE_PKID,jdbcType=VARCHAR},
+			#{item.LKFS,jdbcType=VARCHAR},
+			#{item.KSNUMBER,jdbcType=VARCHAR},
+			#{item.XK_MARK,jdbcType=VARCHAR},
+			#{item.REMARKS1,jdbcType=VARCHAR},
+			#{item.REMARKS2,jdbcType=VARCHAR},
+			#{item.REMARKS3,jdbcType=VARCHAR},
+			#{item.ZXZT,jdbcType=VARCHAR},
+			'1',
+		    SYSDATE,
+			#{item.PWD,jdbcType=VARCHAR}
+			from dual
+		</foreach>
+	</insert>
+		<!-- 导入修改主表信息 -->
+	<update id="updateStuBySfz" parameterType="pd">
+       UPDATE T_STUDENT T 
+          <set>
+          	 <if test="PKID != null and PKID !=''">T.PKID=#{PKID},</if>
+          	 <if test="XINGMING != null and XINGMING !=''">T.XINGMING = #{XINGMING,jdbcType=VARCHAR},</if>
+          	 <if test="XINGBIE != null and XINGBIE !=''">T.XINGBIE = #{XINGBIE,jdbcType=VARCHAR},</if>
+          	 <if test="SHOUJI != null and SHOUJI !=''">T.SHOUJI = #{SHOUJI,jdbcType=VARCHAR},</if>
+          	 <if test="JIATINGZHUZHI != null and JIATINGZHUZHI !=''">T.JIATINGZHUZHI = #{JIATINGZHUZHI,jdbcType=VARCHAR},</if>
+          	 <if test="YOUZHENGBIANMA != null and YOUZHENGBIANMA !=''">T.YOUZHENGBIANMA = #{YOUZHENGBIANMA,jdbcType=VARCHAR},</if>
+          	 <if test="ONE_JHR != null and ONE_JHR !=''">T.ONE_JHR = #{ONE_JHR,jdbcType=VARCHAR},</if>
+          	 <if test="ONE_JHRGX_PKID != null and ONE_JHRGX_PKID !=''">T.ONE_JHRGX_PKID = #{ONE_JHRGX_PKID,jdbcType=VARCHAR},</if>
+          	 <if test="ONE_JHRDH != null and ONE_JHRDH !=''">T.ONE_JHRDH = #{ONE_JHRDH,jdbcType=VARCHAR},</if>
+          	 <if test="TWO_JHR != null and TWO_JHR !=''">T.TWO_JHR = #{TWO_JHR,jdbcType=VARCHAR},</if>
+          	 <if test="TWO_JHRGX_PKID != null and TWO_JHRGX_PKID !=''">T.TWO_JHRGX_PKID = #{TWO_JHRGX_PKID,jdbcType=VARCHAR},</if>
+          	 <if test="TWO_JHRDH != null and TWO_JHRDH !=''">T.TWO_JHRDH =  #{TWO_JHRDH,jdbcType=VARCHAR},</if>
+          	 <if test="BINGSHI != null and BINGSHI !=''">T.BINGSHI = #{BINGSHI,jdbcType=VARCHAR},</if>
+          	 <if test="LJQHTJ_PKID != null and LJQHTJ_PKID !=''">T.LJQHTJ_PKID = #{LJQHTJ_PKID,jdbcType=VARCHAR},</if>
+          	 <if test="TUIJIANREN != null and TUIJIANREN !=''">T.TUIJIANREN = #{TUIJIANREN,jdbcType=VARCHAR},</if>
+          	 <if test="WHKXUEXIAO != null and WHKXUEXIAO !=''">T.WHKXUEXIAO = #{WHKXUEXIAO,jdbcType=VARCHAR},</if>
+          	 <if test="GYRXSJ != null and GYRXSJ !=''">T.GYRXSJ = #{GYRXSJ,jdbcType=VARCHAR},</if>
+          	 <if test="WENLIKE != null and WENLIKE !=''">T.WENLIKE = #{WENLIKE,jdbcType=VARCHAR},</if>
+          	 <if test="BZRSCHOOL != null and BZRSCHOOL !=''">T.BZRSCHOOL = #{BZRSCHOOL,jdbcType=VARCHAR},</if>
+          	 <if test="BZRPHONE != null and BZRPHONE !=''">T.BZRPHONE = #{BZRPHONE,jdbcType=VARCHAR},</if>
+          	 <if test="STARTMEISHU != null and STARTMEISHU !=''">T.STARTMEISHU = #{STARTMEISHU,jdbcType=VARCHAR},</if>
+          	 <if test="KEMU != null and KEMU !=''">T.KEMU = #{KEMU,jdbcType=VARCHAR},</if>
+          	 <if test="GZ_BANJI != null and GZ_BANJI !=''">T.GZ_BANJI = #{GZ_BANJI,jdbcType=VARCHAR},</if>
+          	  <if test="YJ_NIANFEN != null and YJ_NIANFEN !=''">T.YJ_NIANFEN = #{YJ_NIANFEN,jdbcType=VARCHAR},</if>
+          	 <if test="YJ_BANJI_TYPE_PKID != null and YJ_BANJI_TYPE_PKID !=''">T.YJ_BANJI_TYPE_PKID = #{YJ_BANJI_TYPE_PKID,jdbcType=VARCHAR},</if>
+          	 <if test="YJ_STUBM_PKID != null and YJ_STUBM_PKID !=''">T.YJ_STUBM_PKID = #{YJ_STUBM_PKID,jdbcType=VARCHAR},</if>
+		     T.XGSJ = SYSDATE
+		</set>
+	   WHERE T.PKID = #{STU_PKID,jdbcType=VARCHAR}
+	</update>
+		<!-- 根据身份证号查询学生信息 -->
+	<select id="getStuinfoBySfz" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_STUDENT T WHERE T.SHENFENZHENGHAO = #{SHENFENZHENGHAO} AND ROWNUM =1
+	</select>
+	
+	<!--判断学生有没有过缴费记录  -->
+	<select id="stuIsPaid" parameterType="pd" resultType="Integer">
+		<!-- SELECT COUNT(*) FROM T_PAY_ORDER T WHERE STUDENT_PKID=#{PKID} -->
+		SELECT COUNT(1) FROM T_PAY_ORDER_DETAIL TP LEFT JOIN T_PAY_ITEM_LIST TI 
+		    ON TP.T_PAY_ITEM_LIST_PKID = TI.PKID
+		 WHERE TI.STUDENT_BM_PKID = #{PKID}
+	</select>
+	
+	<!-- 保存学生头像路径 -->
+	<update id="saveTouxiangUrlToDB" parameterType="pd">
+		UPDATE T_STUDENT SET TOUXIANG=#{TOUXIANG},XGSJ=SYSDATE WHERE PKID =#{PKID}
+	</update>
+	
+		<!-- 重置密码 -->
+	<update id="resetPwd" parameterType="pd">
+		UPDATE T_STUDENT SET PWD=#{PWD} WHERE PKID IN (SELECT TB.STUDENT_PKID FROM T_STUDENT_BM TB WHERE TB.PKID = #{PKID} )
+	</update>
+	
+	<!-- 修改缴费项目状态 -->
+	<update id="updateItemListStatus" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST T SET T.STATUS=#{STATUS} ,T.XGSJ = SYSDATE 
+		 WHERE T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID} AND T.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</update>
+	
+
+	
+	<!-- 根据入学年份和班型查询缴费类型 -->
+	<select id="getItemTypeList" parameterType="pd" resultType="pd">
+		  SELECT T.* FROM T_PAY_ITEM T  LEFT JOIN T_PAY_STYLE TS ON T.PAY_TYPE_PKID = TS.PKID
+		  WHERE T.GRADE_PKID = #{GRADE_PKID} AND T.CLASSTYPE_PKID = #{CLASSTYPE_PKID}
+		  AND T.ITEMLIST_CREATEMODE !=1
+		  <if test="PAY_STYLE_NAMES != null and PAY_STYLE_NAMES !=''">
+			AND TS.PAY_STYLE_NAME ='预交'
+		</if>
+		  <if test="PAY_STYLE_NAMESS != null and PAY_STYLE_NAMESS !=''">
+			AND TS.PAY_STYLE_NAME !='预交'
+		</if>
+	</select>
+	<!-- 查询缴费类型根据项目pkid-->
+	<select id="getItemTypeName" parameterType="pd" resultType="pd">
+		  SELECT T.* FROM T_PAY_ITEM T  LEFT JOIN T_PAY_STYLE TS ON T.PAY_TYPE_PKID = TS.PKID
+          WHERE T.PKID = #{T_PAY_ITEM_PKID} AND ROWNUM =1
+	</select>
+	
+	<!-- 根据学生副表pkid查询缴费项目对应的缴费类型 -->
+	<select id="getItemTypeListByBmPkid" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_PAY_ITEM TP LEFT JOIN T_PAY_STYLE TS ON TP.PAY_TYPE_PKID = TS.PKID WHERE TP.PKID IN (
+			SELECT T.T_PAY_ITEM_PKID FROM T_PAY_ITEM_LIST T WHERE T.STUDENT_BM_PKID = #{STUDENT_BM_PKID})
+			
+		<if test="PAY_STYLE_NAMES != null and PAY_STYLE_NAMES !=''">
+			AND TS.PAY_STYLE_NAME !='预交'
+		</if>
+	</select>
+	
+	<!-- 根据学生副表pkid和项目pkid查询一条缴费数据 -->
+	<select id="getItemTypeListByBmPkidItemPkid" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_PAY_ITEM_LIST TP WHERE TP.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID} AND TP.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</select>
+	
+	<!-- 根据学生副表pkid查询缴费记录 -->
+	<select id="getItemListByBmPkid" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_PAY_ITEM_LIST TP WHERE  TP.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</select>
+
+	
+	<!-- 根据pkid查询缴费类型表-->
+	<select id="getPayTypeByPkid" parameterType="pd" resultType="pd">
+	     SELECT * FROM T_PAY_STYLE T WHERE T.PKID = #{PKID}
+	</select>
+	
+	<!-- 根据缴费类型pkid查询缴费规则 并且取优惠金额最大的一条数据 -->
+	<select id="getRuleCost" parameterType="pd" resultType="pd">
+	    SELECT * FROM T_PAY_ITEM_RULE TP WHERE TP.ZENGJIAN_JINE = 
+           (SELECT MAX(T.ZENGJIAN_JINE) FROM T_PAY_ITEM_RULE T WHERE T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID})
+           AND TP.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID} AND ROWNUM =1
+	</select>
+	
+	<!-- 根据缴费类型pkid查询缴费规则  -->
+	<select id="getRuleCostByItemPkid" parameterType="pd" resultType="pd">
+	    SELECT * FROM T_PAY_ITEM_RULE TP WHERE TP.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID} AND ROWNUM =1
+	</select>
+	<!--根据学号查询学生信息 -->
+	<select id="getStuinfoByXuehao" parameterType="pd" resultType="pd">
+	    SELECT * FROM T_STUDENT_BM T WHERE T.XUEHAO = #{XUEHAO} AND T.ZHUANGTAI ='1' AND ROWNUM =1
+	</select>
+	
+	<!-- 查询这个学生之前是否有预交 -->
+	<select id="getYjIsExist" parameterType="pd" resultType="pd">
+	   SELECT * FROM T_PAY_ITEM_LIST TI WHERE TI.T_PAY_ITEM_PKID  = (
+		SELECT T.PKID FROM T_PAY_ITEM T LEFT JOIN T_PAY_STYLE TP 
+		ON T.PAY_TYPE_PKID = TP.PKID  WHERE TP.PAY_STYLE_NAME ='预交'
+		AND T.GRADE_PKID = #{yjnianfenPkid}
+		AND T.CLASSTYPE_PKID = #{yjbanxingPkid})
+		AND TI.STUDENT_PKID = #{STUDENT_PKID} <!-- AND TI.STATUS !='3' --> AND ROWNUM =1
+	</select>
+	
+	<insert id="insertItemList" parameterType="pd">
+			INSERT INTO T_PAY_ITEM_LIST
+			(PKID,STUDENT_PKID,CJSJ,XGSJ,STATUS,COST,DISCOUNT,AMOUNTRECEIVABLE,
+			DISCOUNT_MONEY,DISCOUNT_MODE,PAY_ITEM_RULE,STUDENT_BM_PKID,T_PAY_ITEM_PKID)
+            VALUES(
+            SYS_GUID(),
+            #{STUDENT_PKID,jdbcType=VARCHAR},
+            SYSDATE,
+            SYSDATE,
+            #{STATUS,jdbcType=VARCHAR},
+            #{COST,jdbcType=NUMERIC},
+            #{DISCOUNT,jdbcType=VARCHAR},
+            #{AMOUNTRECEIVABLE,jdbcType=NUMERIC},
+            #{DISCOUNT_MONEY,jdbcType=NUMERIC},
+            #{DISCOUNT_MODE,jdbcType=NUMERIC},
+            #{PAY_ITEM_RULE,jdbcType=VARCHAR},
+            #{STUDENT_BM_PKID,jdbcType=VARCHAR},
+            #{T_PAY_ITEM_PKID,jdbcType=VARCHAR}
+            )
+
+	</insert>
+	
+		<!-- 修改缴费项目状态 -->
+	<update id="updateItemList" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST T 
+		   SET T.STATUS = #{STATUS,jdbcType=VARCHAR},
+		       T.COST = #{COST,jdbcType=VARCHAR},
+		       T.DISCOUNT = #{DISCOUNT,jdbcType=VARCHAR},
+		       T.AMOUNTRECEIVABLE = #{AMOUNTRECEIVABLE,jdbcType=VARCHAR},
+		       T.DISCOUNT_MONEY = #{DISCOUNT_MONEY,jdbcType=NUMERIC},
+		       T.DISCOUNT_MODE = #{DISCOUNT_MODE,jdbcType=NUMERIC},
+		       T.PAY_ITEM_RULE = #{PAY_ITEM_RULE,jdbcType=VARCHAR},
+		       T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID,jdbcType=VARCHAR},
+		       <if test="STUDENT_BM_PKID_NEW != null and STUDENT_BM_PKID_NEW !=''">
+		       	T.STUDENT_BM_PKID = #{STUDENT_BM_PKID_NEW,jdbcType=VARCHAR},
+		       </if>
+		       
+		       T.XGSJ = SYSDATE
+		 WHERE T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID_OLD} AND T.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</update>	
+		<!-- 修改学生 标记是哪次附表报名选择的预交-->
+	<update id="updateStuYjPkid" parameterType="pd">
+		UPDATE T_STUDENT T 
+		   SET T.YJ_STUBM_PKID = #{YJ_STUBM_PKID,jdbcType=VARCHAR},
+		       T.XGSJ = SYSDATE
+		 WHERE T.PKID = #{PKID}
+	</update>	
+	
+		<!-- 修改缴费项目状态 -->
+	<update id="updateItemPkid" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST T SET 
+		       T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID,jdbcType=VARCHAR},
+		       T.XGSJ = SYSDATE
+		 WHERE T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID_OLD} AND T.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</update>	
+		<!-- 修改缴费项目状态 -->
+	<update id="updateItemListStaByStuPkid" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST TL SET TL.STATUS='3' ,TL.XGSJ =SYSDATE 
+	      WHERE TL.T_PAY_ITEM_PKID IN (
+	      SELECT TI.PKID FROM T_PAY_ITEM TI  LEFT JOIN T_PAY_STYLE TS ON TI.PAY_TYPE_PKID = TS.PKID WHERE TI.PKID IN(
+	      SELECT TP.T_PAY_ITEM_PKID FROM T_PAY_ITEM_LIST TP WHERE TP.STUDENT_PKID = #{PKID})
+	      AND TS.PAY_STYLE_NAME ='预交')
+	      AND TL.STUDENT_PKID = #{PKID}
+	</update>	
+	
+		<!-- 修改缴费项目状态 -->
+	<update id="updateStatusByPkid" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST T SET 
+		       T.STATUS = #{STATUS,jdbcType=VARCHAR},
+		       T.XGSJ = SYSDATE
+		 WHERE T.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID} AND T.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+	</update>	
+		<!-- 修改缴费项目状态 -->
+	<update id="updateStaByPkid" parameterType="pd">
+		UPDATE T_PAY_ITEM_LIST T SET 
+		       T.STATUS = '3',
+		       T.XGSJ = SYSDATE
+		 WHERE T.PKID = #{PKID}
+	</update>	
+	<select id="getItemListbyBM" parameterType="pd" resultType="pd">
+		select i.*,ps.PAY_STYLE_NAME
+		from t_pay_item i
+		join T_PAY_STYLE ps on ps.pkid = i.PAY_TYPE_PKID
+		join t_student_bm sb on sb.RXNIANFEN_PKID = i.GRADE_PKID and sb.BANJI_TYPE_PKID = i.CLASSTYPE_PKID
+		where sb.pkid = #{STUDENT_BM_PKID}
+		and i.PAY_TYPE_PKID != '12345678902'
+		union 
+		select i.*,'预交' as PAY_STYLE_NAME
+		from t_pay_item i
+		join t_student s on s.YJ_NIANFEN = i.GRADE_PKID and s.YJ_BANJI_TYPE_PKID = i.CLASSTYPE_PKID
+		join t_student_bm sb on sb.STUDENT_PKID = s.PKID and s.YJ_STUBM_PKID = sb.pkid
+		where sb.pkid = #{STUDENT_BM_PKID}
+		AND i.PAY_TYPE_PKID = '12345678902'
+	</select>
+	<select id="getStuYJInfo" parameterType="pd" resultType="pd">
+		select l.*,i.* 
+		from t_pay_item_list l
+		join t_student s on s.pkid = l.STUDENT_PKID
+		join t_pay_item i on i.pkid = l.T_PAY_ITEM_PKID
+		where 
+		exists (
+			select 1 from t_student_bm sb where sb.pkid = #{STUDENT_BM_PKID} and sb.STUDENT_PKID = s.pkid
+		)
+		AND I.PAY_TYPE_PKID = '12345678902'
+		AND I.GRADE_PKID = S.YJ_NIANFEN
+		AND I.CLASSTYPE_PKID = S.YJ_BANJI_TYPE_PKID
+		AND L.STATUS != 3
+		AND ROWNUM = 1
+	</select>
+	<select id="getItemList" parameterType="pd" resultType="pd">
+		select * from t_pay_item_list l where l.STUDENT_BM_PKID = #{STUDENT_BM_PKID}
+		and l.T_PAY_ITEM_PKID = #{T_PAY_ITEM_PKID}
+		and l.status != 3
+		and ROWNUM = 1
+	</select>
+	
+	<select id="getYuJiaoPay" parameterType="pd" resultType="pd">
+		SELECT * FROM (	
+			SELECT L.COST,L.AMOUNTRECEIVABLE
+		FROM T_PAY_ITEM_LIST L
+		JOIN T_PAY_ITEM I ON L.T_PAY_ITEM_PKID=I.PKID
+		JOIN T_PAY_STYLE S ON I.PAY_TYPE_PKID=S.PKID
+		WHERE I.GRADE_PKID = #{RXNIANFEN}
+		AND I.CLASSTYPE_PKID = #{BANJI_TYPE}
+		AND L.STUDENT_PKID = #{STUPKID}
+		AND S.PAY_STYLE_NAME='预交'
+		<if test="flag != null and flag !=''">
+       		AND L.STATUS !=3
+       </if>
+		
+		ORDER BY L.CJSJ DESC
+		) where ROWNUM=1
+	</select>
+	
+</mapper>

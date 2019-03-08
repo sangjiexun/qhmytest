@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="WgwjlxMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		t_dictionaries_en
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"ID",
+		"NAME",
+		"LEIXING",
+		"DEPARTMENT_BIANMA",
+		"ZHUANGTAI"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{ID},
+			#{NAME},
+			#{LEIXING},
+			#{DEPARTMENT_BIANMA},
+			#{ZHUANGTAI}	
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	
+	
+	<!-- 改状态-->
+	<update id="delete" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+			"ZHUANGTAI" = '-1'			
+			where 
+				"ID" = #{ID}
+	</update>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+			"NAME" = #{NAME},
+			"DEPARTMENT_BIANMA" = #{DEPARTMENT_BIANMA}
+			
+			where 
+				"ID" = #{ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"ID" = #{ID} and ZHUANGTAI != '-1'
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1 and ZHUANGTAI != '-1' and LEIXING='wgwjlx'
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				NAME LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				or
+				ID LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				<!--	根据需求自己加检索条件
+					字段1 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or 
+					字段2 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				-->
+				)
+		</if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where  ZHUANGTAI != '-1' and LEIXING='wgwjlx'
+	</select>
+	
+	
+	<!-- 列表(全部) -->
+	<select id="qylist" parameterType="pd" resultType="pd">
+		select name,bianma from sys_department where parent_id='0'
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

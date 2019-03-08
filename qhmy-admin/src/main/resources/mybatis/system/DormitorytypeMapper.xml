@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DormitorytypeMapper">
+	<!-- 查询宿舍类型表数据 -->
+	<select id="dormitorytype_listPage" parameterType="page" resultType="pd">
+		select t.pkid, t.dt_no, t.dt_name, t.pics, t.discribes, t.remarks, t.is_use,
+		(case when t.IS_NUM_LIMIT = 'Y' THEN '是' else '否' end)  IS_NUM_LIMIT,
+		t.cjsj, t.xgsj,(case when t.IS_UPLOAD_PIC = 'Y' THEN '是' else '否' end) as IS_UPLOAD_PIC,
+		(case when t.PRIORITY = 1 THEN '一级' when t.PRIORITY = 2 THEN '二级'
+		      when t.PRIORITY = 3 THEN '三级' when t.PRIORITY = 4 THEN '四级' 
+		      when t.PRIORITY = 5 THEN '五级' when t.PRIORITY = 6 THEN '六级' 
+		      when t.PRIORITY = 7 THEN '七级' when t.PRIORITY = 8 THEN '八级'
+		      when t.PRIORITY = 9 THEN '九级' else '十级' end) as PRIORITY
+		 from T_STUDENT_DORM_TYPE t where 1=1
+    	<if test="pd.keyWord != '' and pd.keyWord !=null">
+    		and  
+    		(
+			t.DT_NAME like CONCAT(CONCAT('%',#{pd.keyWord}),'%')
+			)
+    	</if>
+    	ORDER BY t.PRIORITY ,t.dt_no desc 
+	</select>
+	<select id="getDormitorytype" parameterType="pd" resultType="pd">
+		select t.pkid, t.dt_no, t.dt_name, t.pics, t.discribes, t.remarks, t.is_use, 
+		t.cjsj, t.xgsj,t.IS_UPLOAD_PIC,T.IS_NUM_LIMIT ,t.priority
+		from T_STUDENT_DORM_TYPE t where t.pkid = #{PKID} 
+	</select>
+	<select id="getDT_NAME" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM_TYPE t where t.dt_name = #{DT_NAME} and rownum = 1
+	</select>
+	<update id="update" parameterType="pd" >
+		update T_STUDENT_DORM_TYPE t set DT_NAME = #{DT_NAME},PICS = #{PICS},
+		DISCRIBES = #{DISCRIBES},IS_USE = #{IS_USE},XGSJ = sysdate,
+		IS_UPLOAD_PIC = #{IS_UPLOAD_PIC},PRIORITY = #{PRIORITY} where t.pkid = #{PKID} 
+	</update>
+	<insert id="save" parameterType="pd">
+		insert into T_STUDENT_DORM_TYPE (IS_NUM_LIMIT,pkid, dt_no, dt_name, pics, discribes,  is_use, cjsj,  is_upload_pic, priority)
+		VALUES (#{IS_NUM_LIMIT},sys_guid(),seq_dormitorytype.nextval,#{DT_NAME},#{PICS},#{DISCRIBES},#{IS_USE},sysdate,#{IS_UPLOAD_PIC},#{PRIORITY})
+	</insert>
+	<update id="updateIsUse" parameterType="pd">
+		update T_STUDENT_DORM_TYPE t set IS_USE = #{IS_USE},XGSJ = sysdate
+		where t.pkid = #{PKID}
+	</update>
+	<select id="getFBDormtype" parameterType="pd" resultType="pd">
+		select * from t_pay_item i where i.T_DORM_TYPE_PKID = #{PKID} and ROWNUM = 1
+	</select>
+	<select id="getDormUse" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM where T_STUDENT_DORM_TYPE_PKID = #{PKID} AND ROWNUM = 1
+	</select>
+	<delete id="delete" parameterType="pd">
+		delete from T_STUDENT_DORM_TYPE where PKID = #{PKID}
+	</delete>
+	<update id="updateItem" parameterType="pd">
+		update t_pay_item set PAYITEM = #{DT_NAME},XGSJ = SYSDATE 
+		where T_DORM_TYPE_PKID = #{PKID}
+	</update>
+</mapper>

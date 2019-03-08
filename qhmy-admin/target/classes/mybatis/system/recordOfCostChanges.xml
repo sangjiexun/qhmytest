@@ -1,0 +1,1530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="recordOfCostChangesMapper">
+	<!-- 获取表单数据 -->
+	<select id="paySumTablelistPage" parameterType="page" resultType="pd">
+		SELECT I.PAYITEM AS ITEMNAME,
+		I.PKID,I.CJSJ,
+	    NVL(COUNT(DISTINCT IL.STUDENT_PKID), 0) AS RECEPEOPLE,
+	    NVL(SUM(IL.AMOUNTRECEIVABLE), 0) AS RECEMONEY,
+	    COUNT((SELECT DISTINCT IL.STUDENT_PKID
+	    FROM T_PAY_ITEM_LIST L
+	    WHERE L.PAY_ITEM_PKID = I.PKID
+	    AND L.AMOUNTCOLLECTION > 0
+	    AND L.STUDENT_PKID = IL.STUDENT_PKID)) AS ACTUALPEOPLE,
+	    NVL(SUM(IL.AMOUNTCOLLECTION), 0) AS ACTUALMONEY,
+	    NVL(T.USTUDENT, 0) || ' — ' || NVL(T.U_MONEY, 0) AS UPEOMON,
+	    NVL(OT.USTUDENT, 0) || ' — ' || NVL(OT.U_MONEY, 0) AS OPEOMON
+	    FROM T_PAY_ITEM I
+	    LEFT JOIN T_PAY_ITEM_LIST IL ON IL.PAY_ITEM_PKID = I.PKID
+	    LEFT JOIN (SELECT PAY_ITEM_PKID,
+	    COUNT(DISTINCT D.STUDENT_PKID) AS USTUDENT,
+	    NVL(SUM(CASE
+	    WHEN O.ORDERCREATE_MODE = 'U' THEN
+	    (CASE
+	    WHEN INPUT_OUTPUT = 'XX' THEN
+	    -1 * MONEY
+	    ELSE
+	    MONEY
+	    END) ELSE 0 END), 0) AS U_MONEY
+	    FROM T_PAY_ORDER_DETAIL D
+	    INNER JOIN T_PAY_ORDER O ON (O.PKID = D.PAY_ORDER_PKID AND
+	    O.TRANSACTION_FLAG = '1' and o.ordercreate_mode = 'U')
+	    WHERE 1 = 1
+	    AND EXISTS
+	    (SELECT 1
+	    FROM T_PAY_ITEM_LIST L
+	    WHERE L.PAY_ITEM_PKID = D.PAY_ITEM_PKID)
+	    GROUP BY D.PAY_ITEM_PKID) T ON T.PAY_ITEM_PKID = I.PKID
+	  
+	    LEFT JOIN (SELECT PAY_ITEM_PKID,
+	    COUNT(DISTINCT D.STUDENT_PKID) AS USTUDENT,
+	    NVL(SUM(CASE
+	    WHEN O.ORDERCREATE_MODE != 'U' THEN
+	    (CASE
+	    WHEN INPUT_OUTPUT = 'XX' THEN
+	    -1 * MONEY
+	    ELSE
+	    MONEY
+	    END) ELSE 0 END), 0) AS U_MONEY
+	    FROM T_PAY_ORDER_DETAIL D
+	    INNER JOIN T_PAY_ORDER O ON (O.PKID = D.PAY_ORDER_PKID AND
+	    O.TRANSACTION_FLAG = '1' and o.ordercreate_mode != 'U')
+	    WHERE 1 = 1
+	    AND EXISTS
+	    (SELECT 1
+	    FROM T_PAY_ITEM_LIST L
+	    WHERE L.PAY_ITEM_PKID = D.PAY_ITEM_PKID)
+	    GROUP BY D.PAY_ITEM_PKID) OT ON OT.PAY_ITEM_PKID = I.PKID
+	    GROUP BY I.PAYITEM, OT.U_MONEY, OT.USTUDENT, T.U_MONEY, T.USTUDENT, I.PKID,I.CJSJ,I.STATUS
+	    HAVING I.STATUS IN ('1','2')
+		<if test="pd.ITEMNAME !=null and pd.ITEMNAME!=''">
+			AND I.PAYITEM LIKE CONCAT(CONCAT('%', #{pd.ITEMNAME}),'%')
+		</if>
+		<if test="pd.CHECKSTATUS !=null and pd.CHECKSTATUS!=''">
+			AND I.STATUS=#{pd.CHECKSTATUS}
+		</if>
+		<if test="pd.DATESTART !=null and pd.DATESTART!=''">
+	   		AND I.CJSJ &gt;= to_date(#{pd.DATESTART},'YYYY-MM-DD')
+		</if>
+		<if test="pd.DATEEND !=null and pd.DATEEND!=''">
+	   		AND I.CJSJ &lt; (to_date(#{pd.DATEEND},'YYYY-MM-DD')+1)
+		</if>
+		ORDER BY I.CJSJ DESC
+	</select>
+	<select id="paySumDetailTablelistPage" parameterType="page" resultType="pd">
+	SELECT I.PAYITEM ITEMNAME,S.XINGMING,D.NAME
+		DEPTNAME,L.COST,L.DISCOUNT,L.AMOUNTRECEIVABLE,
+		L.AMOUNTCOLLECTION,OT.ORDERCREATE_MODE||' — '||OT.STUDENTMOENY AS MSG,TO_CHAR(L.XGSJ,'YYYY-MM-DD HH24:MI:SS') XGSJ
+	FROM T_PAY_ITEM I
+		JOIN T_PAY_ITEM_LIST L ON I.PKID = L.PAY_ITEM_PKID
+		JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN
+		(
+		SELECT SUM(STUDENTMOENY) AS
+		STUDENTMOENY,T.ORDERCREATE_MODE,T.STUDENT_PKID,T.PAY_ITEM_PKID
+		FROM (
+		SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+		END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'网上' AS
+		ORDERCREATE_MODE
+		FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+		O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE = 'U' AND
+		O.TRANSACTION_FLAG = '1')
+		GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT
+		UNION
+		SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+		END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'其他' AS
+		ORDERCREATE_MODE
+		FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+		O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE != 'U' AND
+		O.TRANSACTION_FLAG = '1')
+		GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT
+		)T GROUP BY T.STUDENT_PKID,T.PAY_ITEM_PKID,T.ORDERCREATE_MODE
+		)OT ON OT.PAY_ITEM_PKID = I.PKID AND OT.STUDENT_PKID = L.STUDENT_PKID
+	WHERE I.STATUS IN ('1','2') 
+	<if test="pd.PKID != null and pd.PKID !=''">
+		AND I.PKID = #{pd.PKID}
+	</if>
+	<if test="pd.DATESTART !=null and pd.DATESTART!=''">
+	   	AND L.CJSJ &gt;= to_date(#{pd.DATESTART},'YYYY-MM-DD')
+	</if>
+	<if test="pd.DATEEND !=null and pd.DATEEND!=''">
+   		AND L.CJSJ &lt; (to_date(#{pd.DATEEND},'YYYY-MM-DD')+1)
+	</if>
+	<if test="pd.SERCHTEXT !=null and pd.SERCHTEXT!=''">
+		AND (S.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		or 
+		S.XINGMING LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		or 
+		I.PAYITEM LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		)
+	</if>
+	<if test="pd.DETAILSTATUS =='1'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '网上'
+	</if>
+	<if test="pd.DETAILSTATUS =='2'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '其他'
+	</if>
+	ORDER BY L.XGSJ DESC
+	</select>
+	<select id="paySumDetailTablelist" parameterType="pd" resultType="pd">
+	SELECT I.PAYITEM ITEMNAME,S.XINGMING,D.NAME
+	DEPTNAME,L.COST,L.DISCOUNT,L.AMOUNTRECEIVABLE,
+	L.AMOUNTCOLLECTION,OT.ORDERCREATE_MODE||' — '|| to_char(OT.STUDENTMOENY,'fm9999990.9999') AS
+	MSG,TO_CHAR(L.XGSJ,'YYYY-MM-DD HH24:MI:SS') XGSJ
+	FROM T_PAY_ITEM I
+	JOIN T_PAY_ITEM_LIST L ON I.PKID = L.PAY_ITEM_PKID
+	JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID
+	JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+	JOIN
+	(
+	SELECT SUM(STUDENTMOENY) AS
+	STUDENTMOENY,T.ORDERCREATE_MODE,T.STUDENT_PKID,T.PAY_ITEM_PKID
+	FROM (
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'网上' AS
+	ORDERCREATE_MODE
+	FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE = 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT
+	UNION
+	SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+	END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'其他' AS
+	ORDERCREATE_MODE
+	FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+	O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE != 'U' AND
+	O.TRANSACTION_FLAG = '1')
+	GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT
+	)T GROUP BY T.STUDENT_PKID,T.PAY_ITEM_PKID,T.ORDERCREATE_MODE
+	)OT ON OT.PAY_ITEM_PKID = I.PKID AND OT.STUDENT_PKID = L.STUDENT_PKID
+	WHERE I.STATUS IN ('1','2')
+	<if test="PKID != null and PKID !=''">
+		AND I.PKID = #{PKID}
+	</if>
+	<if test="DATESTART !=null and DATESTART!=''">
+		AND L.XGSJ &gt;= to_date(#{DATESTART},'YYYY-MM-DD')
+	</if>
+	<if test="DATEEND !=null and DATEEND!=''">
+		AND L.XGSJ &lt; (to_date(#{DATEEND},'YYYY-MM-DD')+1)
+	</if>
+	<if test="SERCHTEXT !=null and SERCHTEXT!=''">
+		AND (S.XUEHAO LIKE CONCAT(CONCAT('%', #{SERCHTEXT}),'%')
+		or
+		S.XINGMING LIKE CONCAT(CONCAT('%', #{SERCHTEXT}),'%')
+		or
+		I.PAYITEM LIKE CONCAT(CONCAT('%', #{SERCHTEXT}),'%')
+		)
+	</if>
+	<if test="DETAILSTATUS =='1'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '网上'
+	</if>
+	<if test="DETAILSTATUS =='2'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '其他'
+	</if>
+	ORDER BY L.XGSJ DESC
+	</select>
+	<!-- 获取缴费比例中所有缴费名单项目 -->
+	<select id="getListItemBL" parameterType="pd" resultType="pd">
+		 SELECT I.PKID AS ID,
+		 (CASE WHEN I.PARENT_ID IS NULL THEN I.PAYITEM ELSE 
+		 	(SELECT (IT.PAYITEM||'-'||I.PAYITEM)  FROM T_PAY_ITEM IT WHERE IT.PKID = I.PARENT_ID)
+		 end) AS NAME,
+		 '00' AS PARENTID FROM T_PAY_ITEM I
+    	 WHERE I.STATUS IN ('1','2')
+    	 and (i.IS_INCLUDE_CHILD = 'Y' OR i.IS_INCLUDE_CHILD='N')
+	</select>
+	<!-- 获取已审核通过的缴费项目 -->
+	<select id="getListItem" parameterType="pd" resultType="pd">
+		 SELECT I.PKID AS ID,I.PAYITEM AS NAME, '00' AS PARENTID FROM T_PAY_ITEM I
+    	 WHERE I.STATUS IN (1,2)
+	</select>
+	<select id="getGrades" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES WHERE PARENT_ID = 'GRADE' <!-- AND IS_USED = 'Y' --> order by name desc
+	</select>
+	<select id="departmentList" parameterType="pd" resultType="vo">
+		SELECT T.DEPARTMENT_ID AS ID,T.NAME,T.PARENT_ID AS PARENTID,T.PAIXU  FROM SYS_DEPARTMENT T order by t.paixu,t.name 
+	</select>
+	<select id="getPd_msg" parameterType="pd" resultType="pd">
+		select nvl(sum((l.amountreceivable-l.amountcollection)),0) MONEY,'OWE' AS STATUS from t_pay_item_list l 
+		join t_pay_item i on i.pkid = l.pay_item_pkid and i.status in ('1','2')
+		join t_student s on s.pkid = l.student_pkid and s.zhuangtai='1' and s.zaixuezt = 'ZX'
+		where l.status in ('0','1','2')  and l.is_default = 'Y'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+		AND l.PAY_ITEM_PARENT_PKID in
+		(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+		FROM DUAL
+		CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		union all
+		select nvl(sum(l.amountcollection),0) money,'OK' as status from t_pay_item_list l
+		join t_pay_item i on i.pkid = l.pay_item_pkid and i.status in ('1','2')
+		join t_student s on s.pkid = l.student_pkid and s.zhuangtai='1' and s.zaixuezt = 'ZX'
+		where l.status in ('0','1','2')  and l.is_default = 'Y'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+		AND l.PAY_ITEM_PARENT_PKID in
+		(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+		FROM DUAL
+		CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if> 
+	</select>
+	<select id="getStu_msg" parameterType="pd" resultType="pd">
+		select count(*) STUCOUNT,'OWE' AS STATUS
+		from (
+		select l.student_pkid from t_pay_item_list l
+		join t_pay_item i on i.pkid = l.pay_item_pkid and i.status in ('1','2')
+		join t_student s on s.pkid = l.student_pkid and s.zhuangtai='1' and s.zaixuezt = 'ZX'
+		where l.amountreceivable > l.amountcollection AND l.status in ('0','1','2')  and l.is_default = 'Y'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+		AND l.PAY_ITEM_PARENT_PKID in
+		(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+		FROM DUAL
+		CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		group by l.student_pkid
+		)
+	</select>
+	<select id="getStu_msg_all" parameterType="pd" resultType="pd">
+		select count(distinct l.STUDENT_PKID) STUCOUNT
+		from t_pay_item_list l
+		join t_pay_item i on i.pkid = l.pay_item_pkid and i.status in ('1','2')
+		join t_student s on s.pkid = l.student_pkid and s.zhuangtai='1' and s.zaixuezt = 'ZX'
+		where l.status in ('0','1','2')  and l.is_default = 'Y'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+		AND l.PAY_ITEM_PARENT_PKID in
+		(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+		FROM DUAL
+		CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+	</select>
+	<select id="getPayMsg" parameterType="pd" resultType="pd">
+	SELECT * FROM (
+		SELECT COUNT(DISTINCT L.STUDENT_PKID) STUCOUNT,
+		NVL(SUM(L.AMOUNTRECEIVABLE-L.AMOUNTCOLLECTION),0) MONEY,'OWE' AS STATUS
+		FROM T_PAY_ITEM_LIST L
+		JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID AND S.ZAIXUEZT = 'ZX'
+		WHERE 1=1 AND L.STATUS = '0' and l.IS_DEFAULT = 'Y'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+		AND l.PAY_ITEM_PKID in
+		(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+		FROM DUAL
+		CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		UNION
+		SELECT COUNT(DISTINCT L.STUDENT_PKID) STUCOUNT, NVL(SUM(L.AMOUNTCOLLECTION),0)
+		MONEY,'OK' AS STATUS
+		FROM T_PAY_ITEM_LIST L
+		JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID
+		WHERE 1=1 AND L.STATUS = '2'
+		<if test="GRADE != null and GRADE !=''">
+			AND s.NIANJI = #{GRADE}
+		</if>
+		<if test="PARENT_DEP_PKID != null and PARENT_DEP_PKID !=''">
+			AND s.DEPARTMENT_PKID in (SELECT REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_DEP_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PARENT_ITEM_PKID != null and PARENT_ITEM_PKID !=''">
+			AND l.PAY_ITEM_PKID in
+			(SELECT REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{PARENT_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+	)
+	</select>
+	
+	
+	<select id="payDetailTablelistPage" parameterType="page" resultType="pd">
+	SELECT I.PAYITEM ITEMNAME,S.XINGMING,D.NAME
+		DEPTNAME,L.COST,L.DISCOUNT,L.AMOUNTRECEIVABLE,
+		L.AMOUNTCOLLECTION,OT.ORDERCREATE_MODE||' — '|| to_char(OT.STUDENTMOENY,'99999999999999990.99') AS MSG,TO_CHAR(ot.XGSJ,'YYYY-MM-DD HH24:MI:SS') XGSJ
+	FROM T_PAY_ITEM I
+		JOIN T_PAY_ITEM_LIST L ON I.PKID = L.PAY_ITEM_PKID
+		JOIN T_STUDENT S ON S.PKID = L.STUDENT_PKID and s.zaixuezt='ZX'
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN
+		(
+		SELECT SUM(STUDENTMOENY) AS
+		STUDENTMOENY,T.ORDERCREATE_MODE,T.STUDENT_PKID,T.PAY_ITEM_PKID,T.XGSJ
+		FROM (
+		SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+		END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'网上' AS
+		ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where o.PKID = OD.PAY_ORDER_PKID) XGSJ
+		FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+		O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE = 'U' AND
+		O.TRANSACTION_FLAG = '1')
+		GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+		UNION
+		SELECT NVL(SUM(OD.MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1
+		END)),0)AS STUDENTMOENY,OD.STUDENT_PKID,OD.PAY_ITEM_PKID,'其他' AS
+		ORDERCREATE_MODE,(select o.cjsj from t_pay_order o where O.PKID = OD.PAY_ORDER_PKID) XGSJ
+		FROM T_PAY_ORDER_DETAIL OD WHERE EXISTS (SELECT 1 FROM T_PAY_ORDER O WHERE
+		O.PKID = OD.PAY_ORDER_PKID AND O.ORDERCREATE_MODE != 'U' AND
+		O.TRANSACTION_FLAG = '1')
+		GROUP BY OD.STUDENT_PKID,OD.PAY_ITEM_PKID,OD.MONEY,OD.INPUT_OUTPUT,OD.PAY_ORDER_PKID
+		)T GROUP BY T.STUDENT_PKID,T.PAY_ITEM_PKID,T.ORDERCREATE_MODE,T.XGSJ
+		)OT ON OT.PAY_ITEM_PKID = I.PKID AND OT.STUDENT_PKID = L.STUDENT_PKID
+	WHERE I.STATUS IN ('1','2')
+	<if test="pd.PKID != null and pd.PKID !=''">
+		AND I.PKID = #{pd.PKID}
+	</if>
+	<if test="pd.DATESTART !=null and pd.DATESTART!=''">
+	   	AND L.XGSJ &gt;= to_date(#{pd.DATESTART},'YYYY-MM-DD')
+	</if>
+	<if test="pd.DATEEND !=null and pd.DATEEND!=''">
+   		AND L.XGSJ &lt; (to_date(#{pd.DATEEND},'YYYY-MM-DD')+1)
+	</if>
+	<if test="pd.SERCHTEXT !=null and pd.SERCHTEXT!=''">
+		AND (S.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		or 
+		S.XINGMING LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		or 
+		I.PAYITEM LIKE CONCAT(CONCAT('%', #{pd.SERCHTEXT}),'%')
+		)
+	</if>
+	<if test="pd.DETAILSTATUS =='1'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '网上'
+	</if>
+	<if test="pd.DETAILSTATUS =='2'.toString() ">
+   		AND OT.ORDERCREATE_MODE = '其他'
+	</if>
+	ORDER BY L.XGSJ DESC
+	</select>
+	
+	<!-- 介绍人汇总信息 -->
+	<select id="jieshaorenSumTablelistPage" parameterType="page" resultType="pd">
+		SELECT T.*,NVL(P.NONUM,0) AS NONUM FROM (
+		SELECT J.SHENFENZHENGHAO,J.XINGMING,D.NAME,D.DEPARTMENT_ID,P.PKID AS
+		PICI_PKID,J.PKID AS JIESHAOREN_PKID,P.PICI_NAME,COUNT(S.PKID) AS
+		STUNUM,round(sum(SS.SUMMONEY),2) as SUMMONEY
+		FROM T_STUDENT S
+		JOIN T_JIESHAOREN J ON S.JIESHAOREN_PKID = J.PKID
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = TOPID(s.department_pkid)
+		JOIN T_PICI P ON P.PKID = S.PICI_PKID
+		JOIN (SELECT PL.STUDENT_PKID,SUM(PL.AMOUNTCOLLECTION) AS SUMMONEY FROM
+		T_PAY_ITEM_LIST PL where STATUS in ('0','1','2') and pl.is_default = 'Y' GROUP BY PL.STUDENT_PKID) SS
+		ON SS.STUDENT_PKID = S.PKID
+		WHERE S.ZAIXUEZT = 'ZX'
+		and FIRST_PAY_TIME(s.pkid) is not null
+		<if test="pd.DATESTART != null and pd.DATESTART != ''">
+			and FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.TREENAME != null and pd.TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="pd.JIESHAORENNAME != null and pd.JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{pd.JIESHAORENNAME}),'%'))
+		</if>
+		GROUP BY J.SHENFENZHENGHAO,J.XINGMING,D.NAME,J.PKID,P.PICI_NAME,D.DEPARTMENT_ID,P.PKID
+		)T 
+		LEFT JOIN 
+		(SELECT P.PKID AS PICI_PKID,J.PKID AS JIESHAOREN_PKID,
+	    J.SHENFENZHENGHAO,J.XINGMING,D.NAME,D.DEPARTMENT_ID,P.PICI_NAME,COUNT(S.PKID) AS NONUM
+	    FROM T_STUDENT S
+	    JOIN T_JIESHAOREN J ON S.JIESHAOREN_PKID = J.PKID 
+	    JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = TOPID(s.department_pkid)
+	    JOIN T_PICI P ON P.PKID = S.PICI_PKID 
+	    WHERE S.ZAIXUEZT = 'ZX' AND EXISTS (SELECT 1 FROM T_PAY_ITEM_LIST L 
+	    WHERE L.STUDENT_PKID = S.PKID AND L.AMOUNTRECEIVABLE > L.AMOUNTCOLLECTION and l.STATUS in ('0','1','2')
+	    and l.is_default = 'Y')
+		and FIRST_PAY_TIME(s.pkid) is not null
+		<if test="pd.DATESTART != null and pd.DATESTART != ''">
+			and FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.TREENAME != null and pd.TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="pd.JIESHAORENNAME != null and pd.JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{pd.JIESHAORENNAME}),'%'))
+		</if>
+		GROUP BY J.SHENFENZHENGHAO,J.XINGMING,D.NAME,J.PKID,P.PICI_NAME,D.DEPARTMENT_ID,P.PKID
+		) P
+		ON P.JIESHAOREN_PKID = T.JIESHAOREN_PKID AND T.DEPARTMENT_ID = P.DEPARTMENT_ID AND P.PICI_PKID = T.PICI_PKID
+		
+	</select>
+	<select id="jieshaorenSumTablelist" parameterType="pd" resultType="pd">
+		SELECT T.*,NVL(P.NONUM,0) AS NONUM FROM (
+		SELECT J.SHENFENZHENGHAO,J.XINGMING,D.NAME,D.DEPARTMENT_ID,P.PKID AS
+		PICI_PKID,J.PKID AS JIESHAOREN_PKID,P.PICI_NAME,COUNT(S.PKID) AS
+		STUNUM,round(sum(SS.SUMMONEY),2) as SUMMONEY
+		FROM T_STUDENT S
+		JOIN T_JIESHAOREN J ON S.JIESHAOREN_PKID = J.PKID
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = TOPID(s.department_pkid)
+		JOIN T_PICI P ON P.PKID = S.PICI_PKID
+		JOIN (SELECT PL.STUDENT_PKID,SUM(PL.AMOUNTCOLLECTION) AS SUMMONEY FROM
+		T_PAY_ITEM_LIST PL where STATUS in ('0','1','2') and pl.is_default = 'Y' GROUP BY PL.STUDENT_PKID) SS
+		ON SS.STUDENT_PKID = S.PKID
+		WHERE S.ZAIXUEZT = 'ZX'
+		and FIRST_PAY_TIME(s.pkid) is not null
+		<if test="DATESTART != null and DATESTART != ''">
+			and FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="TREENAME != null and TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="JIESHAORENNAME != null and JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{JIESHAORENNAME}),'%'))
+		</if>
+		GROUP BY J.SHENFENZHENGHAO,J.XINGMING,D.NAME,J.PKID,P.PICI_NAME,D.DEPARTMENT_ID,P.PKID
+		)T 
+		LEFT JOIN 
+		(SELECT P.PKID AS PICI_PKID,J.PKID AS JIESHAOREN_PKID,
+	    J.SHENFENZHENGHAO,J.XINGMING,D.NAME,D.DEPARTMENT_ID,P.PICI_NAME,COUNT(S.PKID) AS NONUM
+	    FROM T_STUDENT S
+	    JOIN T_JIESHAOREN J ON S.JIESHAOREN_PKID = J.PKID 
+	    JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = TOPID(s.department_pkid)
+	    JOIN T_PICI P ON P.PKID = S.PICI_PKID 
+	    WHERE S.ZAIXUEZT = 'ZX' AND EXISTS (SELECT 1 FROM T_PAY_ITEM_LIST L 
+	    WHERE L.STUDENT_PKID = S.PKID AND L.AMOUNTRECEIVABLE > L.AMOUNTCOLLECTION and l.STATUS in ('0','1','2')
+	    and l.is_default = 'Y')
+		and FIRST_PAY_TIME(s.pkid) is not null
+		<if test="DATESTART != null and DATESTART != ''">
+			and FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="TREENAME != null and TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="JIESHAORENNAME != null and JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{JIESHAORENNAME}),'%'))
+		</if>
+		GROUP BY J.SHENFENZHENGHAO,J.XINGMING,D.NAME,J.PKID,P.PICI_NAME,D.DEPARTMENT_ID,P.PKID
+		) P
+		ON P.JIESHAOREN_PKID = T.JIESHAOREN_PKID AND T.DEPARTMENT_ID = P.DEPARTMENT_ID AND P.PICI_PKID = T.PICI_PKID
+	</select>
+	<select id="getZuzhis" parameterType="pd" resultType="pd">
+		SELECT T.DEPARTMENT_ID,T.NAME,T.PARENT_ID  FROM SYS_DEPARTMENT T  where t.parent_id = 'null'
+	</select>
+	<!-- 介绍人明细表格数据 -->
+	<select id="jieshaorenDetailTablelistPage" parameterType="page" resultType="pd">
+		SELECT S.SHENFENZHENGHAO,S.XINGMING,<!-- D.NAME, -->DEPARTMENTSTR(D.DEPARTMENT_ID) AS NAME,J.XINGMING AS JIESHAOREN_NAME,
+		(select SUM(L.AMOUNTRECEIVABLE) from T_PAY_ITEM_LIST L WHERE L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null  AND L.STATUS IN ('0','1','2')
+		and exists (select 1 from t_pay_item i where i.pkid = l.pay_item_pkid and i.status in ('1','2') and L.IS_DEFAULT = 'Y'
+		)
+		) AMOUNTRECEIVABLE,
+		(select SUM(L.AMOUNTCOLLECTION) from T_PAY_ITEM_LIST L WHERE L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null 
+		and exists (select 1 from t_pay_item i where i.pkid = l.pay_item_pkid and i.status in ('1','2') and L.IS_DEFAULT = 'Y')
+		) AMOUNTCOLLECTION,
+    	TO_CHAR(FIRST_PAY_TIME(s.pkid),'YYYY-MM-DD HH24:MI:SS') AS CJSJ
+		FROM T_STUDENT S 
+		JOIN T_PICI P ON P.PKID =  S.PICI_PKID
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN T_JIESHAOREN J ON J.PKID = S.JIESHAOREN_PKID
+		JOIN T_PAY_ITEM_LIST L ON L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null 
+		and l.is_default = 'Y'
+		WHERE 1=1 
+		<if test="pd.DATESTART != null and pd.DATESTART != ''">
+			AND FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.TREENAME != null and pd.TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="pd.JIESHAORENNAME != null and pd.JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{pd.JIESHAORENNAME}),'%'))
+		</if>
+		<if test="pd.STATUSSELECT != null and pd.STATUSSELECT!=''">
+			and  #{pd.STATUSSELECT} = L.STATUS
+		</if>
+		<if test="pd.JIESHAOREN_PKID != null and pd.JIESHAOREN_PKID !=''" >
+			and J.PKID = #{pd.JIESHAOREN_PKID}
+		</if>
+		<if test="pd.DEPARTMENT_ID != null and pd.DEPARTMENT_ID !=''">
+			and TOPID(D.DEPARTMENT_ID) = #{pd.DEPARTMENT_ID}
+		</if>
+		<if test="pd.PICI_PKID != null and pd.PICI_PKID != ''">
+			and p.PKID = #{pd.PICI_PKID}
+		</if>
+		group by S.SHENFENZHENGHAO,S.XINGMING,D.NAME,DEPARTMENTSTR(D.DEPARTMENT_ID),J.XINGMING,s.pkid
+    	order by FIRST_PAY_TIME(s.pkid) DESC
+	</select>
+	<select id="jieshaorenDetailTablelist" parameterType="pd" resultType="pd">
+		SELECT S.SHENFENZHENGHAO,S.XINGMING,<!-- D.NAME -->DEPARTMENTSTR(D.DEPARTMENT_ID) AS NAME,J.XINGMING AS JIESHAOREN_NAME,
+		ROUND((select SUM(L.AMOUNTRECEIVABLE) from T_PAY_ITEM_LIST L WHERE L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null  AND L.STATUS IN ('0','1','2')
+		and exists (select 1 from t_pay_item i where i.pkid = l.pay_item_pkid and i.status in ('1','2') and L.IS_DEFAULT = 'Y'
+		)
+		),2) AMOUNTRECEIVABLE,
+		ROUND((select SUM(L.AMOUNTCOLLECTION) from T_PAY_ITEM_LIST L WHERE L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null 
+		and exists (select 1 from t_pay_item i where i.pkid = l.pay_item_pkid and i.status in ('1','2') and L.IS_DEFAULT = 'Y'
+		)
+		),2) AMOUNTCOLLECTION,
+    	TO_CHAR(FIRST_PAY_TIME(s.pkid),'YYYY-MM-DD HH24:MI:SS') AS CJSJ
+		FROM T_STUDENT S 
+		JOIN T_PICI P ON P.PKID =  S.PICI_PKID
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN T_JIESHAOREN J ON J.PKID = S.JIESHAOREN_PKID
+		JOIN T_PAY_ITEM_LIST L ON L.STUDENT_PKID = S.PKID and FIRST_PAY_TIME(s.pkid) is not null 
+		and l.is_default = 'Y'
+		WHERE 1=1 
+		<if test="DATESTART != null and DATESTART != ''">
+			AND FIRST_PAY_TIME(s.pkid) &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND != ''">
+			and FIRST_PAY_TIME(s.pkid) &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="TREENAME != null and TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="JIESHAORENNAME != null and JIESHAORENNAME!=''">
+			and  (j.XINGMING LIKE CONCAT(CONCAT('%', #{JIESHAORENNAME}),'%'))
+		</if>
+		<if test="STATUSSELECT != null and STATUSSELECT!=''">
+			and  #{STATUSSELECT} = L.STATUS
+		</if>
+		<if test="JIESHAOREN_PKID != null and JIESHAOREN_PKID !=''" >
+			and J.PKID = #{JIESHAOREN_PKID}
+		</if>
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			and TOPID(D.DEPARTMENT_ID) = #{DEPARTMENT_ID}
+		</if>
+		<if test="PICI_PKID != null and PICI_PKID != ''">
+			and p.PKID = #{PICI_PKID}
+		</if>
+		group by S.SHENFENZHENGHAO,S.XINGMING,D.NAME,DEPARTMENTSTR(D.DEPARTMENT_ID),J.XINGMING,s.pkid
+    	order by FIRST_PAY_TIME(s.pkid) DESC
+	</select>
+	<select id="getFeeSumlistTable" parameterType="pd" resultType="pd">
+		SELECT T.RUXUENIANFEN,T.BANXING,T.PAY_STYLE_NAME JIAOFEILEIXING,
+		(<!-- SELECT COUNT(STUDENT_BM_PKID) FROM T_PAY_ITEM_LIST PIL 
+		JOIN T_PAY_ITEM PI ON PIL.T_PAY_ITEM_PKID=PI.PKID
+		JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID
+		JOIN SYS_DICTIONARIES DIC ON DIC.DICTIONARIES_ID=PI.GRADE_PKID AND DIC.PARENT_ID='GRADE'
+		JOIN SYS_DICTIONARIES DIC2 ON DIC2.DICTIONARIES_ID=PI.CLASSTYPE_PKID AND DIC2.PARENT_ID='CLASSTYPE'
+		WHERE PI.PAY_TYPE_PKID=T.PAY_TYPE_PKID AND DIC.DICTIONARIES_ID=T.GRADE_PKID AND DIC2.DICTIONARIES_ID=T.CLASSTYPE_PKID
+		AND PIL.AMOUNTCOLLECTION > 0 -->
+		
+		SELECT COUNT(DISTINCT L.STUDENT_PKID)
+		    FROM T_PAY_ORDER_DETAIL L 
+		    JOIN T_PAY_ORDER O ON (O.PKID = L.PAY_ORDER_PKID AND O.TRANSACTION_FLAG = '1')
+		    JOIN T_PAY_ITEM_LIST I ON I.PKID = L.T_PAY_ITEM_LIST_PKID
+		    JOIN T_PAY_ITEM PI ON PI.PKID = I.T_PAY_ITEM_PKID
+		    JOIN T_PAY_STYLE PS ON PS.PKID = PI.PAY_TYPE_PKID
+		    JOIN SYS_DICTIONARIES S ON S.PARENT_ID='GRADE' AND S.DICTIONARIES_ID = PI.GRADE_PKID
+		    JOIN SYS_DICTIONARIES SD ON SD.PARENT_ID='CLASSTYPE' AND SD.DICTIONARIES_ID = PI.CLASSTYPE_PKID
+		    WHERE 1=1
+		  	AND PI.GRADE_PKID=T.GRADE_PKID
+		  	AND PI.CLASSTYPE_PKID=T.CLASSTYPE_PKID
+		  	AND PI.PAY_TYPE_PKID=T.PAY_TYPE_PKID
+		) STU_COUNT,
+		(SELECT NVL(SUM(PIL.AMOUNTCOLLECTION),0) FROM T_PAY_ITEM_LIST PIL 
+		JOIN T_PAY_ITEM PI ON PIL.T_PAY_ITEM_PKID=PI.PKID
+		JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID
+		JOIN SYS_DICTIONARIES DIC ON DIC.DICTIONARIES_ID=PI.GRADE_PKID AND DIC.PARENT_ID='GRADE'
+		JOIN SYS_DICTIONARIES DIC2 ON DIC2.DICTIONARIES_ID=PI.CLASSTYPE_PKID AND DIC2.PARENT_ID='CLASSTYPE'
+		WHERE PI.PAY_TYPE_PKID=T.PAY_TYPE_PKID AND DIC.DICTIONARIES_ID=T.GRADE_PKID AND DIC2.DICTIONARIES_ID=T.CLASSTYPE_PKID
+		<!-- AND PIL.STATUS != 0 -->
+		) SHISHOUMONEY,
+		GETSUMMONEY('CASH',T.PAY_TYPE_PKID,T.GRADE_PKID,T.CLASSTYPE_PKID) CASH_MONEY,
+		GETSUMMONEY('CARD',T.PAY_TYPE_PKID,T.GRADE_PKID,T.CLASSTYPE_PKID) CARD_MONEY,
+		GETSUMMONEY('ZFB',T.PAY_TYPE_PKID,T.GRADE_PKID,T.CLASSTYPE_PKID) ZFB_MONEY,
+		GETSUMMONEY('WX',T.PAY_TYPE_PKID,T.GRADE_PKID,T.CLASSTYPE_PKID) WX_MONEY,
+		GETSUMMONEY('TT',T.PAY_TYPE_PKID,T.GRADE_PKID,T.CLASSTYPE_PKID) TT_MONEY
+		FROM (
+		  SELECT PI.GRADE_PKID,PI.CLASSTYPE_PKID,PI.PAY_TYPE_PKID,PS.PAY_STYLE_NAME,DIC.NAME RUXUENIANFEN,DIC2.NAME BANXING
+		  FROM T_PAY_ITEM PI
+		  JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID
+		  JOIN SYS_DICTIONARIES DIC ON DIC.DICTIONARIES_ID=PI.GRADE_PKID AND DIC.PARENT_ID='GRADE'
+		  JOIN SYS_DICTIONARIES DIC2 ON DIC2.DICTIONARIES_ID=PI.CLASSTYPE_PKID AND DIC2.PARENT_ID='CLASSTYPE'
+		  WHERE 1=1
+		  <if test="RUXUENIANFEN != null and RUXUENIANFEN != ''">
+		  	AND PI.GRADE_PKID=#{RUXUENIANFEN}
+		  </if>
+		  <if test="BANXING != null and BANXING != ''">
+		  	AND PI.CLASSTYPE_PKID=#{BANXING}
+		  </if>
+		  <if test="JIAOFEILEIXING != null and JIAOFEILEIXING != ''">
+		  	AND PI.PAY_TYPE_PKID=#{JIAOFEILEIXING}
+		  </if>
+		  GROUP BY PI.GRADE_PKID,PI.CLASSTYPE_PKID,PI.PAY_TYPE_PKID,PS.PAY_STYLE_NAME,DIC.NAME,DIC2.NAME
+		  ORDER BY PI.GRADE_PKID,PI.CLASSTYPE_PKID ASC
+		) T
+	</select>
+	<select id="getFeeDetailTablelistPage" parameterType="page" resultType="pd">
+
+SELECT DISTINCT OD.PKID,
+                S.SHENFENZHENGHAO,
+                TB.XUEHAO,
+                TPS.SCHOOLNAME,
+                S.XINGMING,
+                TS.PAY_STYLE_NAME,
+                (SELECT D.NAME
+                   FROM SYS_DICTIONARIES D
+                  WHERE D.DICTIONARIES_ID = TP.GRADE_PKID) NIANJI,
+                (SELECT D.NAME
+                   FROM SYS_DICTIONARIES D
+                  WHERE D.DICTIONARIES_ID = TP.CLASSTYPE_PKID) BANJITYPENAME,
+                OD.YHSM,
+                OD.YYSJE,
+                OD.TZHJE,
+                OD.CHAE,
+                OD.JBR,
+                OD.CCZ,
+               to_char(OD.cjSJ,'YYYY-MM-DD :hh24:mi:ss')  cjSJ
+
+  FROM T_PAY_ITEM_LIST_CHANGELOG OD
+   JOIN T_PAY_ITEM_LIST I ON I.PKID = OD.T_PAY_ITEM_LIST_PKID
+     JOIN T_PAY_ITEM TP ON TP.PKID = I.T_PAY_ITEM_PKID
+      JOIN T_PAY_STYLE TS ON TS.PKID = TP.PAY_TYPE_PKID
+     JOIN T_STUDENT_BM TB ON  tb.pkid=I.STUDENT_BM_PKID
+     JOIN T_STUDENT S ON S.PKID = TB.STUDENT_PKID
+   JOIN T_PART_SCHOOL TPS ON TPS.PKID = S.WHKXUEXIAO
+   where 1=1
+	    <if test="pd.DATESTART != null and pd.DATESTART != ''">
+			and OD.cjSJ &gt;= TO_DATE(#{pd.DATESTART},'YYYY-MM-DD')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+			and OD.cjSJ &lt; TO_DATE(#{pd.DATEEND},'YYYY-MM-DD')+1
+		</if>
+		<if test="pd.RUXUENIANFEN != null and pd.RUXUENIANFEN !=''">
+			AND TP.GRADE_PKID = #{pd.RUXUENIANFEN}
+		</if>
+		<if test="pd.BANXING != null and pd.BANXING !=''">
+			AND TP.CLASSTYPE_PKID = #{pd.BANXING}
+		</if>
+		<if test="pd.JIAOFEILEIXING != null and pd.JIAOFEILEIXING !=''">
+			AND TP.PAY_TYPE_PKID = #{pd.JIAOFEILEIXING}
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''">
+			and  (
+			S.XINGMING LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			or 
+			S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			or 
+			TB.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			)
+		</if>
+		order by cjSJ DESC
+	</select>
+	<select id="getFeeDetailTablelist" parameterType="pd" resultType="pd">
+
+SELECT DISTINCT OD.PKID,
+                S.SHENFENZHENGHAO,
+                TB.XUEHAO,
+                TPS.SCHOOLNAME,
+                S.XINGMING,
+                TS.PAY_STYLE_NAME,
+                (SELECT D.NAME
+                   FROM SYS_DICTIONARIES D
+                  WHERE D.DICTIONARIES_ID = TP.GRADE_PKID) NIANJI,
+                (SELECT D.NAME
+                   FROM SYS_DICTIONARIES D
+                  WHERE D.DICTIONARIES_ID = TP.CLASSTYPE_PKID) BANJITYPENAME,
+                OD.YHSM,
+                OD.YYSJE,
+                OD.TZHJE,
+                OD.CHAE,
+                OD.JBR,
+                OD.CCZ,
+               to_char(OD.cjSJ,'YYYY-MM-DD :hh24:mi:ss')  cjSJ
+
+  FROM T_PAY_ITEM_LIST_CHANGELOG OD
+   JOIN T_PAY_ITEM_LIST I ON I.PKID = OD.T_PAY_ITEM_LIST_PKID
+     JOIN T_PAY_ITEM TP ON TP.PKID = I.T_PAY_ITEM_PKID
+      JOIN T_PAY_STYLE TS ON TS.PKID = TP.PAY_TYPE_PKID
+     JOIN T_STUDENT_BM TB ON  tb.pkid=I.STUDENT_BM_PKID
+     JOIN T_STUDENT S ON S.PKID = TB.STUDENT_PKID
+   JOIN T_PART_SCHOOL TPS ON TPS.PKID = S.WHKXUEXIAO
+   where 1=1
+	    <if test="DATESTART != null and DATESTART != ''">
+			and OD.cjSJ &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD')
+		</if>
+		<if test="DATEEND != null and DATEEND != ''">
+			and OD.cjSJ &lt; TO_DATE(#{DATEEND},'YYYY-MM-DD')+1
+		</if>
+		<if test="RUXUENIANFEN != null and RUXUENIANFEN !=''">
+			AND TP.GRADE_PKID = #{RUXUENIANFEN}
+		</if>
+		<if test="BANXING != null and BANXING !=''">
+			AND TP.CLASSTYPE_PKID = #{BANXING}
+		</if>
+		<if test="JIAOFEILEIXING != null and JIAOFEILEIXING !=''">
+			AND TP.PAY_TYPE_PKID = #{JIAOFEILEIXING}
+		</if>
+		<if test="keywords != null and keywords != ''">
+			and  (
+			S.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			or 
+			S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			or 
+			TB.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		order by cjSJ DESC
+	</select>
+	<select id="getAmountMsgFeeDetial" parameterType="pd" resultType="pd">
+		SELECT T.*,(T.CASHTOTALMONEY+T.CARDTOTALMONEY+T.WXTOTALMONEY+T.ZFBTOTALMONEY+T.TTTOTALMONEY) TOTALMONEY
+		FROM (
+			SELECT 
+			NVL(SUM((SELECT MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1 END) FROM T_PAY_ORDER_DETAIL_MONEY ODM WHERE ODM.PAY_ORDER_DETAIL_PKID = OD.PKID AND ODM.PAY_MODE = 'CASH')),0) AS CASHTOTALMONEY,
+			NVL(SUM((SELECT MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1 END) FROM T_PAY_ORDER_DETAIL_MONEY ODM WHERE ODM.PAY_ORDER_DETAIL_PKID = OD.PKID AND ODM.PAY_MODE = 'CARD')),0) AS CARDTOTALMONEY,
+			NVL(SUM((SELECT MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1 END) FROM T_PAY_ORDER_DETAIL_MONEY ODM WHERE ODM.PAY_ORDER_DETAIL_PKID = OD.PKID AND ODM.PAY_MODE = 'TT')),0) AS TTTOTALMONEY,
+			NVL(SUM((SELECT MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1 END) FROM T_PAY_ORDER_DETAIL_MONEY ODM WHERE ODM.PAY_ORDER_DETAIL_PKID = OD.PKID AND ODM.PAY_MODE = 'WX')),0) AS WXTOTALMONEY,
+			NVL(SUM((SELECT MONEY*(CASE WHEN OD.INPUT_OUTPUT = 'JX' THEN 1 ELSE -1 END) FROM T_PAY_ORDER_DETAIL_MONEY ODM WHERE ODM.PAY_ORDER_DETAIL_PKID = OD.PKID AND ODM.PAY_MODE = 'ZFB')),0) AS ZFBTOTALMONEY,
+			NVL(COUNT(DISTINCT OD.STUDENT_PKID),0) AS TOTALPEOPLE
+			FROM T_PAY_ORDER_DETAIL OD 
+			JOIN T_PAY_TRANSACTION_LOG TL ON TL.PAY_ORDER_PKID = OD.PAY_ORDER_PKID
+			JOIN T_PAY_ORDER O ON O.PKID = OD.PAY_ORDER_PKID
+			JOIN T_STUDENT S ON S.PKID = OD.STUDENT_PKID
+			JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+			JOIN T_CENGCI C ON C.PKID = S.CENGCI_PKID
+			JOIN T_PICI P ON P.PKID = S.PICI_PKID
+			JOIN T_PAY_ITEM I ON I.PKID = OD.PAY_ITEM_PKID
+			WHERE OD.INPUT_OUTPUT = 'JX' AND O.TRANSACTION_FLAG = 1
+			AND TL.TRANSACTION_MONEY > 0
+			<if test="PAY_ITEM_PKID != null and PAY_ITEM_PKID != ''">
+				and PARENTITEMPKID(OD.PAY_ITEM_PKID) in  (SELECT REGEXP_SUBSTR(#{PAY_ITEM_PKID}, '[^,]+', 1, LEVEL)
+				FROM DUAL
+				CONNECT BY REGEXP_SUBSTR(#{PAY_ITEM_PKID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+			</if>
+			<if test="DATESTART != null and DATESTART != ''">
+				and TL.TRANSACTION_DATE &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			<if test="DATEEND != null and DATEEND != ''">
+				and TL.TRANSACTION_DATE &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+			</if>
+			<if test="PICI_PKID != null and PICI_PKID != ''">
+				and p.PKID = #{PICI_PKID}
+			</if>
+			<if test="DEPARTMENT_ID != null and DEPARTMENT_ID != ''">
+				and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{DEPARTMENT_ID}, '[^,]+', 1, LEVEL)
+				FROM DUAL
+				CONNECT BY REGEXP_SUBSTR(#{DEPARTMENT_ID}, '[^,]+', 1, LEVEL) IS NOT NULL)
+			</if>
+			<if test="GRADE != null and GRADE !=''">
+				AND s.NIANJI = #{GRADE}
+			</if>
+			<if test="CENGCI_PKID != null and CENGCI_PKID != ''">
+				and C.PKID = #{CENGCI_PKID}
+			</if>
+			<if test="keywords != null and keywords != ''">
+				and  (
+				S.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				or 
+				S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				or 
+				S.xuehao LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+			</if>
+				<if test="RECEIPTNO!=null and RECEIPTNO!=''">
+		        and OD.RECEIPTNO LIKE '%${RECEIPTNO}%'
+		        </if>
+		) T
+	</select>
+	<!-- 学院汇总统计列表 -->
+	<select id="getCollegeSummaryTableListPage" parameterType="pd" resultType="pd">
+	    select nianji,t.name,school_year_name,ptp ,
+		sum(TOTALAMOUNTRECEIVABLE) TOTALAMOUNTRECEIVABLE,
+		sum(TOTALAMOUNTCOLLECTION) TOTALAMOUNTCOLLECTION,sum(QIANFEIHEJI) QIANFEIHEJI from (
+        select d.NAME NIANJI,
+       y.school_year_name SCHOOL_YEAR_NAME,p.pay_style_name ptp,
+        trunc(l.AMOUNTRECEIVABLE,2) TOTALAMOUNTRECEIVABLE,
+        trunc(L.AMOUNTCOLLECTION,2) TOTALAMOUNTCOLLECTION,
+        trunc(((l.AMOUNTRECEIVABLE)-(L.AMOUNTCOLLECTION)),2) QIANFEIHEJI,
+       func_getstubelongXueyuanDEPTid(s.department_pkid) as xueyuanid
+        from t_pay_item_list l 
+        JOIN t_pay_item i ON l.pay_item_pkid=i.pkid
+        join t_student s on s.pkid = l.STUDENT_PKID
+        join SYS_DICTIONARIES d on d.BIANMA = s.nianji
+        join t_school_year y on y.pkid = i.school_year_pkid
+        join t_pay_style p on p.pkid = i.pay_type_pkid
+        where 1=1 
+        and l.IS_DEFAULT='Y' and l.status !=3  and i.status in(1,2)  
+        and d.parent_id = 'GRADE' and s.zhuangtai = '1' and s.zaixuezt = 'ZX'
+        <if test="shoufeixuenian != null and shoufeixuenian !=''">
+				and i.school_year_pkid = #{shoufeixuenian}
+		</if>
+		
+		<if test="NIANJI != null and NIANJI !=''">
+			and s.NIANJI = #{NIANJI}
+		</if>
+		<if test="PAY_TYPE_PKID!=null and PAY_TYPE_PKID!=''">
+			and  i.PAY_TYPE_PKID =#{PAY_TYPE_PKID}
+		  </if>
+      )w join SYS_DEPARTMENT t on t.department_id = w.xueyuanid
+      where w.xueyuanid is not null
+	    <if test="orgtree !=null and orgtree != ''" >
+	        and t.department_id = #{orgtree}
+	    </if>
+      group by nianji,t.name,school_year_name,ptp 
+      order by NIANJI desc,t.name,SCHOOL_YEAR_NAME desc,ptp
+	</select>
+	<!-- 获取院校下拉列表 -->
+	<select id="getYuanXiaoList" resultType="pd">
+		select t.name,t.department_id 
+		from SYS_DEPARTMENT t 
+		where t.parent_id in(
+			select t.department_id 
+			from SYS_DEPARTMENT t 
+			where t.parent_id = 'null')
+	</select>
+	
+	
+	
+		<!-- 获取宿舍下拉列表 -->
+	<select id="getSuShersList" resultType="pd">
+		select pkid,dt_no,dt_name from t_student_dorm_type ORDER BY to_number(regexp_substr(dt_name,'[0-9]+*[0-9]+',1)) ASC
+	</select>
+	
+	<!-- 非财经统计总人数 -->
+	<select id="getdepartList"  parameterType="pd" resultType="pd"> <!--  zhuanye 专业     xingbie 性别(男.女) enxingbie(0女.1男) bed房间类型-->
+	select maxpeople,info,ispay,(maxbed-maxbed_l) as maxbed,lastbed from (
+	
+select
+ (
+select count(*) from(  <!-- 总人数判断 -->
+
+select stu.xingming,stu.nianji,dic.is_yx
+from t_student stu <!--  /**学生表 */ -->
+inner join sys_department sysde on(stu.department_pkid=sysde.department_id)<!-- /**院校专业表*/  -->
+left join(select distinct student_pkid from t_pay_item_list)  paylist on(paylist.student_pkid=stu.pkid)<!-- /**缴费名单表 */ -->
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)<!-- /**字典表（入学年份在这个表关联）*/ -->
+where sysde.name='${zhuanye}' and stu.xingbie='${xingbie}' and stu.zaixuezt='ZX'  and dic.is_yx='Y' and dic.parent_id='GRADE'
+
+
+)) as maxpeople,
+(
+select count(*) from( <!--  确认个人信息统计 -->
+
+select stu.xingming,stu.xingbie,stu.nianji,sysde.name,nvl(studorm.t_student_pkid,'null') as isstudent,stu.is_sure_inf
+from t_student stu <!--  /**学生表 */ -->
+inner join sys_department sysde on(stu.department_pkid=sysde.department_id)<!-- /**院校专业表*/  -->
+left join t_student_dorm studorm on(studorm.t_student_pkid=stu.pkid)<!--  /**学生宿舍表*/ -->
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)<!-- /**字典表（入学年份在这个表关联）*/ -->
+where stu.is_sure_inf='Y' and sysde.name='${zhuanye}' and stu.xingbie='${xingbie}' 
+and stu.zaixuezt='ZX' and dic.parent_id='GRADE' and dic.is_yx='Y'
+
+
+)) as info,
+(
+select count(*) from(  <!-- 已经缴费人数 -->
+
+
+ /**paylist_END*/
+select 
+stu.xingming,stu.xingbie,stu.nianji,sysde.name,nvl(studorm.t_student_pkid,'null') as isstudent,stu.is_sure_inf,paylist.amountcollection,paylist.dt_name
+from t_student stu  /**学生表 */
+inner join sys_department sysde on(stu.department_pkid=sysde.department_id)/**院校专业表*/ 
+left join t_student_dorm studorm on(studorm.t_student_pkid=stu.pkid) /**学生宿舍表   distinct student_pkid*/
+inner join(/**end缴费名单表 */
+
+select inpay.pkid,inpay.pay_style_name,inpay.pay_style_bianma,inpay.dt_name,inpay.xingming,t_pay_item_list.amountcollection,t_pay_item_list.student_pkid
+from t_pay_item_list
+inner join(
+
+select style.pay_style_name,style.pay_style_bianma,pay.pkid,dormtype.dt_name,stu.xingming,syde.name
+from t_pay_item_list pay
+inner join t_pay_item itpay on(pay.pay_item_pkid=itpay.pkid)
+inner join t_pay_style style on(itpay.pay_type_pkid=style.pkid)
+inner join t_student_dorm_type dormtype on(itpay.t_dorm_type_pkid=dormtype.pkid)
+inner join t_student stu on(pay.student_pkid=stu.pkid)
+inner join sys_department syde on(stu.department_pkid=syde.department_id)
+where style.pay_style_bianma='43' /**住宿费编号*/ 
+
+) inpay on(t_pay_item_list.pkid=inpay.pkid)
+ where  t_pay_item_list.Is_Default='Y' and t_pay_item_list.amountcollection>0 
+ 
+)paylist on(paylist.student_pkid=stu.pkid)/**star缴费名单表 */
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)/**字典表（入学年份在这个表关联）*/
+where 
+studorm.t_student_pkid is not null and sysde.name='${zhuanye}' and stu.xingbie='${xingbie}' and stu.zaixuezt='ZX' and dic.parent_id='GRADE' and dic.is_yx='Y' and paylist.dt_name='${bed}'
+/**paylist_STAR*/
+
+
+
+
+)) as ispay,
+(
+select count(*) from(  <!-- 床位总数求法 -->
+
+
+ /**paylist_END*/
+  select *
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+    where sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}'
+ /**paylist_STAR*/
+
+)) as maxbed,
+(
+select count(*) from(  <!-- 老生床位总数 -->
+
+
+ /**paylist_END*/
+    select stu.is_yx,stu.bianma
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+
+    inner join(
+      select stu.pkid,dic.is_yx,dic.bianma 
+      from t_student stu 
+      inner join sys_dictionaries dic on(stu.nianji=dic.bianma)
+      where dic.is_yx='N' 
+    )stu on(dorm.t_student_pkid=stu.pkid)
+    
+     where sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}'
+      /**paylist_STAR*/
+
+)) as maxbed_l,
+(
+select count(*) from(  <!-- /**剩余床数*/ -->
+
+
+ /**paylist_END*/
+  select *
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+    where  sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}' and dorm.status='0'
+ /**paylist_STAR*/
+
+)) as lastbed
+ from t_student_dorm_type where t_student_dorm_type.dt_name='8人间' )
+	</select>
+	
+	
+	
+	
+	<!-- 财经统计总人数 -->
+	<select id="getdepartListCj"  parameterType="pd" resultType="pd"> <!--  zhuanye 专业     xingbie 性别(男.女) enxingbie(0女.1男) bed房间类型-->
+	
+	select maxpeople,info,ispay,(maxbed-maxbed_l) as maxbed,lastbed from (
+	select
+ (/**总人数*/ 
+select count(*) from(
+
+select deps.name as name2,dep.name as name4,stu.xingming,dic.is_yx
+from sys_department dep 
+left join sys_department deps on(dep.parent_id=deps.department_id) 
+inner join t_student stu on(stu.department_pkid=dep.department_id)
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)/**字典表（入学年份在这个表关联） deps代表学院,dep代表专业*/
+
+where deps.leibie='2' and deps.name='${zhuanye}' and stu.xingbie='${xingbie}' and stu.zaixuezt='ZX' and dic.is_yx='Y' and dic.parent_id='GRADE'
+
+
+
+)) as maxpeople,
+(/**确认专业人数 */ 
+select count(*) from(
+
+select deps.name as name2,dep.name as name4,stu.xingming,dic.is_yx
+from sys_department dep 
+left join sys_department deps on(dep.parent_id=deps.department_id) 
+inner join t_student stu on(stu.department_pkid=dep.department_id)
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)/**字典表（入学年份在这个表关联） deps代表学院,dep代表专业*/
+
+where deps.leibie='2' and deps.name='${zhuanye}' and stu.xingbie='${xingbie}' and stu.zaixuezt='ZX' and dic.is_yx='Y' and dic.parent_id='GRADE' and stu.is_sure_dep='Y'
+
+)) as info,
+(/**已缴费人数*/ 
+select count(*) from(
+
+  
+/**paylist_END*/
+select deps.name as name2,dep.name as name4,stu.xingming,dic.is_yx,paylist.amountcollection,paylist.dt_name
+from sys_department dep 
+left join sys_department deps on(dep.parent_id=deps.department_id) 
+inner join t_student stu on(stu.department_pkid=dep.department_id)
+
+left join t_student_dorm studorm on(studorm.t_student_pkid=stu.pkid) /**学生宿舍表   distinct student_pkid*/
+inner join(/**end缴费名单表 */
+
+select inpay.pkid,inpay.pay_style_name,inpay.pay_style_bianma,inpay.dt_name,inpay.xingming,t_pay_item_list.amountcollection,t_pay_item_list.student_pkid
+from t_pay_item_list
+inner join(
+
+select style.pay_style_name,style.pay_style_bianma,pay.pkid,dormtype.dt_name,stu.xingming,syde.name
+from t_pay_item_list pay
+inner join t_pay_item itpay on(pay.pay_item_pkid=itpay.pkid)
+inner join t_pay_style style on(itpay.pay_type_pkid=style.pkid)
+inner join t_student_dorm_type dormtype on(itpay.t_dorm_type_pkid=dormtype.pkid)
+inner join t_student stu on(pay.student_pkid=stu.pkid)
+inner join sys_department syde on(stu.department_pkid=syde.department_id)
+where style.pay_style_bianma='43' /**住宿费编号*/ 
+
+) inpay on(t_pay_item_list.pkid=inpay.pkid)
+ where  t_pay_item_list.Is_Default='Y' and t_pay_item_list.amountcollection>0 
+ 
+)paylist on(paylist.student_pkid=stu.pkid)/**star缴费名单表 */
+inner join sys_dictionaries dic on(stu.nianji=dic.bianma)/**字典表（入学年份在这个表关联）*/
+where 
+studorm.t_student_pkid is not null and deps.name='${zhuanye}' and stu.xingbie='${xingbie}' and stu.zaixuezt='ZX' and dic.parent_id='GRADE' and dic.is_yx='Y' and paylist.dt_name='${bed}'
+/**paylist_STAR*/
+
+
+
+
+
+)) as ispay,
+(/**床位总数求法*/ 
+select count(*) from(
+
+ /**paylist_END*/
+  select *
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+    left join sys_department sysdorms on(sysdorm.department_id=sysdorms.parent_id)
+    where sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}' 
+ /**paylist_STAR*/
+
+
+)) as maxbed,
+(/**老生床数*/ 
+ select count(*) from(/**老生床数*/ 
+ /**paylist_END*/
+    select stu.is_yx,stu.bianma,tdorm.dt_name,sysdorm.name
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+    left join sys_department sysdorms on(sysdorm.department_id=sysdorms.parent_id)
+    inner join(
+      select stu.pkid,dic.is_yx,dic.bianma 
+      from t_student stu 
+      inner join sys_dictionaries dic on(stu.nianji=dic.bianma)
+      where dic.is_yx='N' 
+    )stu on(dorm.t_student_pkid=stu.pkid)
+    
+     where sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}'
+      /**paylist_STAR*/
+)) as maxbed_l,
+(/**剩余床数*/ 
+select count(*) from(
+
+/**paylist_END*/
+  select sysdorm.name,sysdorms.name
+    from t_dorm_department depdorm  /**宿舍所属院校专业表*/ 
+    inner join t_student_dorm dorm on(depdorm.dorm_id=dorm.pkid) /**学生宿舍表*/
+    inner join t_student_dorm_type tdorm on(dorm.t_student_dorm_type_pkid=tdorm.pkid)/**学生宿舍类型表*/ 
+    inner join sys_department sysdorm on(depdorm.department_id=sysdorm.department_id) /**院校专业表*/ 
+      left join sys_department sysdorms on(sysdorm.department_id=sysdorms.parent_id)
+    where  sysdorm.name='${zhuanye}' and dorm.sd_sex='${enxingbie}' and tdorm.dt_name='${bed}' and dorm.status='0'
+ /**paylist_STAR*/
+
+)) as lastbed
+ from t_student_dorm_type where t_student_dorm_type.dt_name='8人间')
+	
+	
+	
+
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+<!-- 	非  -->
+	<select id="sushelist"  parameterType="pd" resultType="pd">
+
+	 select sysdep.department_id,sysdep.name as yxname,dormtype.dt_no,dormtype.dt_name
+ from t_dorm_department dep
+ inner join sys_department sysdep on(dep.department_id=sysdep.department_id)
+ inner join t_student_dorm dorm on(dep.dorm_id=dorm.pkid)
+ inner join t_student_dorm_type dormtype on(dorm.t_student_dorm_type_pkid=dormtype.pkid)
+ 
+ 
+ where 1=1 and sysdep.leibie='${leibie}' <!--  2为学院\4位专业 -->
+ <if test="sushe!=null and sushe!=''">
+  and  dormtype.dt_no='${sushe}'
+ </if>
+ 
+  <if test="suZhuanYe!=null and suZhuanYe!=''">
+ and sysdep.department_id='${suZhuanYe}'
+ </if>
+  group by sysdep.department_id,sysdep.name,dormtype.dt_no,dormtype.dt_name  having count(*) > 1 order by sysdep.name
+	</select>
+	
+	
+	
+	<select id="getYuanXiaoLists" parameterType="pd" resultType="pd">
+	select s.name,s.department_id from sys_department s where s.leibie='${leibie}' group by  s.department_id,s.name
+	ORDER BY S.NAME ASC
+	</select>
+	
+	<!-- 获得院校专业集合 -->
+	<select id="getDepartmentList" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DEPARTMENT DT WHERE DT.LEIBIE=#{LEIBIE} 
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND DT.DEPARTMENT_ID = #{DEPARTMENT_ID}
+		</if>
+	</select>
+	
+	<!-- 获得宿舍计划统计报表 -->
+	<select id="getStudentDormPlanSumTableList2" parameterType="pd" resultType="pd">
+		SELECT COUNT(SD.PKID) CHUANGCOUNT,
+		(CASE WHEN SD.SD_SEX ='1' THEN '男' ELSE '女' END) SD_SEX_NAME,
+		SD.T_STUDENT_DORM_TYPE_PKID,SD.SD_SEX,SDT.DT_NAME,
+		(SELECT COUNT(DISTINCT(PIL.STUDENT_PKID)) FROM T_PAY_ITEM_LIST PIL
+		JOIN T_STUDENT S ON PIL.STUDENT_PKID=S.PKID
+		JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA
+		JOIN T_PAY_ITEM PI ON PI.PKID=PIL.PAY_ITEM_PKID
+		JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID AND PS.PAY_STYLE_BIANMA='43'
+		JOIN SYS_DICTIONARIES DIC2 ON S.NIANJI=DIC2.BIANMA  AND DIC2.PARENT_ID='GRADE'
+		WHERE DIC2.IS_YX='Y' AND PIL.AMOUNTCOLLECTION > 0 AND PIL.IS_DEFAULT='Y' AND PIL.PAY_ITEM_PARENT_PKID != PIL.PAY_ITEM_PKID AND PI.T_DORM_TYPE_PKID=SD.T_STUDENT_DORM_TYPE_PKID
+		AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE=(CASE WHEN SD.SD_SEX ='1' THEN '男' ELSE '女' END)
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND S.DEPARTMENT_PKID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>) STUDENTCOUNT_YIJIAO,<!-- 已缴费人数 -->
+		
+		(SELECT COUNT(1) FROM T_STUDENT S JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='男'
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND S.DEPARTMENT_PKID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>
+		) STUDENTCOUNT_NAN,<!-- 男总人数 -->
+		(SELECT COUNT(1) FROM T_STUDENT S JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='女'
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND S.DEPARTMENT_PKID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>
+		) STUDENTCOUNT_NV,<!-- 女总人数 -->
+		(SELECT COUNT(1) FROM T_STUDENT S JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='男' AND S.IS_SURE_INF='Y'
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND S.DEPARTMENT_PKID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>
+		) STUDENTCOUNT_NAN_SUREINF,<!-- 男确认信息人数 -->
+		(SELECT COUNT(1) FROM T_STUDENT S JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='女' AND S.IS_SURE_INF='Y'
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND S.DEPARTMENT_PKID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>
+		) STUDENTCOUNT_NV_SUREINF,<!-- 女确认信息人数 -->
+		SUM(CASE WHEN DIC.IS_YX !='Y' THEN 1 ELSE 0 END) CHUANGCOUNT_LAOSHENG,<!-- 老生占用床数量 -->
+		SUM(CASE WHEN DIC.IS_YX ='Y' THEN 1 ELSE 0 END) CHUANGCOUNT_XINSHENG<!-- 新生占用床数量 -->
+		FROM T_STUDENT_DORM SD 
+		JOIN T_DORM_DEPARTMENT DD ON SD.PKID=DD.DORM_ID
+		JOIN T_STUDENT_DORM_TYPE SDT ON SD.T_STUDENT_DORM_TYPE_PKID=SDT.PKID
+		LEFT JOIN T_STUDENT STU ON SD.T_STUDENT_PKID=STU.PKID
+		LEFT JOIN SYS_DICTIONARIES DIC ON STU.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+		WHERE SD.SD_LEVEL='5'
+		<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+			AND SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID}
+		</if>
+		<if test="SD_SEX != null and SD_SEX !=''">
+			AND SD.SD_SEX=#{SD_SEX}
+		</if>
+		<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+			AND DD.DEPARTMENT_ID IN (
+					SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+				)
+		</if>
+		
+		GROUP BY SD.T_STUDENT_DORM_TYPE_PKID,SD.SD_SEX,SDT.DT_NAME
+		ORDER BY SD.SD_SEX,SD.T_STUDENT_DORM_TYPE_PKID
+	</select>
+	
+	<!-- 结账汇总统计  -->
+	<select id="getTheInvoicingList" parameterType="pd" resultType="pd">
+		SELECT  SU.USER_ID,(CASE WHEN SU.NAME IS NULL THEN '院方' ELSE SU.NAME END) AS NAME,
+        PI.PAY_TYPE_PKID AS PAY_STYLE_PKID,Y.SCHOOL_YEAR_NAME,P.PAY_STYLE_NAME,
+              trunc(SUM(CASE WHEN L.INPUT_OUTPUT='JX' THEN L.MONEY ELSE 0 END)-SUM(CASE WHEN L.INPUT_OUTPUT='XX' THEN L.MONEY ELSE 0 END),2) SHISHOUMONEY,
+              trunc(NVL(SUM(L.CASHMONEY),0),2) CASH_MONEY,trunc(NVL(SUM(L.CARDMONEY),0),2) CARD_MONEY,
+              trunc(NVL(SUM(L.TTMONEY),0),2) TT_MONEY,trunc(NVL(SUM(L.WXMONEY),0),2) WX_MONEY,
+              trunc(NVL(SUM(L.ZFBMONEY),0),2) ZFB_MONEY
+    	FROM (
+            SELECT L.*,M.*
+            FROM T_PAY_ORDER_DETAIL L
+            LEFT JOIN (
+                SELECT M.PAY_ORDER_DETAIL_PKID,
+                SUM(CASE WHEN M.PAY_MODE='CASH' AND L.INPUT_OUTPUT='JX' THEN M.MONEY ELSE 0 END)-SUM(CASE WHEN M.PAY_MODE='CASH' AND L.INPUT_OUTPUT='XX' THEN M.MONEY ELSE 0 END) AS CASHMONEY,
+                SUM(CASE WHEN M.PAY_MODE='CARD' AND L.INPUT_OUTPUT='JX' THEN M.MONEY ELSE 0 END)-SUM(CASE WHEN M.PAY_MODE='CARD' AND L.INPUT_OUTPUT='XX' THEN M.MONEY ELSE 0 END) AS CARDMONEY,
+                SUM(CASE WHEN M.PAY_MODE='TT' AND L.INPUT_OUTPUT='JX' THEN M.MONEY ELSE 0 END)-SUM(CASE WHEN M.PAY_MODE='TT' AND L.INPUT_OUTPUT='XX' THEN M.MONEY ELSE 0 END) AS TTMONEY,
+                SUM(CASE WHEN M.PAY_MODE='WX' AND L.INPUT_OUTPUT='JX' THEN M.MONEY ELSE 0 END)-SUM(CASE WHEN M.PAY_MODE='WX' AND L.INPUT_OUTPUT='XX' THEN M.MONEY ELSE 0 END) AS WXMONEY,
+                SUM(CASE WHEN M.PAY_MODE='ZFB' AND L.INPUT_OUTPUT='JX' THEN M.MONEY ELSE 0 END)-SUM(CASE WHEN M.PAY_MODE='ZFB' AND L.INPUT_OUTPUT='XX' THEN M.MONEY ELSE 0 END) AS ZFBMONEY
+                FROM T_PAY_ORDER_DETAIL_MONEY M
+                LEFT JOIN T_PAY_ORDER_DETAIL L
+                ON L.PKID=M.PAY_ORDER_DETAIL_PKID
+                WHERE 1=1
+                GROUP BY M.PAY_ORDER_DETAIL_PKID
+            ) M
+            ON M.PAY_ORDER_DETAIL_PKID=L.PKID
+            WHERE L.CJR IS NOT NULL
+		      <if test="shoufeiyuan != null and shoufeiyuan !=''">
+				and L.CJR = #{shoufeiyuan}
+			  </if>
+        ) L 
+        INNER JOIN T_PAY_ORDER O ON (O.PKID = L.PAY_ORDER_PKID AND O.TRANSACTION_FLAG = '1')
+        JOIN T_STUDENT S ON L.STUDENT_PKID=S.PKID  AND S.ZAIXUEZT='ZX' AND S.ZHUANGTAI='1'
+        LEFT JOIN T_PAY_ITEM PI ON PI.PKID=L.PAY_ITEM_PKID
+        LEFT JOIN T_PAY_STYLE P ON P.PKID = PI.PAY_TYPE_PKID
+        LEFT JOIN T_SCHOOL_YEAR Y ON Y.PKID = PI.SCHOOL_YEAR_PKID
+        LEFT JOIN SYS_USER SU ON SU.USER_ID = L.CJR
+        JOIN T_PAY_TRANSACTION_LOG PTL ON PTL.PAY_ORDER_PKID = O.PKID
+        WHERE 1=1 AND PTL.TRANSACTION_MONEY >0
+        <if test="shoufeixuenian != null and shoufeixuenian !=''">
+			and PI.SCHOOL_YEAR_PKID = #{shoufeixuenian}
+		</if>
+		 <if test="DATESTART != null and DATESTART != ''">
+			and PTL.TRANSACTION_DATE &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		 </if>
+	     <if test="DATEEND != null and DATEEND != ''">
+	        and PTL.TRANSACTION_DATE &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+	     </if>
+        GROUP BY SU.USER_ID,SU.NAME,PI.PAY_TYPE_PKID,Y.SCHOOL_YEAR_NAME,P.PAY_STYLE_NAME
+        ORDER BY SU.NAME,SU.USER_ID,Y.SCHOOL_YEAR_NAME DESC,P.PAY_STYLE_NAME
+	</select>
+	<!-- 收费员  -->
+	<select id="getOperatorList" parameterType="pd" resultType="pd">
+		SELECT DISTINCT U.USER_ID, U.NAME
+  		  FROM SYS_USER U
+  		  JOIN T_PAY_ORDER_DETAIL PD ON PD.CJR = U.USER_ID
+	</select>
+	
+	
+	<!-- 获得宿舍计划统计报表 -->
+	<select id="getStudentDormPlanSumTableList" parameterType="pd" resultType="pd">
+		SELECT * FROM (
+			<if test="(SD_SEX ==''.toString()) or (SD_SEX != null and SD_SEX !='' and SD_SEX=='1'.toString())">
+				SELECT '男' SD_SEX_NAME,SDT.PKID,
+				(SELECT COUNT(1) FROM T_STUDENT S
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='男'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT,<!-- 总人数 -->
+				
+				(SELECT COUNT(1) FROM T_STUDENT S
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='男' AND S.IS_SURE_INF='Y'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_SUREINF,<!-- 确认个人信息人数 -->
+				
+				(SELECT COUNT(1) FROM T_STUDENT S
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='男' AND S.IS_SURE_DEP='Y'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_SUREDEP,<!-- 确认个人专业人数 -->
+				
+				SDT.DT_NAME,
+				(SELECT COUNT(DISTINCT(PIL.STUDENT_PKID)) FROM T_PAY_ITEM_LIST PIL
+				JOIN T_STUDENT S ON PIL.STUDENT_PKID=S.PKID
+				JOIN T_PAY_ITEM PI ON PI.PKID=PIL.PAY_ITEM_PKID
+				JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID AND PS.PAY_STYLE_BIANMA='43'
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE DIC.IS_YX='Y' AND S.XINGBIE='男' AND PIL.AMOUNTCOLLECTION > 0 AND PIL.IS_DEFAULT='Y' AND PIL.PAY_ITEM_PARENT_PKID != PIL.PAY_ITEM_PKID AND PI.T_DORM_TYPE_PKID=SDT.PKID
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_YIJIAO,<!-- 已缴费人数 -->
+				
+				NVL((SELECT (COUNT(SD.PKID)- SUM(CASE WHEN DIC.IS_YX!='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END)) FROM T_STUDENT_DORM SD 
+				JOIN T_DORM_DEPARTMENT DD ON SD.PKID=DD.DORM_ID
+				JOIN T_STUDENT_DORM_TYPE SDT2 ON SD.T_STUDENT_DORM_TYPE_PKID=SDT2.PKID
+				LEFT JOIN T_STUDENT STU ON SD.T_STUDENT_PKID=STU.PKID
+				LEFT JOIN SYS_DICTIONARIES DIC ON STU.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE SD.SD_LEVEL='5' AND SDT2.PKID=SDT.PKID AND SD.SD_SEX='1'
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="SD_SEX != null and SD_SEX !=''">
+					AND SD.SD_SEX=#{SD_SEX}
+				</if>
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND DD.DEPARTMENT_ID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				),0) DORMCOUNT_TOTAL,<!-- 床位总数 -->
+				
+				NVL((SELECT (COUNT(SD.PKID)- SUM(CASE WHEN DIC.IS_YX!='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END) - SUM(CASE WHEN DIC.IS_YX='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END)) FROM T_STUDENT_DORM SD 
+				JOIN T_DORM_DEPARTMENT DD ON SD.PKID=DD.DORM_ID
+				JOIN T_STUDENT_DORM_TYPE SDT2 ON SD.T_STUDENT_DORM_TYPE_PKID=SDT2.PKID
+				LEFT JOIN T_STUDENT STU ON SD.T_STUDENT_PKID=STU.PKID
+				LEFT JOIN SYS_DICTIONARIES DIC ON STU.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE SD.SD_LEVEL='5' AND SDT2.PKID=SDT.PKID AND SD.SD_SEX='1'
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="SD_SEX != null and SD_SEX !=''">
+					AND SD.SD_SEX=#{SD_SEX}
+				</if>
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND DD.DEPARTMENT_ID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				),0) DORMCOUNT_SHENGYU<!-- 剩余床位数 -->
+				
+				FROM T_STUDENT_DORM_TYPE SDT
+				WHERE SDT.IS_USE=1
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SDT.PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+			</if>
+			
+			<if test="SD_SEX ==''.toString()"> UNION ALL </if>
+			
+			<if test="(SD_SEX ==''.toString()) or (SD_SEX != null and SD_SEX !='' and SD_SEX=='0'.toString())">
+				SELECT '女' SD_SEX_NAME,SDT.PKID,
+				(SELECT COUNT(1) FROM T_STUDENT S
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='女'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT,<!-- 总人数 -->
+				
+				(SELECT COUNT(1) FROM T_STUDENT S 
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='女' AND S.IS_SURE_INF='Y'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_SUREINF,<!-- 确认个人信息人数 -->
+				
+				(SELECT COUNT(1) FROM T_STUDENT S
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA WHERE DIC.IS_YX='Y' AND DIC.PARENT_ID='GRADE' AND S.ZHUANGTAI=1 AND S.ZAIXUEZT='ZX' AND S.XINGBIE='女' AND S.IS_SURE_DEP='Y'
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_SUREDEP,<!-- 确认个人专业人数 -->
+				
+				SDT.DT_NAME,
+				(SELECT COUNT(DISTINCT(PIL.STUDENT_PKID)) FROM T_PAY_ITEM_LIST PIL
+				JOIN T_STUDENT S ON PIL.STUDENT_PKID=S.PKID
+				JOIN T_PAY_ITEM PI ON PI.PKID=PIL.PAY_ITEM_PKID
+				JOIN T_PAY_STYLE PS ON PI.PAY_TYPE_PKID=PS.PKID AND PS.PAY_STYLE_BIANMA='43'
+				JOIN SYS_DICTIONARIES DIC ON S.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE DIC.IS_YX='Y' AND S.XINGBIE='女' AND PIL.AMOUNTCOLLECTION > 0 AND PIL.IS_DEFAULT='Y' AND PIL.PAY_ITEM_PARENT_PKID != PIL.PAY_ITEM_PKID AND PI.T_DORM_TYPE_PKID=SDT.PKID
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND S.DEPARTMENT_PKID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				<if test="PICI != null and PICI !=''">
+					AND S.PICI_PKID=#{PICI}
+				</if>) STUDENTCOUNT_YIJIAO,<!-- 已缴费人数 -->
+				
+				NVL((SELECT (COUNT(SD.PKID)- SUM(CASE WHEN DIC.IS_YX!='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END)) FROM T_STUDENT_DORM SD 
+				JOIN T_DORM_DEPARTMENT DD ON SD.PKID=DD.DORM_ID
+				JOIN T_STUDENT_DORM_TYPE SDT2 ON SD.T_STUDENT_DORM_TYPE_PKID=SDT2.PKID
+				LEFT JOIN T_STUDENT STU ON SD.T_STUDENT_PKID=STU.PKID
+				LEFT JOIN SYS_DICTIONARIES DIC ON STU.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE SD.SD_LEVEL='5' AND SDT2.PKID=SDT.PKID AND SD.SD_SEX='0'
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="SD_SEX != null and SD_SEX !=''">
+					AND SD.SD_SEX=#{SD_SEX}
+				</if>
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND DD.DEPARTMENT_ID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				),0) DORMCOUNT_TOTAL,<!-- 床位总数 -->
+				
+				NVL((SELECT (COUNT(SD.PKID)- SUM(CASE WHEN DIC.IS_YX!='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END) - SUM(CASE WHEN DIC.IS_YX='Y' AND SD.T_STUDENT_PKID IS NOT NULL THEN 1 ELSE 0 END)) FROM T_STUDENT_DORM SD 
+				JOIN T_DORM_DEPARTMENT DD ON SD.PKID=DD.DORM_ID
+				JOIN T_STUDENT_DORM_TYPE SDT2 ON SD.T_STUDENT_DORM_TYPE_PKID=SDT2.PKID
+				LEFT JOIN T_STUDENT STU ON SD.T_STUDENT_PKID=STU.PKID
+				LEFT JOIN SYS_DICTIONARIES DIC ON STU.NIANJI=DIC.BIANMA AND DIC.PARENT_ID='GRADE'
+				WHERE SD.SD_LEVEL='5' AND SDT2.PKID=SDT.PKID AND SD.SD_SEX='0'
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SD.T_STUDENT_DORM_TYPE_PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+				<if test="SD_SEX != null and SD_SEX !=''">
+					AND SD.SD_SEX=#{SD_SEX}
+				</if>
+				<if test="DEPARTMENT_ID != null and DEPARTMENT_ID !=''">
+					AND DD.DEPARTMENT_ID IN (
+							SELECT DT.DEPARTMENT_ID FROM SYS_DEPARTMENT DT START WITH DT.DEPARTMENT_ID=#{DEPARTMENT_ID} CONNECT BY PRIOR DT.DEPARTMENT_ID = DT.PARENT_ID
+						)
+				</if>
+				),0) DORMCOUNT_SHENGYU<!-- 剩余床位数 -->
+				FROM T_STUDENT_DORM_TYPE SDT
+				WHERE SDT.IS_USE=1
+				<if test="T_STUDENT_DORM_TYPE_PKID != null and T_STUDENT_DORM_TYPE_PKID !=''">
+					AND SDT.PKID=#{T_STUDENT_DORM_TYPE_PKID}
+				</if>
+			</if>
+			
+		) TABL
+		ORDER BY TABL.SD_SEX_NAME,to_number(regexp_substr(TABL.PKID,'[-10-9]+*[-10-9]+',1)) ASC
+	</select>
+	
+	<select id="getRuxuenianfenList" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES DIC WHERE DIC.PARENT_ID='GRADE'
+	</select>
+	<select id="getBanxingList" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES DIC WHERE DIC.PARENT_ID='CLASSTYPE'
+	</select>
+	<select id="getJiaofeileixingList" parameterType="pd" resultType="pd">
+		SELECT * FROM T_PAY_STYLE PS
+	</select>
+</mapper>

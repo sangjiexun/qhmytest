@@ -1,0 +1,108 @@
+body {
+	color: rgb(0, 0, 0); line-height: 166.6%; font-family: verdana; font-size: 12px; float: left;
+}
+ul {
+	list-style: none;
+}
+ol {
+	list-style: none;
+}
+ul {
+	margin: 0px; padding: 0px; border: 0px currentColor;
+}
+ol {
+	margin: 0px; padding: 0px; border: 0px currentColor;
+}
+li {
+	margin: 0px; padding: 0px; border: 0px currentColor;
+}
+img {
+	margin: 0px; padding: 0px; border: 0px currentColor;
+}
+.stream-browse-files {
+	overflow: hidden; position: relative;
+}
+.stream-browse-drag-files-area {
+	margin: 10px 0px; padding: 10px 0px; border-radius: 7px; border: 2px dashed rgb(85, 85, 85); text-align: center; cursor: pointer;
+}
+.stream-disable-browser {
+	color: rgb(144, 144, 144);
+}
+.stream-files-scroll {
+	height: 450px; overflow: auto;
+}
+.stream-cell-file {
+	border-color: rgb(204, 204, 204); padding: 10px 20px 10px 35px; border-bottom-width: 1px; border-bottom-style: dotted; position: relative; cursor: default; zoom: 1;
+}
+.stream-cell-file .stream-cell-infos::before {
+	height: 0px; overflow: hidden; clear: both; font-size: 0px; display: block; visibility: hidden; content: ".";
+}
+.stream-cell-file .stream-cell-infos::after {
+	height: 0px; overflow: hidden; clear: both; font-size: 0px; display: block; visibility: hidden; content: ".";
+}
+.stream-cell-file .stream-file-name {
+	width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.stream-cell-file .stream-process {
+	overflow: hidden; zoom: 1;
+}
+.stream-cell-file .stream-cancel {
+	margin-right: 5px; float: right;
+}
+a {
+	color: rgb(21, 129, 68);
+}
+.stream-cell-file .stream-process-bar {
+	width: 300px;
+}
+.stream-cell-file .stream-process-bar {
+	margin-right: 10px; float: left;
+}
+.stream-cell-file .stream-percent {
+	margin-right: 10px; float: left;
+}
+.stream-cell-file .stream-process-bar {
+	width: 430px; margin-top: 5px;
+}
+.stream-process-bar {
+	background: rgb(255, 255, 255); border: 1px solid rgb(204, 204, 204); width: 55px; height: 10px; overflow: hidden; position: relative;
+}
+.stream-process-bar span {
+	background-position: 0px -149px; border: 1px solid rgb(255, 255, 255); left: 0px; top: 0px; height: 8px; font-size: 0px; position: absolute; background-image: url("../static/images/bgx.png"); background-repeat: repeat-x; background-color: rgb(165, 221, 61);
+}
+.stream-process-bar {
+	box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; -khtml-box-sizing: border-box;
+}
+.stream-process-bar span {
+	box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; -khtml-box-sizing: border-box;
+}
+.stream-cell-file .stream-cell-infos {
+	color: rgb(125, 125, 125); zoom: 1;
+}
+.stream-cell-file .stream-cell-infos .stream-cell-info {
+	width: 170px;
+}
+.stream-cell-file .stream-cell-infos span {
+	margin-right: 8px; float: left;
+}
+.stream-total-tips .stream-process-bar {
+	width: 200px; margin-top: -1px;
+}
+.stream-process-bar {
+	vertical-align: middle; display: inline-block; zoom: 1; -moz-box-align: center;
+}
+.stream-uploading-ico {
+	vertical-align: middle; display: inline-block; zoom: 1; -moz-box-align: center;
+}
+.stream-total-tips {
+	border-width: 1px 0px 0px; border-style: solid; border-color: rgb(204, 204, 204); padding: 3px 5px 3px 25px; color: rgb(86, 86, 86); position: relative; zoom: 1; background-color: rgb(255, 255, 225);
+}
+.stream-main-upload-box {
+	border: 1px solid rgb(80, 160, 91); width: 610px; overflow: hidden; clear: both; background-color: rgb(255, 255, 255);
+}
+.stream-uploading-ico {
+	background: url("../static/images/upload.gif") no-repeat 0px 1px !important; left: 11px; top: 11px; width: 18px; height: 18px; position: absolute;
+}
+.stream-disabled {
+	color: rgb(144, 144, 144); filter: alpha(opacity=65); cursor: not-allowed; opacity: 0.65; pointer-events: none; box-shadow: none; -webkit-box-shadow: none;
+}

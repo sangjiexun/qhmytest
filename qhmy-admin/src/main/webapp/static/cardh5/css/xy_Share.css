@@ -1,0 +1,155 @@
+body{
+	margin: 0;
+	padding: 0;
+}
+.btn-primary{
+    background-color: #0081f0;
+    border-color: #0081f0;
+}
+/*领卡*/
+/* .xy_TopImg{
+	height: 280px;
+	background: url(../images/2017091908818595.png) no-repeat;
+	background-size: 100% 100%;
+} */
+.xy_CradName{
+	font-size: 18px;
+	font-weight: bold;
+	color:#0051be;
+	text-align: center;
+	margin-bottom: 12%;
+}
+.xy_TextCenter{
+	margin-top: 3%;
+}
+.xy_BeiAn{
+	width: 100%;
+	height: 35px;
+	position: fixed;
+	bottom: 0;
+	background: #ddd;
+	padding-top:7px;
+	text-align: center;
+}
+/*身份认证*/
+.xy_logo{
+	margin-top: 30%;
+}
+.xy_login{
+	font-size: 20px;
+	font-weight: bold;
+	color:#0081f0;
+	margin-top: 15%;
+	margin-bottom: 10%;
+}
+/*领卡成功*/
+.xy_success{
+	width: 20%;
+	margin-top: 20%;
+}
+.xy_CradSuccess{
+	font-size: 18px;
+	font-weight: bold;
+	color:#00bb88;
+	text-align: center;
+	margin-top:2%;
+	margin-bottom: 15%;
+}
+/*卡中心*/
+.xy_Card1{
+	width: 90%;
+	margin-top: 6%;
+	position: relative;
+	margin-bottom: 15%;
+}
+.xy_cardMessage{
+	position: absolute;
+	font-size: 16px;
+	color: #ddd;
+	font-weight: bold;
+	left: 20px;
+	bottom:25px;
+}
+/*授权*/
+.xy_zhiFu{
+	width: 100%;
+	position: relative;
+}
+.xy_touXiang{
+	width: 90px;
+	height: 90px;
+	background:#fff;
+	box-shadow: 0px 5px 5px #ddd;
+	border-radius: 40%;
+	position: absolute;
+	bottom: -30px;
+	left: 50%;
+	margin-left: -45px;
+}
+.xy_tongYi{
+	padding: 15px 10px;
+	font-size: 16px;
+}
+/*首页*/
+.jf_ctn{
+	padding:0; 
+	min-width:1200px;    
+}
+.jf_nav{
+	background:#fefefe;
+	/*border-bottom: 2px solid #ddd;*/
+	margin-bottom:0 !important;
+	box-shadow: 3px 3px 8px #bbbbbb;
+	z-index:1;
+}
+.jf_navbra{
+	padding:6px 15px;
+	margin-right:15px;
+}
+.jf_a{
+	color:#99a8b4 !important;
+	font-size:15px !important;
+}
+.jf_biga{
+	color:#99a8b4 !important;
+	font-size:20px !important;
+}
+ .jf_a:hover,.jf_biga:hover{
+	background: #edf0f5 !important;
+}
+.xy_name{
+	font-size: 22px;
+    font-weight: bold;
+    color: #f5352f;
+    line-height: 50px;
+    text-shadow: 3px 3px 3px #ccc;
+}
+.xy_MoKuai{
+	width:120px;
+	height:120px;
+	border-radius: 37%;
+	/*background: #00e0d3;*/
+	box-shadow: 5px 5px 6px #ddd;
+}
+.xy_MoKuai span{
+    line-height: 105px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+}
+.xy_center{
+    width: 85%;
+    margin: 0 auto;
+    margin-top: 30px;
+}
+.xy_baiFenBi{
+	width: 20%;float: left;
+}
+.xy_img{
+	width:60%;
+	margin: 0 auto;
+	box-shadow: 8px 8px 8px #e5e5e5;
+}
+.xy_hangMargin{
+	margin-bottom: 30px;
+}

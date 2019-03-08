@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DictionariesMapper">
+	
+	<resultMap type="Dictionaries" id="dictResultMap">
+		<id column="DICTIONARIES_ID" property="DICTIONARIES_ID"/>
+		<result column="NAME" property="NAME"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+	</resultMap>
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_DICTIONARIES"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",	
+		"NAME_EN",	
+		"BIANMA",	
+		"ORDER_BY",	
+		"PARENT_ID",	
+		"BZ",	
+		"TBSNAME",	
+		"DICTIONARIES_ID",
+		"SFQY"
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{NAME},	
+		#{NAME_EN},	
+		#{BIANMA},	
+		#{ORDER_BY},	
+		#{PARENT_ID},	
+		#{BZ},	
+		#{TBSNAME},	
+		#{DICTIONARIES_ID},
+		#{SFQY}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into T_ZD_GONGZHONG
+		(BIANMA, MINGCHENG, SHIFOUTSGZ, NANRENTUIXIUNL, BEIZHU, CJSJ, NURENTUIXIUNL, SHIYONGXMTXNL, QIYE_BIANMA)
+		VALUES (#{BIANMA},#{MINGCHENG},#{SHIFOUTSGZ},#{NANRENTUIXIUNL},#{BEIZHU},SYSDATE,#{NURENTUIXIUNL},#{TXNL},#{QIYE_BIANMA})
+	</insert>
+	<insert id="saveT" parameterType="pd">
+		insert into T_ZD_KV
+		(PKID, MINGCHENG, LEIXING, CJSJ, QIYE_BIANMA, BEIZHU)
+		values (#{PKID},#{MINGCHENG},#{LEIXING},SYSDATE,#{QIYE_BIANMA},#{BEIZHU})
+	</insert>
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		T_ZD_GONGZHONG
+		where 
+		"BIANMA" = #{BIANMA}
+	</delete>
+	<delete id="deleteT" parameterType="pd">
+		delete from
+		T_ZD_KV
+		where 
+			"PKID" = #{BIANMA}
+	</delete>
+	
+	<!-- 修改是否启用 -->
+	<update id="updatebs" parameterType="pd" >
+		update
+		SYS_DICTIONARIES
+		set 
+			"SFQY" = #{BS}
+		where 
+			"DICTIONARIES_ID" = #{DICTIONARIES_ID}
+	</update>
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listDictByParentId" parameterType="String" resultMap="dictResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"PARENT_ID" = #{parentId} and "SFQY"='1' order by "ORDER_BY" 
+	</select>
+	<select id="isDel" parameterType="pd" resultType="pd">
+		select * from T_ZD_GONGZHONG G where (EXISTS (SELECT 1 FROM T_BANZU B WHERE G.BIANMA = B.GONGZHONG AND B.ZHUANGTAI = '1')
+		OR EXISTS (SELECT 1 FROM T_LAOWURENYUAN L WHERE L.GONGZHONG_BIANMA = G.BIANMA AND L.ZHUANGTAI='1')) 
+		AND G.BIANMA = #{BIANMA}
+	</select>
+	<select id="isDelZS" parameterType="pd" resultType="pd">
+		select * from T_ZD_KV d where exists (select 1 from T_LAOWURENYUAN_ZS z where z.ZD_KV_PKID = d.PKID) 
+		AND D.PKID = #{BIANMA}
+	</select>
+	<select id="isDelAQJY" parameterType="pd" resultType="pd">
+		select * from T_ZD_KV d where exists (select 1 from T_ANQUANJIAOYU A where A.JIAOYULEIXING = d.PKID) 
+		AND D.PKID = #{BIANMA}
+	</select>
+	<select id="isDelJL" parameterType="pd" resultType="pd">
+		select * from T_ZD_KV d where exists (select 1 from T_JIANGCHENG A where A.JIANGCHENGLX = d.PKID AND LEIXING = 1)  
+		AND D.PKID = #{BIANMA}
+	</select>
+	<select id="isDelWGWJ" parameterType="pd" resultType="pd">
+		select * from T_ZD_KV d where exists (select 1 from T_JIANGCHENG A where A.JIANGCHENGLX = d.PKID AND LEIXING = 2)  
+		AND D.PKID = #{BIANMA}
+	</select>
+ 	<select id="listRightGZ" parameterType="pd" resultType="pd">
+	 SELECT BIANMA,
+	      	 MINGCHENG,
+	       	(CASE
+	         WHEN SHIFOUTSGZ = 'Y' THEN
+	          '特殊工种'
+	         ELSE
+	          ' '
+	       	END) SHIFOUTSGZ,
+	      	 NANRENTUIXIUNL,
+	      	 NVL(BEIZHU,' ') BEIZHU,
+	       CJSJ,
+	       NURENTUIXIUNL,
+	       (CASE
+         	WHEN SHIYONGXMTXNL = 'Y' THEN
+          	'使用项目退休年龄'
+         	ELSE
+         	 'N'
+       		END) SHIYONGXMTXNL,
+	       QIYE_BIANMA
+  	FROM T_ZD_GONGZHONG WHERE QIYE_BIANMA = #{DTTOP_BIANMA}
+ 	ORDER BY CJSJ DESC 
+	</select>
+ 	<select id="listRight" parameterType="pd" resultType="pd">
+		SELECT PKID, MINGCHENG, LEIXING, CJSJ, QIYE_BIANMA,NVL(BEIZHU,' ') BEIZHU
+		FROM T_ZD_KV Z 
+		WHERE Z.LEIXING = #{LEIXING} AND QIYE_BIANMA = #{DTTOP_BIANMA}
+	</select> 
+	<select id="listSelect" parameterType="pd" resultType="pd">
+		SELECT DEPARTMENT_ID,
+       		NAME,
+       		BIANMA
+  		FROM V_SYS_DEPARTMENT D WHERE D.PARENT_ID = '0'  
+	</select>
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd" >
+		update
+		T_ZD_GONGZHONG
+		set 
+			"MINGCHENG" = #{MINGCHENG},
+			"SHIFOUTSGZ" = #{SHIFOUTSGZ},
+			"NANRENTUIXIUNL" = #{NANRENTUIXIUNL},
+			"BEIZHU" = #{BEIZHU},
+			"NURENTUIXIUNL" = #{NURENTUIXIUNL},
+			"SHIYONGXMTXNL" = #{TXNL}
+		where 
+			"BIANMA" = #{BIANMA}
+	</update>
+	<update id="editT" parameterType="pd">
+		update
+		T_ZD_KV
+		set 
+			"MINGCHENG" = #{MINGCHENG},
+			"LEIXING" = #{LEIXING},
+			"BEIZHU" = #{BEIZHU}
+		where 
+			"PKID" = #{PKID}
+	</update>
+	<select id="getbianma" parameterType="pd" resultType="pd">
+		SELECT SEQ_ZDGONGZHONG.nextval AS BIANMA FROM DUAL
+	</select>
+	<select id="getMC" parameterType="pd" resultType="pd">
+		SELECT MINGCHENG FROM T_ZD_GONGZHONG WHERE QIYE_BIANMA = #{BIANMA} and MINGCHENG = #{MINGCHENG}
+	</select>
+	<select id="getMCT" parameterType="pd" resultType="pd">
+		SELECT MINGCHENG FROM T_ZD_KV WHERE QIYE_BIANMA = #{BIANMA} and MINGCHENG = #{MINGCHENG}
+	</select>
+	
+	<select id="getZdList" parameterType="pd" resultType="pd">
+		SELECT * FROM T_ZD_KV WHERE QIYE_BIANMA = #{bianma} and leixing = #{leixing}
+	</select>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DICTIONARIES_ID" = #{DICTIONARIES_ID}
+	</select>
+	
+	<!-- 通过编码获取数据 -->
+	<select id="findByBianma" parameterType="pd" resultType="pd">
+		select 
+		*
+		from 
+		T_ZD_GONGZHONG
+		where 
+			"BIANMA" = #{BIANMA}
+	</select>
+	<select id="findByBianmaT" parameterType="pd" resultType="pd">
+		select 
+		*
+		from 
+		T_ZD_KV
+		where 
+			"PKID" = #{BIANMA}
+	</select>
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where
+			1=1
+		<if test="pd.DICTIONARIES_ID!= null and pd.DICTIONARIES_ID != ''"><!-- 检索 -->
+		and "PARENT_ID" = #{pd.DICTIONARIES_ID}
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 "NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 "NAME_EN" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				 or
+				 "BIANMA" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+		order by "ORDER_BY"
+	</select>
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listSubDictByParentId" parameterType="String" resultMap="dictResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"PARENT_ID" = #{parentId} order by "ORDER_BY" 
+	</select>
+	
+	<!-- 排查表检查是否被占用 -->
+	<select id="findFromTbs" parameterType="pd" resultType="pd">
+		select
+			count(*) "zs"
+		from 
+			${thisTable}
+		where
+			"BIANMA" = #{BIANMA}
+	</select>
+	
+	<!-- zhoudibo -->
+</mapper>

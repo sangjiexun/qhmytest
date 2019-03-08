@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RoleMapper">
+	
+	<resultMap type="Role" id="roleResultMap">
+		<id column="ROLE_ID" property="ROLE_ID"/>
+		<result column="ROLE_NAME" property="ROLE_NAME"/>
+		<result column="RIGHTS" property="RIGHTS"/>
+		<result column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="USERID" property="USER_ID"/>
+	</resultMap>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"ROLE_ID",
+		"ROLE_NAME",
+		"RIGHTS",
+		"PARENT_ID",
+		"ADD_QX",
+		"DEL_QX",
+		"EDIT_QX",
+		"CHA_QX",
+		"DEPARTMENT_ID",
+		"USERID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{ROLE_ID},
+		#{ROLE_NAME},
+		#{RIGHTS,jdbcType=VARCHAR},
+		#{PARENT_ID,jdbcType=VARCHAR},
+		#{ADD_QX,jdbcType=VARCHAR},
+		#{DEL_QX,jdbcType=VARCHAR},
+		#{EDIT_QX,jdbcType=VARCHAR},
+		#{CHA_QX,jdbcType=VARCHAR},
+		#{DEPARTMENT_ID,jdbcType=VARCHAR},
+		#{USERID,jdbcType=VARCHAR}
+	</sql>
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_ROLE"
+	</sql>
+	
+	
+	<!-- 分页查询角色列表  -->
+	<select id="rolelistPage"  parameterType="page" resultType="pd">
+  		  SELECT R.ROLE_ID,
+		       R.ROLE_NAME,
+		       R.RIGHTS,
+		       R.PARENT_ID,
+		       R.ADD_QX,
+		       R.DEL_QX,
+		       R.EDIT_QX,
+		       R.CHA_QX,
+		       R.DEPARTMENT_ID,
+		       R.ROLE_TYPE,
+		       R.USERID,
+		       R.CJSJ,
+		       U.USERNAME
+		  FROM SYS_ROLE R LEFT JOIN SYS_USER U ON(R.USERID=U.USER_ID)
+		 WHERE 1 = 1
+		  <if test="pd.seText!=null and pd.seText!=''">
+		  	AND R.ROLE_NAME LIKE CONCAT(CONCAT('%', #{pd.seText}),'%')
+		  </if>
+    </select>
+    <!-- end 分页查询角色列表  -->
+	
+	<!-- 列出此组下的角色 -->
+	<select id="listAllRolesByPId" parameterType="pd" resultMap="roleResultMap">
+	
+	select r.* from V_SYS_ROLE r join sys_department d on r.department_id = d.department_id
+   where 1 = 1 
+   <if test="DEPARTMENT_ID!='' or DEPARTMENT_ID!=null"> 
+   and  d.department_id =#{DEPARTMENT_ID}
+   </if>
+ <if test="ROLE_ID!='' and ROLE_ID!=null">
+	and r."PARENT_ID" = #{ROLE_ID}
+ </if>
+   <!-- <if test="ROLE_ID=='' or ROLE_ID==null">
+	and r."PARENT_ID" != '0' and r."PARENT_ID" != '2'
+</if> -->
+ ORDER BY "ROLE_ID"
+	
+	</select>
+	
+	<select id="listAllRolesByPId1" parameterType="pd" resultMap="roleResultMap">
+	
+	select r.* from V_SYS_ROLE r join sys_department d on r.department_id = d.department_id
+   where 1 = 1 and r.role_id!='1' 
+   <if test="DEPARTMENT_ID!='' or DEPARTMENT_ID!=null"> 
+   and  d.department_id =#{DEPARTMENT_ID}
+   </if>
+ <if test="ROLE_ID!='' and ROLE_ID!=null">
+	and r."PARENT_ID" = #{ROLE_ID}  or  ROLE_ID='2'
+</if>
+ <!--    <if test="ROLE_ID=='' or ROLE_ID==null">
+	and r."PARENT_ID" != '0' and r."PARENT_ID" != '2'
+</if> -->
+ ORDER BY "ROLE_ID"
+	
+	</select>
+		
+	<select id="listAllRolesByPId11" parameterType="pd" resultMap="roleResultMap">
+	
+	select r.* from V_SYS_ROLE r join sys_department d on r.department_id = d.department_id
+   where 1 = 1 and r.role_id!='1' 
+   <if test="DEPARTMENT_ID!='' or DEPARTMENT_ID!=null"> 
+   and  d.department_id =#{DEPARTMENT_ID}
+   </if>
+ <if test="ROLE_ID!='' and ROLE_ID!=null">
+	and r."PARENT_ID" = #{ROLE_ID} 
+</if>
+ <!--    <if test="ROLE_ID=='' or ROLE_ID==null">
+	and r."PARENT_ID" != '0' and r."PARENT_ID" != '2'
+</if> -->
+ ORDER BY "ROLE_ID"
+	
+	</select>
+	
+	
+	<!-- 通过id查找 -->
+	<select id="findObjectById" parameterType="pd" resultType="pd">
+		select  
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		<if test="ROLE_ID!='' and ROLE_ID!=null">
+			and "ROLE_ID" = #{ROLE_ID}
+			</if>
+	</select>
+	
+	
+	<select id="findObjectByUserid" parameterType="pd" resultType="pd">
+		select  
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		<if test="USER_ID!='' and USER_ID!=null">
+			and "USERID" = #{USER_ID}
+			</if>
+	</select>
+	
+	
+	
+	<!-- 添加 -->
+	<insert id="insert" parameterType="pd">
+		insert into sys_role
+		  (role_id, role_name, USERID)
+		values 
+		  (#{pkid},#{role_name},#{userid})
+	</insert>
+	
+	<!-- 保存修改 -->
+	<update id="edit" parameterType="pd">
+		update sys_role 
+		set "ROLE_NAME" = #{role_name}
+		where "ROLE_ID" = #{pkid}
+	</update>
+	
+	<!-- 删除角色  -->
+	<delete id="deleteRoleById" parameterType="String">
+		delete from 
+		<include refid="tableName"></include>
+		where "ROLE_ID"=#{ROLE_ID}
+	</delete>
+	
+	<!-- 给当前角色附加菜单权限  -->
+	<update id="updateRoleRights" parameterType="Role">
+		update 
+		<include refid="tableName"></include>
+		set "RIGHTS"=#{rights,jdbcType=VARCHAR} 
+		where "ROLE_ID"=#{role_id}
+	</update>
+	
+	<!-- 通过id查找 -->
+	<select id="getRoleById" parameterType="String" resultMap="roleResultMap">
+		SELECT * FROM SYS_ROLE WHERE "ROLE_ID"=#{ROLE_ID}
+	</select>
+	
+	
+	<!-- 给全部子角色加菜单权限 -->
+	<update id="setAllRights" parameterType="pd">
+		update 
+		<include refid="tableName"></include> 
+		set "RIGHTS"=#{rights} 
+		where "PARENT_ID"=#{ROLE_ID}
+	</update>
+	
+		<!-- 给全部子角色加菜单权限 -->
+	<update id="setAllRights111" parameterType="pd">
+		update 
+		<include refid="tableName"></include> 
+		set "ADD_QX"=#{rights}, "DEL_QX"=#{rights} ,"EDIT_QX"=#{rights} ,"CHA_QX"=#{rights}
+		where "ROLE_ID"=#{ROLE_ID}
+	</update>
+	
+	
+	<!-- 新增权限 -->
+	<update id="add_qx" parameterType="pd">
+		update 
+		<include refid="tableName"></include> 
+		set "ADD_QX"=#{value} 
+		where "ROLE_ID"=#{ROLE_ID}
+	</update>
+	
+	<!-- 删除权限 -->
+	<update id="del_qx" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set "DEL_QX"=#{value} 
+		where "ROLE_ID"=#{ROLE_ID}
+	</update>
+	
+	<!-- 修改权限 -->
+	<update id="edit_qx" parameterType="pd">
+		update 
+		<include refid="tableName"></include> 
+		set "EDIT_QX"=#{value} 
+		where "ROLE_ID"=#{ROLE_ID}
+	</update>
+	
+	<!-- 查看权限 -->
+	<update id="cha_qx" parameterType="pd">
+		update 
+		<include refid="tableName"></include>
+		set "CHA_QX"=#{value} 
+		where "ROLE_ID"=#{ROLE_ID}
+	</update>
+	
+	
+	<!-- 列出此部门下的角色 -->
+	<select id="listAllRolesBydepid" parameterType="pd" resultMap="roleResultMap">
+		select
+		<include refid="Field"></include>
+		from
+		<include refid="tableName"></include>
+		where 1=1
+		<if test="DEPARTMENT_ID!=null and DEPARTMENT_ID!=''">
+		and "DEPARTMENT_ID" = #{DEPARTMENT_ID}
+		</if>
+		ORDER BY "ROLE_ID"
+	</select>
+	
+	<select id="sys_role_department" parameterType="pd" resultType="pd">
+		select * from sys_role where ROLE_ID=#{pkid}
+	</select>
+	
+	<select id="deleterd" parameterType="String">
+	delete from sys_role_department where role_id =#{ROLE_ID}
+	</select>
+	
+	<select id="addrd" parameterType="pd">
+	insert into sys_role_department (id,role_id,department_id) values (#{ID},#{ROLE_ID},#{DEPARTMENT_ID})
+	</select>
+	<!-- zhoudibo -->
+	
+	<!-- 保存规则设置修改 -->
+	<update id="editRule" parameterType="pd">
+		update 
+		T_SHIMING_RULE
+		<if test="CHENGFA_JZXJXG!=null and CHENGFA_JZXJXG!=''">
+		set "CHENGFA_JZXJXG" = #{CHENGFA_JZXJXG}
+		</if>
+		<if test="YOUCHENGFAJLKYDJ!=null and YOUCHENGFAJLKYDJ!=''">
+		set "YOUCHENGFAJLKYDJ" = #{YOUCHENGFAJLKYDJ}
+		</if>
+		<if test="CHENGDUJIBIE!=null and CHENGDUJIBIE!=''">
+		set "CHENGDUJIBIE" = #{CHENGDUJIBIE}
+		</if>
+		<if test="TONGGONGNL!=null and TONGGONGNL!=''">
+		set "TONGGONGNL" = #{TONGGONGNL}
+		</if>
+		<if test="NANXINGTXNL!=null and NANXINGTXNL!=''">
+		set "NANXINGTXNL" = #{NANXINGTXNL}
+		</if>
+		<if test="NUXINGTXNL!=null and NUXINGTXNL!=''">
+		set "NUXINGTXNL" = #{NUXINGTXNL}
+		</if>
+		<if test="SHIFOUBXSCZS!=null and SHIFOUBXSCZS!=''">
+		set "SHIFOUBXSCZS" = #{SHIFOUBXSCZS}
+		</if>
+		<if test="SHIFOUQYGRJZ!=null and SHIFOUQYGRJZ!=''">
+		set "SHIFOUQYGRJZ" = #{SHIFOUQYGRJZ}
+		</if>
+		<if test="NIANLING_JZXJXG!=null and NIANLING_JZXJXG!=''">
+		set "NIANLING_JZXJXG" = #{NIANLING_JZXJXG}
+		</if>
+		<if test="ZHENGSHU_JZXJXG!=null and ZHENGSHU_JZXJXG!=''">
+		set "ZHENGSHU_JZXJXG" = #{ZHENGSHU_JZXJXG}
+		</if>
+		where 1=1
+		<if test="QIYE_BIANMA!=null and QIYE_BIANMA!=''">
+		and  "QIYE_BIANMA" = #{QIYE_BIANMA}
+		</if>
+		<if test="XIANGMU_BIANMA!=null and XIANGMU_BIANMA!=''">
+		and  "XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+		</if>
+	</update>
+	
+	
+	<!-- 添加规则设置 -->
+	<insert id="insertRule" parameterType="pd">
+		insert into 
+		T_SHIMING_RULE
+		(
+	    "PKID",
+		"QIYE_BIANMA",
+		"CHENGFA_JZXJXG",
+		"YOUCHENGFAJLKYDJ",
+		"CHENGDUJIBIE",
+		"TONGGONGNL",
+		"NANXINGTXNL",
+		"NUXINGTXNL",
+		"SHIFOUBXSCZS",
+		"SHIFOUQYGRJZ",
+		"CJSJ",
+		"NIANLING_JZXJXG",
+		"ZHENGSHU_JZXJXG",
+		"XIANGMU_BIANMA"
+		) values (
+		#{PKID,jdbcType=VARCHAR},
+		#{QIYE_BIANMA,jdbcType=VARCHAR},
+		#{CHENGFA_JZXJXG,jdbcType=VARCHAR},
+		#{YOUCHENGFAJLKYDJ,jdbcType=VARCHAR},
+		#{CHENGDUJIBIE,jdbcType=VARCHAR},
+		#{TONGGONGNL,jdbcType=VARCHAR},
+		#{NANXINGTXNL,jdbcType=VARCHAR},
+		#{NUXINGTXNL,jdbcType=VARCHAR},
+		#{SHIFOUBXSCZS,jdbcType=VARCHAR}
+		#{SHIFOUQYGRJZ,jdbcType=VARCHAR}
+		#{CJSJ,jdbcType=DATE},
+		#{NIANLING_JZXJXG,jdbcType=VARCHAR},
+		#{ZHENGSHU_JZXJXG,jdbcType=VARCHAR},
+		#{XIANGMU_BIANMA,jdbcType=VARCHAR}
+		)
+	</insert>
+	<!-- 通过编码获取规则设置数据 -->
+	<select id="findByName" parameterType="pd" resultType="pd">
+		select d.* from T_SHIMING_RULE d 
+		where 1=1
+		<if test="QIYE_BIANMA != null and QIYE_BIANMA != ''">
+			and			"QIYE_BIANMA" = #{QIYE_BIANMA}
+		</if>
+		<if test="XIANGMU_BIANMA != null and XIANGMU_BIANMA != ''">
+			and			"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+		</if>
+	</select>
+	
+	
+	<!-- 检查是否有用户引用了这个角色 -->
+	<select id="queryUserhasRoleCount" parameterType="pd" resultType="pd">
+		select count(1) as rs from sys_role r inner join sys_user u on(r.role_id=u.role_id) 
+		where 1=1 
+		and r.ROLE_ID in
+		<foreach item="item" index="index" collection="pkids" open="(" separator="," close=")">  
+		 #{item}
+		</foreach> 
+	</select>
+	<!--end 检查是否有用户引用了这个角色 -->
+	
+	<!-- 删除角色 -->
+	<delete id="deleteRoleList" parameterType="pd">
+		delete from sys_role r
+		where 1=1 
+		and r.ROLE_ID in
+		<foreach item="item" index="index" collection="pkids" open="(" separator="," close=")">  
+		 #{item}
+		</foreach> 
+	</delete>
+	<!--end 删除角色 -->
+	
+	<!-- 查询菜单和按钮（全部）,并关联出有权限的按钮 -->
+	<select id="queryMenuAndButtonRole" parameterType="pd" resultType="menuButtonVo">
+		select mb.*,qx.*,case when qx.button_id is not null then 'true' else 'false' end as state  from v_menu_button mb left join 
+        (
+        select rb.role_id,rb.button_id,r.rights from sys_role_fhbutton rb inner join sys_fhbutton f  
+        on(rb.button_id = f.fhbutton_id) inner join sys_role r on(r.role_id=rb.role_id) where rb.role_id=#{role_id}
+        ) qx on(qx.button_id=mb.id)
+        order by type desc
+	</select>
+	<!-- end 查询菜单和按钮（全部）,并关联出有权限的按钮 -->
+	
+	<!-- 根据角色删除按钮 -->
+	<delete id="deleteButtonJurisdictionByRole">
+		delete from sys_role_fhbutton where role_id=#{role_id}
+	</delete>
+	
+	<!-- 插入按钮权限 -->
+	<insert id="saveButtonJurisdiction" parameterType="pd" useGeneratedKeys="false">
+		insert into sys_role_fhbutton(RB_ID,ROLE_ID,button_id)
+        values(sys_guid(),#{role_id},#{button_id}) 
+	</insert>
+	<!-- 根据角色名称查询角色信息 -->
+	<select id="rolenameIdentify" parameterType="pd" resultType="pd">
+		select * from sys_role r where r.ROLE_NAME = #{ROLE_NAME} and rownum = 1
+	</select>
+	
+	<!-- 数据权限 -->
+	<select id="queryqxRole" parameterType="pd" resultType="vo">
+		        select t.department_id as id,
+             t.name,
+             t.parent_id as parentId,
+             level as paixu,
+             case
+               when t.department_id
+               IN (
+               SELECT REGEXP_SUBSTR((select c.department_pkid from T_USERDORM_DEPARTMENT c where c.user_id=#{USER_ID}),'[^,]+', 1, LEVEL) FROM DUAL
+               CONNECT BY REGEXP_SUBSTR((select c.department_pkid from T_USERDORM_DEPARTMENT c where c.user_id=#{USER_ID}), '[^,]+', 1, LEVEL) IS NOT NULL
+                )  then
+                'true'
+               else
+                'false'
+             end as state
+        from sys_department t
+         
+       where 1 = 1
+       start with t.parent_id = 'null'
+      connect by prior t.department_id = t.parent_id
+       order by level
+
+	</select>
+	<!-- end 数据权限 -->
+	
+	<!-- 数据权限 -->
+	<select id="queryyhqxRole" parameterType="pd" resultType="vo">
+		        select t.department_id as id,
+             t.name,
+             t.parent_id as parentId,
+             level as paixu,
+             case
+               when t.department_id
+               IN (
+               SELECT REGEXP_SUBSTR((select c.department_pkid from T_USER_DEPARTMENT c where c.user_id=#{USER_ID}),'[^,]+', 1, LEVEL) FROM DUAL
+               CONNECT BY REGEXP_SUBSTR((select c.department_pkid from T_USER_DEPARTMENT c where c.user_id=#{USER_ID}), '[^,]+', 1, LEVEL) IS NOT NULL
+                )  then
+                'true'
+               else
+                'false'
+             end as state
+        from sys_department t
+         
+       where 1 = 1
+       start with t.parent_id = 'null'
+      connect by prior t.department_id = t.parent_id
+       order by level
+
+	</select>
+	<!-- end 数据权限 -->
+	
+	<!-- 插入数据权限 -->
+	<insert id="savesjqxJur" parameterType="pd" useGeneratedKeys="false">
+		insert into T_USERDORM_DEPARTMENT(USER_ID,DEPARTMENT_PKID,CZR_ID,PKID)
+        values(#{USER_ID},#{DEPARTMENT_PKID},#{CZR_ID},#{PKID}) 
+	</insert>
+	<!-- 插入数据权限 -->
+	
+	<!-- 插入用户数据权限 -->
+	<insert id="saveyhsjqxJur" parameterType="pd" useGeneratedKeys="false">
+		insert into T_USER_DEPARTMENT(USER_ID,DEPARTMENT_PKID,CZR_ID,PKID)
+        values(#{USER_ID},#{DEPARTMENT_PKID},#{CZR_ID},#{PKID}) 
+	</insert>
+	<!-- 插入数据权限 -->
+	
+	
+	<select id="getqxlist" parameterType="pd" resultType="pd">
+	select * from T_USERDORM_DEPARTMENT t where t.user_id=#{USER_ID} and rownum=1
+	</select>
+	
+	<select id="getyhqxlist" parameterType="pd" resultType="pd">
+	select * from T_USER_DEPARTMENT t where t.user_id=#{USER_ID} and rownum=1
+	</select>
+	
+	<!-- 保存修改 -->
+	<update id="updatesjqx" parameterType="pd">
+		update T_USERDORM_DEPARTMENT 
+		set "DEPARTMENT_PKID" = #{DEPARTMENT_PKID},"XGSJ"=sysdate
+		where "USER_ID" = #{YUSER_ID}
+	</update>
+	
+	<!-- 保存修改 -->
+	<update id="updateyhsjqx" parameterType="pd">
+		update T_USER_DEPARTMENT 
+		set "DEPARTMENT_PKID" = #{DEPARTMENT_PKID},"XGSJ"=sysdate
+		where "USER_ID" = #{YUSER_ID}
+	</update>
+	
+</mapper>

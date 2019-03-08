@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sys_configMapper">
+	<resultMap type="Sys_config" id="departmentResultMap">
+		<id column="PARAM_ID" property="PARAM_ID"/>
+		<result column="PARAM_NAME" property="PARAM_NAME"/>
+		<result column="PARAM_VALUE" property="PARAM_VALUE"/>
+		<result column="PARAM_COMMENT" property="PARAM_COMMENT"/>
+		<result column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+		<result column="CONFIG_TYPE_ID" property="CONFIG_TYPE_ID"/>
+	</resultMap>
+	<!--表名 -->
+	<sql id="tableName">
+		sys_config
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"PARAM_ID",	
+		"PARAM_NAME",
+		"PARAM_VALUE",
+		"PARAM_COMMENT",
+		"DEPARTMENT_ID",
+		"PARENT_ID",
+		"CONFIG_TYPE_ID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{PARAM_ID},
+			#{PARAM_NAME},
+			#{PARAM_VALUE},
+			#{PARAM_COMMENT},
+			#{DEPARTMENT_ID},
+			#{PARENT_ID},
+			#{CONFIG_TYPE_ID}	
+	</sql>
+	
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listSubDepartmentByParentId" parameterType="String" resultMap="departmentResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+		"PARENT_ID" = #{parentId}
+	</select>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"SYS_CONFIG_ID" = #{SYS_CONFIG_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"PARAM_VALUE" = #{PARAM_VALUE}
+			where 
+				"PARAM_ID" = #{PARAM_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"PARAM_ID" = #{PARAM_ID}
+	</select>
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where
+			1=1 and CONFIG_TYPE_ID &gt; 2 
+		<if test="pd.PARAM_ID!= null and pd.PARAM_ID != ''"><!-- 检索 -->
+		and "PARENT_ID" = #{pd.PARAM_ID}
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and ( "PARAM_COMMENT" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			       or  
+			        "PARAM_NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			    )
+		</if>
+		
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"SYS_CONFIG_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	<select id="findByname" parameterType="pd" resultType="pd">
+		select
+		PARAM_VALUE
+		from 
+		<include refid="tableName"></include>
+		where PARAM_NAME = 'kqksrq'
+	</select>
+	<!-- zhoudibo -->
+</mapper>

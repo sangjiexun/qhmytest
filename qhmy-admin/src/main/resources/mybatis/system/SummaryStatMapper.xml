@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SummaryStatMapper">
+	
+	<select id="getList" parameterType="pd" resultType="pd">
+	
+	select
+ d.*,
+ (((TRUNC(
+ 
+  (case when d.y_maxchuang=0 then 0 else d.y_maxchuang end)/(case when d.z_maxchuang=0 then 1 else d.z_maxchuang end)
+ 
+ ,4))*100))rzl
+from(
+select
+d.*,
+(d.z_maxchuang-d.y_maxchuang)k_maxchuang,
+(d.z_nansheng-d.y_nansheng)k_nansheng,
+(d.z_nvsheng-d.y_nvsheng)k_nvsheng
+
+from(
+select
+(
+select dd.sd_name from t_student_dorm dd where dd.sd_level=1 start with dd.pkid=d.pkid connect by prior dd.parent_pkid=dd.pkid 
+)xiaoqu,
+(
+select dd.sd_name from t_student_dorm dd where dd.sd_level=2 start with dd.pkid=d.pkid connect by prior dd.parent_pkid=dd.pkid 
+)lou,
+d.pkid,
+d.parent_pkid,
+d.sd_name ceng,
+d.sd_level,
+(select count(*) from t_student_dorm dd where dd.sd_level=5 start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+)z_maxchuang,
+(select count(*) from t_student_dorm dd where dd.sd_level=5 and dd.sd_sex=1 start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+)z_nansheng,
+(select count(*) from t_student_dorm dd where dd.sd_level=5 and dd.sd_sex=0 start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+)z_nvsheng,
+(
+select COUNT(*) from 
+(
+select dorm.*,bm.zxzt,dic.is_used
+from t_student_dorm dorm 
+left join t_student_bm bm on dorm.t_student_bm_pkid=bm.pkid
+left join sys_dictionaries dic on dorm.sys_dictionaries_pkid=dic.dictionaries_id
+where 1 = 1
+)
+dd where dd.sd_level=5 and dd.zxzt='ZX' start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+
+)y_maxchuang,
+(
+select COUNT(*) from 
+(
+select dorm.*,bm.zxzt,dic.is_used
+from t_student_dorm dorm 
+left join t_student_bm bm on dorm.t_student_bm_pkid=bm.pkid
+left join sys_dictionaries dic on dorm.sys_dictionaries_pkid=dic.dictionaries_id
+where 1 = 1
+)
+dd where dd.sd_level=5 and dd.zxzt='ZX' and dd.sd_sex=1 start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+
+)y_nansheng,
+(
+select COUNT(*) from 
+(
+select dorm.*,bm.zxzt,dic.is_used
+from t_student_dorm dorm 
+left join t_student_bm bm on dorm.t_student_bm_pkid=bm.pkid
+left join sys_dictionaries dic on dorm.sys_dictionaries_pkid=dic.dictionaries_id
+where 1 = 1
+)
+dd where dd.sd_level=5 and dd.zxzt='ZX' and dd.sd_sex=0 start with dd.pkid=d.pkid connect by dd.parent_pkid=prior dd.pkid
+
+)y_nvsheng
+
+ from t_student_dorm d 
+ where d.sd_level=3
+) d
+) d 
+
+where 1=1
+
+<if test="NAME!=null and NAME!=''">
+and d.parent_pkid in
+	<foreach item="item" index="index" collection="namelist" open="(" separator="," close=")"> 
+		#{namelist[${index}],jdbcType=VARCHAR}  
+	</foreach>
+</if>
+
+order by d.xiaoqu,d.lou,d.ceng 
+	
+	</select>
+	
+	
+	<select id="getRefundlistPage" parameterType="page" resultType="pd">
+	select 
+		s.shenfenzhenghao,
+		s.xingming,
+		b.XUEHAO,
+	    (CASE WHEN S.XINGBIE = 'W' then '女' WHEN S.XINGBIE = 'M' then '男'  ELSE ''END) XINGBIE,
+	    (SELECT SCHOOLNAME FROM T_PART_SCHOOL TP WHERE TP.PKID = S.WHKXUEXIAO) WHKXUEXIAONAME,
+		(select dic.name from sys_dictionaries dic where dic.dictionaries_id=i.grade_pkid) rxnf,
+		(select dic.name from sys_dictionaries dic where dic.dictionaries_id=i.classtype_pkid) banji_type,
+		(select c.cengci_name from t_cengci c where c.pkid=b.cengci_pkid)ccname,
+		sy.pay_style_name,
+		d.input_output,
+		d.discount_money,
+		(CASE WHEN d.INPUT_OUTPUT='XX' THEN d.MONEY ELSE 0-d.MONEY END) MONEY,
+		 to_char(d.cjsj, 'yyyy-MM-dd hh24:mi:ss') cjsj,
+		 to_char(d.xgsj, 'yyyy-MM-dd hh24:mi:ss') xgsj,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='CASH') CASH,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='CARD') CARD,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='TT') TT,
+		
+		o.remark
+		
+		
+		
+		from t_pay_order_detail d
+		join t_pay_item_list l on d.t_pay_item_list_pkid=l.pkid
+		join t_student_bm b on l.student_bm_pkid=b.pkid
+		join t_student s on b.student_pkid=s.pkid
+		join t_pay_item i on l.t_pay_item_pkid=i.pkid
+		join t_pay_style sy on i.pay_type_pkid=sy.pkid
+		join t_pay_order o on d.pay_order_pkid=o.pkid
+		where 1 = 1
+		and o.transaction_type='TF'
+		and o.TRANSACTION_FLAG='1'
+		<if test="pd.STARTTIME!=null and pd.STARTTIME!='' and pd.ENDTIME!=null and pd.ENDTIME!=''">
+		and  d.cjsj&gt;=to_date(#{pd.STARTTIME},'yyyy-MM-dd')
+		and  d.cjsj&lt;to_date(#{pd.ENDTIME},'yyyy-MM-dd')+1
+		</if>
+		<if test="pd.RXNFPKID!=null and pd.RXNFPKID!=''">
+		and i.grade_pkid=#{pd.RXNFPKID}
+		</if>
+		<if test="pd.BANJITYPEPKID!=null and pd.BANJITYPEPKID!=''">
+		and i.classtype_pkid=#{pd.BANJITYPEPKID}
+		</if>
+		<if test="pd.CENGCIPKID!=null and pd.CENGCIPKID!=''">
+		and b.cengci_pkid=#{pd.CENGCIPKID}
+		</if>
+		<if test="pd.SYPKID!=null and pd.SYPKID!=''">
+		and sy.pkid=#{pd.SYPKID}
+		</if>
+		<if test="pd.sextest != null and pd.sextest!= ''">
+		and(
+		s.shenfenzhenghao like '%${pd.sextest}%'
+		or
+		s.xingming like '%${pd.sextest}%'
+		)
+		</if>
+		
+		order by d.xgsj desc
+
+	
+	
+	
+	</select>
+	
+	
+	<!-- 
+		退费明细合计
+	 -->
+	<select id="getRefundDetailSum" parameterType="pd" resultType="pd">
+	select count(distinct(SHENFENZHENGHAO)) as totalPeople,nvl(sum(MONEY),0) as toalRefundMoney,nvl(sum(XIANJINMONEY),0) as totalCash, nvl(sum(CARDMONEY),0) as TOTALCARDMONEY 
+	,nvl(sum(TTMONEY),0) as TOTALTTMONEY
+	from (
+		SELECT S.PKID,S.SHENFENZHENGHAO,S.XINGMING,b.xuehao,D.MONEY,
+		(SELECT SUM(M.MONEY) FROM T_PAY_ORDER_DETAIL_MONEY M WHERE M.PAY_ORDER_DETAIL_PKID=D.PKID  AND M.PAY_MODE='CASH')  AS XIANJINMONEY,
+		(SELECT SUM(M.MONEY) FROM T_PAY_ORDER_DETAIL_MONEY M WHERE M.PAY_ORDER_DETAIL_PKID=D.PKID AND M.PAY_MODE='CARD')  AS CARDMONEY,
+		(SELECT SUM(M.MONEY) FROM T_PAY_ORDER_DETAIL_MONEY M WHERE M.PAY_ORDER_DETAIL_PKID=D.PKID AND M.PAY_MODE='TT')  AS TTMONEY 
+		from t_pay_order_detail d
+		join t_pay_item_list l on d.t_pay_item_list_pkid=l.pkid
+		join t_student_bm b on l.student_bm_pkid=b.pkid
+		join t_student s on b.student_pkid=s.pkid
+		join t_pay_item i on l.t_pay_item_pkid=i.pkid
+		join t_pay_style sy on i.pay_type_pkid=sy.pkid
+		join t_pay_order o on d.pay_order_pkid=o.pkid
+		where 1 = 1
+		and o.transaction_type='TF'
+		and o.TRANSACTION_FLAG='1'
+		<if test="STARTTIME!=null and STARTTIME!='' and ENDTIME!=null and ENDTIME!=''">
+		and  d.cjsj&gt;=to_date(#{STARTTIME},'yyyy-MM-dd')
+		and  d.cjsj&lt;to_date(#{ENDTIME},'yyyy-MM-dd')+1
+		</if>
+		<if test="RXNFPKID!=null and RXNFPKID!=''">
+		and i.grade_pkid=#{RXNFPKID}
+		</if>
+		<if test="BANJITYPEPKID!=null and BANJITYPEPKID!=''">
+		and i.classtype_pkid=#{BANJITYPEPKID}
+		</if>
+		<if test="CENGCIPKID!=null and CENGCIPKID!=''">
+		and b.cengci_pkid=#{CENGCIPKID}
+		</if>
+		<if test="SYPKID!=null and SYPKID!=''">
+		and sy.pkid=#{SYPKID}
+		</if>
+		<if test="sextest != null and sextest!= ''">
+		and(
+		s.shenfenzhenghao like '%${sextest}%'
+		or
+		s.xingming like '%${sextest}%'
+		)
+		</if>
+		
+	    )
+	</select>
+	
+	<select id="getRefund" parameterType="pd" resultType="pd">
+	
+	select 
+		s.shenfenzhenghao,
+		s.xingming,
+		b.XUEHAO,
+	    (CASE WHEN S.XINGBIE = 'W' then '女' WHEN S.XINGBIE = 'M' then '男'  ELSE ''END) XINGBIE,
+	    (SELECT SCHOOLNAME FROM T_PART_SCHOOL TP WHERE TP.PKID = S.WHKXUEXIAO) WHKXUEXIAONAME,
+		(select dic.name from sys_dictionaries dic where dic.dictionaries_id=i.grade_pkid) rxnf,
+		(select dic.name from sys_dictionaries dic where dic.dictionaries_id=i.classtype_pkid) banji_type,
+		(select c.cengci_name from t_cengci c where c.pkid=b.cengci_pkid)ccname,
+		sy.pay_style_name,
+		d.input_output,
+		d.discount_money,
+		(CASE WHEN d.INPUT_OUTPUT='XX' THEN d.MONEY ELSE 0-d.MONEY END) MONEY,
+		d.cjsj,
+		 to_char(d.cjsj, 'yyyy-MM-dd hh24:mi:ss') xgsj,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='CASH') CASH,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='CARD') CARD,
+		(select m.money from t_pay_order_detail_money m where m.pay_order_detail_pkid=d.pkid and m.pay_mode='TT') TT,
+		
+		o.remark
+		
+		
+		
+		from t_pay_order_detail d
+		join t_pay_item_list l on d.t_pay_item_list_pkid=l.pkid
+		join t_student_bm b on l.student_bm_pkid=b.pkid
+		join t_student s on b.student_pkid=s.pkid
+		join t_pay_item i on l.t_pay_item_pkid=i.pkid
+		join t_pay_style sy on i.pay_type_pkid=sy.pkid
+		join t_pay_order o on d.pay_order_pkid=o.pkid
+		where 1 = 1
+		and o.transaction_type='TF'
+		and o.TRANSACTION_FLAG='1'
+		<if test="STARTTIME!=null and STARTTIME!='' and ENDTIME!=null and ENDTIME!=''">
+		and  d.cjsj&gt;=to_date(#{STARTTIME},'yyyy-MM-dd')
+		and  d.cjsj&lt;to_date(#{ENDTIME},'yyyy-MM-dd')+1
+		</if>
+		<if test="RXNFPKID!=null and RXNFPKID!=''">
+		and i.grade_pkid=#{RXNFPKID}
+		</if>
+		<if test="BANJITYPEPKID!=null and BANJITYPEPKID!=''">
+		and i.classtype_pkid=#{BANJITYPEPKID}
+		</if>
+		<if test="CENGCIPKID!=null and CENGCIPKID!=''">
+		and b.cengci_pkid=#{CENGCIPKID}
+		</if>
+		<if test="SYPKID!=null and SYPKID!=''">
+		and sy.pkid=#{SYPKID}
+		</if>
+		<if test="sextest != null and sextest!= ''">
+		and(
+		s.shenfenzhenghao like '%${sextest}%'
+		or
+		s.xingming like '%${sextest}%'
+		)
+		</if>
+		
+		order by d.xgsj desc
+
+	
+	</select>
+	
+	
+	
+	<select id="getLou" resultType="pd" parameterType="pd">
+	 select * from (
+select 
+dd.pkid,
+dd.sd_name,
+dd.cjsj,
+  row_number()  over (partition by dd.sd_name order by dd.cjsj desc) as rank 
+
+from t_student_dorm dd where dd.sd_level=2 
+) dd where dd.rank=1
+	</select>
+	
+	<select id="getpayitem" resultType="pd" parameterType="pd">
+	
+select sy.pay_style_name name,sy.pkid from t_pay_style sy
+	</select>
+	
+	
+	<select id="getrxnf" resultType="pd" parameterType="pd">
+	select dic.dictionaries_id pkid,dic.name from sys_dictionaries dic where dic.parent_id='GRADE'
+	</select>
+	
+	<select id="getcengci" resultType="pd" parameterType="pd">
+	select cc.pkid,cc.cengci_name from t_cengci cc 
+	</select>
+	
+	<select id="getbanji_type" parameterType="pd" resultType="pd">
+		select dic.dictionaries_id pkid,dic.name from sys_dictionaries dic where dic.parent_id='CLASSTYPE'
+	
+	</select>
+	
+	<select id="getDormTree" parameterType="pd" resultType="pd">
+     select  t.pkid,t.parent_pkid as parent_id,t.sd_name as name,t.sd_level  from t_student_dorm t where t.sd_level in ('1','2') order by t.sd_name 
+	</select>
+	</mapper>

@@ -1,0 +1,1173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DormitoryInfoMapper">
+	
+	<!-- 宿舍信息列表table -->
+	<select id="getDormlistPage" parameterType="page" resultType="pd">
+		
+	 select /*+ FIRST_ROWS(100) */  w.pkid,w.room_name,w.parent_pkid,w.T_STUDENT_DORM_TYPE_PKID,w.SYS_DICTIONARIES_PKID,w.T_STUDENT_PKID,w.SD_NAME,w.SD_LEVEL,w.SD_PREFIX,
+ w.STATUS, w.CJSJ, w.XGSJ, w.SD_SEX, w.TREE_NODES, w.IS_ALLOT, <!-- w.dept_name,  -->w.rxnianfen_pkid, <!-- w.dept_id, --> w.dorm_type_name,w.t_student_bm_pkid,
+  w.shenfenzhenghao, w.xuehao, w.xingming, w.is_received, w.BANJI, w.BANJIPKID,w.WHKXUEXIAO,w.WHKXX,w.WHKXUEXIAOPKID,w.BANXING,w.BANJI_TYPE_PKID,w.IS_RZ,w.RXNF,w.BMPKID,w.SCHOOLPKIDS,
+ substr(w.ROOM_NAME,0,instr(w.room_name,'-',1,4)) as ROOM_NAME2 from (
+		 SELECT GETWHOLEROOMNAME_FUNC(T.PKID) AS ROOM_NAME,
+   T.*,
+   <!--  s.name AS
+    dept_name, -->
+    bm.pkid bmpkid,
+     bm.rxnianfen_pkid,(SELECT SCHOOLNAME FROM T_PART_SCHOOL T where t.pkid=stu.whkxuexiao) whkxx,
+     (select  name  from sys_dictionaries WHERE dictionaries_id= T.SYS_DICTIONARIES_PKID ) as rxnf,
+    <!-- s.department_id as dept_id, -->
+    (SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+    sdt.pkid=t.t_student_dorm_type_pkid)AS dorm_type_name,
+    stu.shenfenzhenghao,bm.xuehao,stu.xingming,
+    (select count(*) from t_student_takekey_log ttl where ttl.T_STUDENT_PKID=STU.pkid) AS is_received,
+    (SELECT CLASS_NAME FROM t_class cls WHERE cls.pkid=bm.BANJI)AS BANJI,
+     bm.BANJI as BANJIPKID,
+    (SELECT SCHOOLNAME FROM t_part_school sc WHERE sc.pkid=n.partschool_id)AS WHKXUEXIAO,
+    stu.whkxuexiao AS WHKXUEXIAOPKID,
+    n.partschool_id as schoolpkids,
+    (SELECT es.name FROM sys_dictionaries es WHERE es.dictionaries_id=n.classtype_id)AS BANXING,
+      n.classtype_id as BANJI_TYPE_PKID,
+      case when bm.is_rz is null then '否' when bm.is_rz='Y' then '是' end as is_rz
+    FROM T_STUDENT_DORM T 
+    left join T_DORM_RELATION n on n.dorm_id=t.pkid 
+   left join T_STUDENT_BM bm 
+     on bm.pkid=t.t_student_bm_pkid <!-- and bm.ZHUANGTAI=1 and bm.ZXZT='ZX' and t.sys_dictionaries_pkid=bm.rxnianfen_pkid and n.classtype_id=bm.banji_type_pkid  -->
+     left join  t_student stu ON bm.student_pkid=stu.pkid 
+    where  T.SD_LEVEL = 5   
+		)w 
+		<where>
+			<if test="pd.dorm_pkid!=null and pd.dorm_pkid!=''">
+ 		 <foreach item="item" index="index" collection="pd.array" open="(" separator="or" close=")"> 
+			w.pkid=#{pd.array[${index}]} 
+			</foreach> 
+			</if>
+			<if test="pd.dorm_pkid2!=null and pd.dorm_pkid2!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{pd.dorm_pkid2}
+			</if>
+			<if test="pd.ssgs!=null and pd.ssgs!=''">
+				and instr( w.SCHOOLPKIDS, #{pd.ssgs}) &gt; 0 
+			</if>
+			<if test="pd.dorm_type !=null and pd.dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{pd.dorm_type}
+			</if>
+			<if test="pd.whkxx!=null and pd.whkxx!=''">
+				and w.WHKXUEXIAOPKID =#{pd.whkxx}
+			</if>
+			<if test="pd.banx!=null and pd.banx!=''">
+				and w.BANJI_TYPE_PKID =#{pd.banx}
+			</if> 
+			<if test="pd.xingbie!=null and pd.xingbie!=''">
+				and w.SD_SEX =#{pd.xingbie}
+			</if>
+			<if test="pd.zhuangtai!=null and pd.zhuangtai!=''">
+				and w.STATUS =#{pd.zhuangtai}
+			</if>
+			<if test="pd.seText!=null and pd.seText!=''">
+				and 
+				(
+				   w.shenfenzhenghao like concat('%',concat(#{pd.seText},'%'))
+				or w.xingming like concat('%',concat(#{pd.seText},'%'))
+				or w.xuehao like concat('%',concat(#{pd.seText},'%'))
+				)
+			</if>
+			<if test="pd.pkid!=null and pd.pkid!=''">
+				and w.pkid !=#{pd.pkid} 
+				<choose>
+				<when test="pd.tiaosu!=null and pd.tiaosu!='' and pd.tiaosu!='null'">
+					and w.status=0
+				</when>
+				<otherwise>
+					and w.status=1
+				</otherwise>
+			</choose>
+			</if>
+			<if test="pd.sd_sex!=null and pd.sd_sex!=''">
+				and w.SD_SEX =#{pd.sd_sex}
+			</if>
+		</where>
+		order by  ROOM_NAME2,to_number(regexp_substr(sd_name,'[0-9]*[0-9]',1))
+	</select>
+	
+	
+	<select id="getDuiDiaoDormlistPage" parameterType="page" resultType="pd">
+		
+	 select /*+ FIRST_ROWS(100) */  w.pkid,w.room_name,w.parent_pkid,w.T_STUDENT_DORM_TYPE_PKID,w.SYS_DICTIONARIES_PKID,w.T_STUDENT_PKID,w.SD_NAME,w.SD_LEVEL,w.SD_PREFIX,
+ w.STATUS, w.CJSJ, w.XGSJ, w.SD_SEX, w.TREE_NODES, w.IS_ALLOT, <!-- w.dept_name,  -->w.rxnianfen_pkid, <!-- w.dept_id, --> w.dorm_type_name,w.t_student_bm_pkid,
+  w.shenfenzhenghao, w.xuehao, w.xingming, w.is_received, w.BANJI, w.BANJIPKID,w.WHKXUEXIAO,w.WHKXX,w.WHKXUEXIAOPKID,w.BANXING,w.BANJI_TYPE_PKID,w.IS_RZ,w.RXNF,w.BMPKID,w.SCHOOLPKIDS,
+ substr(w.ROOM_NAME,0,instr(w.room_name,'-',1,4)) as ROOM_NAME2 from (
+		 SELECT GETWHOLEROOMNAME_FUNC(T.PKID) AS ROOM_NAME,
+   T.*,
+   <!--  s.name AS
+    dept_name, -->
+    bm.pkid bmpkid,
+     bm.rxnianfen_pkid,(SELECT SCHOOLNAME FROM T_PART_SCHOOL T where t.pkid=stu.whkxuexiao) whkxx,
+     (select  name  from sys_dictionaries WHERE dictionaries_id= T.SYS_DICTIONARIES_PKID ) as rxnf,
+    <!-- s.department_id as dept_id, -->
+    (SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+    sdt.pkid=t.t_student_dorm_type_pkid)AS dorm_type_name,
+    stu.shenfenzhenghao,bm.xuehao,stu.xingming,
+    (select count(*) from t_student_takekey_log ttl where ttl.T_STUDENT_PKID=STU.pkid) AS is_received,
+    (SELECT CLASS_NAME FROM t_class cls WHERE cls.pkid=bm.BANJI)AS BANJI,
+     bm.BANJI as BANJIPKID,
+    (SELECT SCHOOLNAME FROM t_part_school sc WHERE sc.pkid=n.partschool_id)AS WHKXUEXIAO,
+    stu.whkxuexiao AS WHKXUEXIAOPKID,
+    n.partschool_id as schoolpkids,
+    (SELECT es.name FROM sys_dictionaries es WHERE es.dictionaries_id=n.classtype_id)AS BANXING,
+      n.classtype_id as BANJI_TYPE_PKID,
+      case when bm.is_rz is null then '否' when bm.is_rz='Y' then '是' end as is_rz
+    FROM T_STUDENT_DORM T 
+    left join T_DORM_RELATION n on n.dorm_id=t.pkid 
+   left join T_STUDENT_BM bm 
+     on bm.pkid=t.t_student_bm_pkid <!-- and bm.ZHUANGTAI=1 and bm.ZXZT='ZX' and t.sys_dictionaries_pkid=bm.rxnianfen_pkid and n.classtype_id=bm.banji_type_pkid  -->
+     left join  t_student stu ON bm.student_pkid=stu.pkid 
+    where  T.SD_LEVEL = 5   
+		)w 
+		<where>
+			<if test="pd.dorm_pkid!=null and pd.dorm_pkid!=''">
+ 		 <foreach item="item" index="index" collection="pd.array" open="(" separator="or" close=")"> 
+			w.pkid=#{pd.array[${index}]} 
+			</foreach> 
+			</if>
+			<if test="pd.dorm_pkid2!=null and pd.dorm_pkid2!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{pd.dorm_pkid2}
+			</if>
+			<if test="pd.ssgs!=null and pd.ssgs!=''">
+				and instr( w.SCHOOLPKIDS, #{pd.ssgs}) &gt; 0 
+			</if>
+			<if test="pd.dorm_type !=null and pd.dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{pd.dorm_type}
+			</if>
+			<!-- <if test="pd.whkxx!=null and pd.whkxx!=''">
+				and w.WHKXUEXIAOPKID =#{pd.whkxx}
+			</if> -->
+			<if test="pd.banx!=null and pd.banx!=''">
+				and w.BANJI_TYPE_PKID =#{pd.banx}
+			</if> 
+			<if test="pd.xingbie!=null and pd.xingbie!=''">
+				and w.SD_SEX =#{pd.xingbie}
+			</if>
+			<if test="pd.zhuangtai!=null and pd.zhuangtai!=''">
+				and w.STATUS =#{pd.zhuangtai}
+			</if>
+			<if test="pd.seText!=null and pd.seText!=''">
+				and 
+				(
+				   w.shenfenzhenghao like concat('%',concat(#{pd.seText},'%'))
+				or w.xingming like concat('%',concat(#{pd.seText},'%'))
+				or w.xuehao like concat('%',concat(#{pd.seText},'%'))
+				)
+			</if>
+			<if test="pd.pkid!=null and pd.pkid!=''">
+				and w.pkid !=#{pd.pkid} 
+				<choose>
+				<when test="pd.tiaosu!=null and pd.tiaosu!='' and pd.tiaosu!='null'">
+					and w.status=0
+				</when>
+				<otherwise>
+					and w.status=1
+				</otherwise>
+			</choose>
+			</if>
+			<if test="pd.sd_sex!=null and pd.sd_sex!=''">
+				and w.SD_SEX =#{pd.sd_sex}
+			</if>
+		</where>
+		order by  ROOM_NAME2,to_number(regexp_substr(sd_name,'[0-9]*[0-9]',1))
+	</select>
+	
+	
+	
+	<select id="getDormhistorylistPage" parameterType="page" resultType="pd">
+	select  *  from (select l.room_pkid,t.whkxuexiao whkxuexiaopkid,b.BANJI_TYPE_PKID,b.BANJI BANJIPKID,
+(select T_STUDENT_DORM_TYPE_PKID from t_student_dorm m where m.pkid=l.room_pkid) T_STUDENT_DORM_TYPE_PKID,
+t.shenfenzhenghao,b.xuehao,t.xingming,t.xingbie, 
+(SELECT SCHOOLNAME FROM t_part_school sc WHERE sc.pkid=t.whkxuexiao)AS WHKXUEXIAO,
+(select  name  from sys_dictionaries WHERE dictionaries_id= b.RXNIANFEN_PKID ) as rxnf,
+(SELECT es.name FROM sys_dictionaries es WHERE es.dictionaries_id=b.BANJI_TYPE_PKID)AS BANXING,
+(SELECT s.CLASS_NAME FROM t_class s WHERE s.pkid=b.BANJI)AS BANJI,
+(SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE sdt.pkid=(select T_STUDENT_DORM_TYPE_PKID from t_student_dorm m where m.pkid=l.room_pkid))AS dorm_type_name,
+ GETWHOLEROOMNAME_FUNC(l.room_pkid) AS ROOM_NAME,
+ to_char(l.cjsj,'YYYY-MM-DD HH24:mi:ss') RZSJ
+from t_room_used_log l
+join t_student t on t.pkid=l.t_student_pkid
+join t_student_bm b on b.pkid=l.student_bm_pkid 
+where
+l.used_type!=0 and b.ZHUANGTAI='1' and b.IS_TONGGUO !=0
+order by l.cjsj desc
+) w
+<where>
+	<if test="pd.dorm_pkid!=null and pd.dorm_pkid!=''">
+ 		 <foreach item="item" index="index" collection="pd.array" open="(" separator="or" close=")"> 
+			w.ROOM_PKID=#{pd.array[${index}]} 
+			</foreach> 
+</if>
+<if test="pd.dorm_type !=null and pd.dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{pd.dorm_type}
+</if>
+<if test="pd.whkxx!=null and pd.whkxx!=''">
+				and w.WHKXUEXIAOPKID =#{pd.whkxx}
+			</if>
+			<if test="pd.banx!=null and pd.banx!=''">
+				and w.BANJI_TYPE_PKID =#{pd.banx}
+			</if> 
+			<if test="pd.xingbie!=null and pd.xingbie!=''">
+				and w.XINGBIE =#{pd.xingbie}
+			</if>
+      <if test="pd.banji!=null and pd.banji!=''">
+				and w.BANJIPKID =#{pd.banji}
+			</if>
+      <if test="pd.seText!=null and pd.seText!=''">
+				and 
+				(
+				   w.SHENFENZHENGHAO like concat('%',concat(#{pd.seText},'%'))
+				or w.XINGMING like concat('%',concat(#{pd.seText},'%'))
+				or w.XUEHAO like concat('%',concat(#{pd.seText},'%'))
+				)
+			</if>
+	
+</where>
+	
+	
+	
+	</select>
+	
+	
+	<select id="ExportDormhistoryInfo" parameterType="pd" resultType="pd">
+	select  *  from (select l.room_pkid,t.whkxuexiao whkxuexiaopkid,b.BANJI_TYPE_PKID,b.BANJI BANJIPKID,
+(select T_STUDENT_DORM_TYPE_PKID from t_student_dorm m where m.pkid=l.room_pkid) T_STUDENT_DORM_TYPE_PKID,
+t.shenfenzhenghao,b.xuehao,t.xingming,case when t.xingbie='M' then '男' when t.xingbie='W' then '女' end xingbie,  
+(SELECT SCHOOLNAME FROM t_part_school sc WHERE sc.pkid=t.whkxuexiao)AS WHKXUEXIAO,
+(select  name  from sys_dictionaries WHERE dictionaries_id= b.RXNIANFEN_PKID ) as rxnf,
+(SELECT es.name FROM sys_dictionaries es WHERE es.dictionaries_id=b.BANJI_TYPE_PKID)AS BANXING,
+(SELECT s.CLASS_NAME FROM t_class s WHERE s.pkid=b.BANJI)AS BANJI,
+(SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE sdt.pkid=(select T_STUDENT_DORM_TYPE_PKID from t_student_dorm m where m.pkid=l.room_pkid))AS dorm_type_name,
+ GETWHOLEROOMNAME_FUNC(l.room_pkid) AS ROOM_NAME,
+ to_char(l.cjsj,'YYYY-MM-DD HH24:mi:ss') RZSJ
+from t_room_used_log l
+join t_student t on t.pkid=l.t_student_pkid
+join t_student_bm b on b.pkid=l.student_bm_pkid 
+where
+l.used_type!=0 and b.ZHUANGTAI='1'  and b.IS_TONGGUO !=0
+<if test="xingbie!=null and xingbie!=''">
+		and t.XINGBIE =#{xingbie}
+</if>
+order by l.cjsj desc
+) w
+<where>
+	<if test="dorm_pkid!=null and dorm_pkid!=''">
+ 		 <foreach item="item" index="index" collection="array" open="(" separator="or" close=")"> 
+			w.ROOM_PKID=#{array[${index}]} 
+			</foreach> 
+</if>
+<if test="dorm_type !=null and dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{dorm_type}
+</if>
+<if test="whkxx!=null and whkxx!=''">
+				and w.WHKXUEXIAOPKID =#{whkxx}
+			</if>
+			<if test="banx!=null and banx!=''">
+				and w.BANJI_TYPE_PKID =#{banx}
+			</if> 
+			
+      <if test="banji!=null and banji!=''">
+				and w.BANJIPKID =#{banji}
+			</if>
+      <if test="seText!=null and seText!=''">
+				and 
+				(
+				   w.SHENFENZHENGHAO like concat('%',concat(#{seText},'%'))
+				or w.XINGMING like concat('%',concat(#{seText},'%'))
+				or w.XUEHAO like concat('%',concat(#{seText},'%'))
+				)
+			</if>
+	
+</where>
+	</select>
+	
+	
+	
+	<!-- 查询用户的宿舍权限 -->
+	<select id="getUserDormDepartments" parameterType="String" resultType="pd">
+		select * from T_USERDORM_DEPARTMENT where user_id=#{user_id}
+	</select>
+	
+	<select id="getDormDepts" parameterType="String" resultType="pd">
+		select DORM_ID from t_dorm_department t where t.department_id in 
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		and t.ALLOT_TYPE = '0'
+	</select>
+	<select id="getDormDeptsBykey" parameterType="pd" resultType="pd">
+		select T.DORM_ID AS ID,T. from t_dorm_department t
+		JOIN T_STUDENT_DORM D ON d.pkid = t.DORM_ID and SD_SEX = #{SEX} and d.STATUS = '0'
+		where t.department_id in 
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		and t.ALLOT_TYPE = '0'
+	</select>
+	
+	
+	<select id="getUserAllDeptsBeds" parameterType="java.util.List" resultType="pd">
+		<foreach item="item" index="index" collection="list" open="(" separator="union" close=")">
+                 select pkid from t_student_dorm start with pkid=#{item.DORM_ID}  connect by prior parent_pkid = pkid 
+		</foreach>
+	</select>
+	<select id="getDormOrder" parameterType="pd" resultType="pd">
+		select * from t_student_dorm d where 
+		exists (
+			select 1 from
+			(SELECT REGEXP_SUBSTR(#{dormtree}, '[^,]+', 1, LEVEL) AS TOKEN
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{dormtree}, '[^,]+', 1, LEVEL) IS NOT NULL) t1
+			where t1.TOKEN = d.pkid
+		)
+		order by GETWHOLEROOMNAME_FUNC(d.PKID)
+	</select>
+	<!-- 宿舍下拉列表 -->
+	<select id="getDormList" parameterType="pd" resultType="pd">
+		select pkid,GETWHOLEROOMNAME_FUNC(PKID) AS ROOM_NAME from t_student_dorm where SD_LEVEL = 5  and pkid in
+		<choose>
+			<when test="UserAllDormDepts!=null">
+				<foreach item="item" index="index" collection="UserAllDormDepts" open="(" separator="," close=")"> 
+				   #{UserAllDormDepts[${index}].DORM_ID,jdbcType=VARCHAR}  
+				</foreach>
+			</when>
+			<otherwise>
+			('')
+			</otherwise>
+		</choose>
+		<!-- 该条件是 调宿舍界面用的 -->
+		<if test="tiaosu!=null and tiaosu!=''">
+				and status=0
+		</if>
+	</select>
+	
+	
+	<select id="getDormTypeList" resultType="pd">
+		select * from t_student_dorm_type t 
+<!-- 		where t.is_use=1 -->
+	</select>
+	
+	<select id="getUserDormInfoDepts" parameterType="String" resultType="pd">
+		<!--  
+		select * from sys_department where department_id in 
+		<choose>
+			<when test="array!=null">
+				<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+				   #{item}  
+				</foreach>
+			</when>
+			<otherwise>
+			('')
+			</otherwise>
+		</choose>
+		-->
+		<foreach item="item" index="index" collection="array" open="(" separator="union" close=")">
+				     
+				   select * from sys_department start with  department_id  =#{item}
+				   connect by prior department_id=parent_id
+		</foreach>
+	</select>
+	
+	<!-- 对调 -->
+	
+	
+	<update id="changeEachOtherDormInfo" parameterType="pd">
+		update t_student_dorm 
+		set xgsj=sysdate,
+		<!-- 调宿后原来占用的改为未占用 -->
+		<choose>
+			<when test="T_STUDENT_PKID==null or T_STUDENT_PKID=='' or T_STUDENT_PKID=='null'">
+			status=0,
+			</when>
+			<otherwise>
+			status=1,
+			</otherwise>
+		</choose>	
+		T_STUDENT_PKID=#{T_STUDENT_PKID,jdbcType=VARCHAR}
+		
+		where pkid=#{PKID,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="changeDORMDEPARTMENT" parameterType="pd">
+		update T_DORM_DEPARTMENT 
+		set xgsj=sysdate,
+		DEPARTMENT_ID=(select DEPARTMENT_PKID from   T_STUDENT p where p.PKID=#{T_STUDENT_PKID,jdbcType=VARCHAR})
+		where DORM_ID=#{PKID,jdbcType=VARCHAR}
+	</update>
+	
+	
+	<update id="tuiSu" parameterType="pd">
+		update t_student_dorm 
+		set xgsj=sysdate,
+		status=0,
+		t_student_pkid=null
+		where pkid=#{pkid}
+	</update>
+	
+	<insert id="saveDormUsedLog" parameterType="pd">
+		    INSERT INTO t_room_used_log
+		      (pkid, t_student_pkid, room_pkid, used_type, handle_resource)
+		    VALUES
+		      (sys_guid(), #{t_student_pkid,jdbcType=VARCHAR},#{pkid}, #{used_type}, #{handle_resource})
+	</insert>
+	
+	
+	
+	
+	<select id="getStuInfolistPage" parameterType="page" resultType="pd">
+		
+		
+	select min(t.pkid) pkid,
+  min(t.XINGMING) XINGMING,
+  min((case when t.XINGBIE='M'then '男' when t.XINGBIE='W'then '女' else '' end))XINGBIE,
+  min(b.XUEHAO) XUEHAO,
+ min(l.schoolname) as hzxx,
+ min(d.name) as banxing,t.shenfenzhenghao,b.banji_type_pkid,b.RXNIANFEN_PKID,
+ min((SELECT  E.Name  FROM SYS_DICTIONARIES E WHERE E.DICTIONARIES_ID=b.RXNIANFEN_PKID)) RXNF,
+  min((SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+    sdt.pkid=o.t_student_dorm_type_pkid))AS dorm_type_name,
+   min(getMYRoomName_func(o.PKID,t.pkid,b.rxnianfen_pkid,t.whkxuexiao)) AS ROOM_NAME,
+ min(c.CLASS_NAME) CLASS_NAME ,min(B.PKID) BMPKID
+ from t_student t  
+ left join t_student_bm b on b.student_pkid=t.pkid
+ left join t_class c on c.pkid=t.banji left join T_PART_SCHOOL l on t.WHKXUEXIAO=l.pkid
+ left join t_student_dorm o on o.T_STUDENT_PKID=t.pkid
+ left join sys_dictionaries d on d.dictionaries_id=b.banji_type_pkid
+        where  t.zhuangtai=1 
+        <if test="pd.sd_sex != null and pd.sd_sex !=''">
+			<choose>
+				<when test="pd.sd_sex ==1 or pd.sd_sex =='1'">
+					and t.xingbie='M'
+				</when>
+				
+				<when test="pd.sd_sex ==0 or pd.sd_sex =='0'">
+					and t.xingbie='W'
+				</when>
+			</choose>		
+		</if>
+		<if test="pd.seText !=null and pd.seText !=''">
+			and 
+			(
+			    t.shenfenzhenghao like concat('%',concat(#{pd.seText},'%'))
+				or t.xingming like concat('%',concat(#{pd.seText},'%'))
+				or b.xuehao like concat('%',concat(#{pd.seText},'%'))
+			)
+		</if>
+		<if test="pd.WHKXUEXIAO !=null and pd.WHKXUEXIAO !=''">
+			 and t.WHKXUEXIAO =#{pd.WHKXUEXIAO}
+		</if>
+		<if test="pd.BANXING !=null and pd.BANXING !=''">
+			and b.BANJI_TYPE_PKID =#{pd.BANXING}
+		</if>
+	 AND NOT EXISTS (SELECT 1 FROM t_student_dorm e left join T_DORM_RELATION u on u.dorm_id=e.pkid 
+  where 1=1
+ and t.pkid=e.t_student_pkid
+ <if test="pd.BANXING !=null and pd.BANXING !=''">
+			and u.classtype_id =#{pd.BANXING}
+</if>
+<if test="pd.WHKXUEXIAO !=null and pd.WHKXUEXIAO !=''">
+			 and u.partschool_id =#{pd.WHKXUEXIAO}
+</if>
+ and e.sys_dictionaries_pkid = b.rxnianfen_pkid
+ )
+group  by t.shenfenzhenghao,b.banji_type_pkid,b.RXNIANFEN_PKID
+	
+	
+	
+	
+	
+	<!-- 
+		select t.*,
+		(SELECT dd.name FROM Sys_Department dd WHERE dd.department_id=t.DEPARTMENT_PKID)AS
+		dept_name
+		 from t_student t
+		<where>
+		    zhuangtai=1 and 
+			DEPARTMENT_PKID IN 
+		<choose>
+			<when test="pd.UserAllDormDepts!=null">
+				<foreach item="item" index="index" collection="pd.UserAllDormDepts" open="(" separator="," close=")"> 
+				   #{pd.UserAllDormDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+				</foreach>
+			</when>
+			<otherwise>
+			('')
+			</otherwise>
+		</choose>
+		<if test="pd.sd_sex != null and pd.sd_sex !=''">
+			<choose>
+				<when test="pd.sd_sex ==1 or pd.sd_sex =='1'">
+					and xingbie='男'
+				</when>
+				
+				<when test="pd.sd_sex ==0 or pd.sd_sex =='0'">
+					and xingbie='女'
+				</when>
+			</choose>		
+		</if>
+		<if test="pd.seText !=null and pd.seText !=''">
+			and 
+			(
+			    t.shenfenzhenghao like concat('%',concat(#{pd.seText},'%'))
+				or t.xingming like concat('%',concat(#{pd.seText},'%'))
+				or t.xuehao like concat('%',concat(#{pd.seText},'%'))
+			)
+		</if>
+		<if test="pd.dept_id!=null and  pd.dept_id!=''">
+			and DEPARTMENT_PKID=#{pd.dept_id}
+		</if>
+		AND NOT EXISTS (SELECT 1 FROM t_student_dorm d WHERE t.pkid=d.t_student_pkid)
+		and (exists (
+			select  I.T_DORM_TYPE_PKID
+			from t_pay_item_list l
+			join t_pay_item i on i.pkid = l.PAY_ITEM_PKID
+			where l.STUDENT_PKID = t.pkid AND I.T_DORM_TYPE_PKID IS NOT NULL
+			and l.PAY_ITEM_PKID != l.PAY_ITEM_PARENT_PKID
+			and l.IS_DEFAULT = 'Y'
+			AND L.AMOUNTCOLLECTION > 0
+			AND ROWNUM = 1
+			and i.T_DORM_TYPE_PKID = #{pd.t_student_dorm_type_pkid}
+		) or not exists (
+			select  I.T_DORM_TYPE_PKID
+			from t_pay_item_list l
+			join t_pay_item i on i.pkid = l.PAY_ITEM_PKID
+			where l.STUDENT_PKID = t.pkid AND I.T_DORM_TYPE_PKID IS NOT NULL
+			and l.PAY_ITEM_PKID != l.PAY_ITEM_PARENT_PKID
+			and l.IS_DEFAULT = 'Y'
+			AND L.AMOUNTCOLLECTION > 0
+			AND ROWNUM = 1
+			and i.T_DORM_TYPE_PKID != #{pd.t_student_dorm_type_pkid}
+		)   
+		)
+		
+		</where>  -->
+		
+	</select>
+	
+	
+	<select id="getfenpeiStuInfolistPage" parameterType="page" resultType="pd">
+		
+		
+	select min(t.pkid) pkid,
+  min(t.XINGMING) XINGMING,
+  min((case when t.XINGBIE='M'then '男' when t.XINGBIE='W'then '女' else '' end))XINGBIE,
+  min(b.XUEHAO) XUEHAO,
+ min(l.schoolname) as hzxx,
+ min(d.name) as banxing,t.shenfenzhenghao,b.banji_type_pkid,b.RXNIANFEN_PKID,
+ min((SELECT  E.Name  FROM SYS_DICTIONARIES E WHERE E.DICTIONARIES_ID=b.RXNIANFEN_PKID)) RXNF,
+  min((SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+    sdt.pkid=o.t_student_dorm_type_pkid))AS dorm_type_name,
+   min(getMYRoomName_func(o.PKID,t.pkid,b.rxnianfen_pkid,t.whkxuexiao)) AS ROOM_NAME,
+ min(c.CLASS_NAME) CLASS_NAME ,min(B.PKID) BMPKID
+ from t_student t  
+ left join t_student_bm b on b.student_pkid=t.pkid
+ left join t_class c on c.pkid=t.banji left join T_PART_SCHOOL l on t.WHKXUEXIAO=l.pkid
+ left join t_student_dorm o on o.T_STUDENT_PKID=t.pkid
+ left join sys_dictionaries d on d.dictionaries_id=b.banji_type_pkid
+        where  b.zhuangtai=1  and b.ZXZT='ZX' and b.is_tongguo!=0
+        <if test="pd.sd_sex != null and pd.sd_sex !=''">
+			<choose>
+				<when test="pd.sd_sex ==1 or pd.sd_sex =='1'">
+					and t.xingbie='M'
+				</when>
+				
+				<when test="pd.sd_sex ==0 or pd.sd_sex =='0'">
+					and t.xingbie='W'
+				</when>
+			</choose>		
+		</if>
+		<if test="pd.seText !=null and pd.seText !=''">
+			and 
+			(
+			    t.shenfenzhenghao like concat('%',concat(#{pd.seText},'%'))
+				or t.xingming like concat('%',concat(#{pd.seText},'%'))
+				or b.xuehao like concat('%',concat(#{pd.seText},'%'))
+			)
+		</if>
+		<if test="pd.WHKXUEXIAO !=null and pd.WHKXUEXIAO !=''">
+			<!--  and t.WHKXUEXIAO =#{pd.WHKXUEXIAO} -->
+			 and instr(#{pd.WHKXUEXIAO},t.WHKXUEXIAO) &gt; 0
+		</if>
+		<if test="pd.BANXING !=null and pd.BANXING !=''">
+			and b.BANJI_TYPE_PKID =#{pd.BANXING}
+		</if>
+	 AND NOT EXISTS (SELECT 1 FROM t_student_dorm e left join T_DORM_RELATION u on u.dorm_id=e.pkid 
+  where 1=1
+ and t.pkid=e.t_student_pkid
+ <if test="pd.BANXING !=null and pd.BANXING !=''">
+			and u.classtype_id =#{pd.BANXING}
+</if>
+<!-- <if test="pd.WHKXUEXIAO !=null and pd.WHKXUEXIAO !=''">
+			 and u.partschool_id =#{pd.WHKXUEXIAO}
+			and instr(#{pd.WHKXUEXIAO},u.partschool_id) &gt; 0
+</if> -->
+ and e.sys_dictionaries_pkid = b.rxnianfen_pkid
+ )
+group  by t.shenfenzhenghao,b.banji_type_pkid,b.RXNIANFEN_PKID
+	
+		
+	</select>
+	<select id="getStuInfolist" parameterType="pd" resultType="pd">
+		select t.*
+		 from t_student t
+		<where>
+		    zhuangtai=1  
+		<if test="sd_sex != null and sd_sex !=''">
+			<choose>
+				<when test="sd_sex ==1 or sd_sex =='1'">
+					and xingbie='男'
+				</when>
+				
+				<when test="sd_sex ==0 or sd_sex =='0'">
+					and xingbie='女'
+				</when>
+			</choose>		
+		</if>
+		<if test="seText !=null and seText !=''">
+			and 
+			(
+			    t.shenfenzhenghao like concat('%',concat(#{seText},'%'))
+				or t.xingming like concat('%',concat(#{seText},'%'))
+				or t.xuehao like concat('%',concat(#{seText},'%'))
+			)
+		</if>
+		AND NOT EXISTS (SELECT 1 FROM t_student_dorm d WHERE t.pkid=d.t_student_pkid)
+		</where>
+	</select>
+	<select id="getItemList" parameterType="pd" resultType="pd">
+		select  I.T_DORM_TYPE_PKID
+		from t_pay_item_list l
+		join t_pay_item i on i.pkid = l.PAY_ITEM_PKID
+		where l.STUDENT_PKID = #{PKID} AND I.T_DORM_TYPE_PKID IS NOT NULL
+		and l.PAY_ITEM_PKID != l.PAY_ITEM_PARENT_PKID
+		and l.IS_DEFAULT = 'Y'
+		AND L.AMOUNTCOLLECTION > 0
+		AND ROWNUM = 1
+	</select>
+	
+	<!-- 导出宿舍信息 -->
+	<select id="ExportDormInfo" parameterType="pd" resultType="pd">
+	
+	
+	
+	 select  w.pkid,w.room_name,w.parent_pkid,w.T_STUDENT_DORM_TYPE_PKID,w.SYS_DICTIONARIES_PKID,w.T_STUDENT_PKID,w.SD_NAME,w.SD_LEVEL,w.SD_PREFIX,
+ w.STATUS, w.CJSJ, w.XGSJ, (
+    case 
+     when w.SD_SEX=1
+     then '男'
+     when w.SD_SEX=0
+     then '女'
+     end
+    ) as SD_SEX, w.TREE_NODES, w.IS_ALLOT, w.rxnianfen_pkid,w.dorm_type_name,w.t_student_bm_pkid,
+  w.shenfenzhenghao, w.xuehao, w.xingming, w.is_received, w.BANJI, w.BANJIPKID,w.WHKXUEXIAO,w.WHKXX,w.WHKXUEXIAOPKID,w.BANXING,w.BANJI_TYPE_PKID,w.IS_RZ,w.RXNF,w.SCHOOLPKIDS,
+ substr(w.ROOM_NAME,0,instr(w.room_name,'-',1,4)) as ROOM_NAME2 from (
+     SELECT GETWHOLEROOMNAME_FUNC(T.PKID) AS ROOM_NAME,
+   T.*,
+     bm.rxnianfen_pkid,(SELECT SCHOOLNAME FROM T_PART_SCHOOL T where t.pkid=stu.whkxuexiao) whkxx,
+     (select  name  from sys_dictionaries WHERE dictionaries_id= T.SYS_DICTIONARIES_PKID ) as rxnf,
+    (SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+    sdt.pkid=t.t_student_dorm_type_pkid)AS dorm_type_name,
+    stu.shenfenzhenghao,bm.xuehao,stu.xingming,
+    (select count(*) from t_student_takekey_log ttl where ttl.T_STUDENT_PKID=STU.pkid) AS is_received,
+    (SELECT CLASS_NAME FROM t_class cls WHERE cls.pkid=bm.BANJI)AS BANJI,
+     bm.BANJI as BANJIPKID,
+    (SELECT SCHOOLNAME FROM t_part_school sc WHERE sc.pkid=n.partschool_id)AS WHKXUEXIAO,
+    stu.whkxuexiao AS WHKXUEXIAOPKID,
+     n.partschool_id as schoolpkids,
+    (SELECT es.name FROM sys_dictionaries es WHERE es.dictionaries_id=n.classtype_id)AS BANXING,
+      n.classtype_id as BANJI_TYPE_PKID,
+      case when bm.is_rz is null then '否' when bm.is_rz='Y' then '是' end as is_rz
+    FROM T_STUDENT_DORM T 
+    left join T_DORM_RELATION n on n.dorm_id=t.pkid 
+   left join T_STUDENT_BM bm 
+    on bm.pkid=t.t_student_bm_pkid
+	left join  t_student stu ON bm.student_pkid=stu.pkid 	
+   
+    where  T.SD_LEVEL = 5   
+    )w 
+		<where>
+			<if test="dorm_pkid!=null and dorm_pkid!=''">
+<!-- 				w.pkid in  -->
+<!-- 				(SELECT REGEXP_SUBSTR(#{pd.dorm_pkid}, '[^,]+', 1, LEVEL) -->
+<!-- 				FROM DUAL -->
+<!-- 				CONNECT BY REGEXP_SUBSTR(#{pd.dorm_pkid}, '[^,]+', 1, LEVEL) IS NOT NULL) -->
+<!-- 				<foreach item="item" index="index" collection="array" open="(" separator="," close=")"> -->
+<!-- 			#{item} -->
+<!-- 		</foreach> -->
+ 		 <foreach item="item" index="index" collection="array" open="(" separator="or" close=")"> 
+			w.pkid=#{array[${index}]} 
+			</foreach> 
+<!-- 		and exists (select 1 from   -->
+<!-- 			<foreach item="item" index="index" collection="pd.array" open="(" separator="union all" close=")"> -->
+<!-- 			select #{pd.array[${index}]} as PKID  from dual -->
+<!-- 			</foreach> bb where bb.pkid=w.pkid) -->
+			
+			
+			</if>
+			
+			<if test="dorm_pkid2!=null and dorm_pkid2!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{dorm_pkid2}
+			</if>
+			<if test="dorm_type !=null and dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{dorm_type}
+			</if>
+			<if test="ssgs!=null and ssgs!=''">
+				and instr( w.SCHOOLPKIDS, #{ssgs}) &gt; 0 
+			</if>
+			<if test="whkxx!=null and whkxx!=''">
+				and w.WHKXUEXIAOPKID =#{whkxx}
+			</if>
+			<if test="banx!=null and banx!=''">
+				and w.BANJI_TYPE_PKID =#{banx}
+			</if> 
+			<if test="xingbie!=null and xingbie!=''">
+				and w.SD_SEX =#{xingbie}
+			</if>
+			<if test="zhuangtai!=null and zhuangtai!=''">
+				and w.STATUS =#{zhuangtai}
+			</if>
+			<if test="seText!=null and seText!=''">
+				and 
+				(
+				   w.shenfenzhenghao like concat('%',concat(#{seText},'%'))
+				or w.xingming like concat('%',concat(#{seText},'%'))
+				or w.xuehao like concat('%',concat(#{seText},'%'))
+				)
+			</if>
+			<if test="pkid!=null and pkid!=''">
+				and w.pkid !=#{pkid} 
+				<choose>
+				<when test="tiaosu!=null and tiaosu!='' and tiaosu!='null'">
+					and w.status=0
+				</when>
+				<otherwise>
+					and w.status=1
+				</otherwise>
+			</choose>
+			</if>
+			<if test="sd_sex!=null and sd_sex!=''">
+				and w.SD_SEX =#{sd_sex}
+			</if>
+		</where>
+		order by  ROOM_NAME2,to_number(regexp_substr(sd_name,'[0-9]*[0-9]',1))
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		<!-- select w.*,substr(w.ROOM_NAME,0,instr(w.room_name,'-',1,4)) as ROOM_NAME2 from (
+		SELECT GETWHOLEROOMNAME_FUNC(T.PKID) AS ROOM_NAME,
+		T.*,
+		(SELECT NAME
+		FROM SYS_DICTIONARIES D
+		WHERE D.BIANMA = STU.NIANJI) AS ruxuenianfen,
+		
+		(SELECT dd.name FROM Sys_Department dd WHERE dd.department_id=getBedBelongsToDeptId(t.pkid))AS
+		dept_name,
+		getBedBelongsToDeptId(t.pkid) as dept_id,
+		(SELECT sdt.DT_NAME FROM t_student_dorm_type sdt WHERE
+		sdt.pkid=t.t_student_dorm_type_pkid)AS dorm_type_name,
+		stu.shenfenzhenghao,stu.xuehao,stu.xingming,stu.nianji,
+		(
+		case 
+		 when stu.is_received='Y'
+		 then '是'
+		 when stu.is_received='N'
+		 then '否'
+		 end
+		) as takeKey,
+		
+		(
+		case 
+		 when t.sd_sex=1
+		 then '男'
+		 when t.sd_sex=0
+		 then '女'
+		 end
+		) as sushexingbie
+		FROM T_STUDENT_DORM T LEFT OUTER JOIN t_student Stu ON t.t_student_pkid=stu.pkid
+		join t_dorm_department tdd on t.pkid = tdd.dorm_id 
+		where  T.SD_LEVEL = 5 
+	     and tdd.department_id in 
+		<choose>
+			<when test="UserAllDormDepts!=null">
+				<foreach item="item" index="index" collection="UserAllDormDepts" open="(" separator="," close=")"> 
+				   #{UserAllDormDepts[${index}].DEPARTMENT_ID,jdbcType=VARCHAR}  
+				</foreach>
+			</when>
+			<otherwise>
+			('')
+			</otherwise>
+		</choose>
+	 
+		AND T.PKID IN 
+		<choose>
+			<when test="UserAllDormDepts!=null">
+				<foreach item="item" index="index" collection="UserAllDormDepts" open="(" separator="," close=")"> 
+				   #{UserAllDormDepts[${index}].DORM_ID,jdbcType=VARCHAR}  
+				</foreach>
+			</when>
+			<otherwise>
+			('')
+			</otherwise>
+		</choose>
+		)w 
+		<where>
+			<if test="dorm_pkid!=null and dorm_pkid!=''">
+				w.pkid in 
+				(SELECT REGEXP_SUBSTR(#{dorm_pkid}, '[^,]+', 1, LEVEL)
+				FROM DUAL
+				CONNECT BY REGEXP_SUBSTR(#{dorm_pkid}, '[^,]+', 1, LEVEL) IS NOT NULL)
+			</if>
+			<if test="dorm_pkid2!=null and dorm_pkid2!=''">
+				and w.pkid =#{dorm_pkid2}
+			</if>
+			<if test="dorm_type!=null and dorm_type!=''">
+				and w.T_STUDENT_DORM_TYPE_PKID =#{dorm_type}
+			</if>
+			<if test="ruxuenianfen!=null and ruxuenianfen!=''">
+				and w.nianji =#{ruxuenianfen}
+			</if>
+			<if test="department_pkid!=null and department_pkid!=''">
+				and w.dept_id 
+				in
+			(SELECT REGEXP_SUBSTR(#{department_pkid}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{department_pkid}, '[^,]+', 1, LEVEL) IS NOT NULL)
+			</if>
+			<if test="xingbie!=null and xingbie!=''">
+				and w.SD_SEX =#{xingbie}
+			</if>
+			<if test="zhuangtai!=null and zhuangtai!=''">
+				and w.STATUS =#{zhuangtai}
+			</if>
+			<if test="seText!=null and seText!=''">
+				and 
+				(
+				   w.shenfenzhenghao like concat('%',concat(#{seText},'%'))
+				or w.xingming like concat('%',concat(#{seText},'%'))
+				or w.xuehao like concat('%',concat(#{seText},'%'))
+				)
+			</if>
+			<if test="pkid!=null and pkid!=''">
+				and w.pkid !=#{pkid} 
+				<choose>
+				<when test="tiaosu!=null and tiaosu!='' and tiaosu!='null'">
+					and w.status=0
+				</when>
+				<otherwise>
+					and w.status=1
+				</otherwise>
+			</choose>
+			</if>
+			<if test="sd_sex!=null and sd_sex!=''">
+				and w.SD_SEX =#{sd_sex}
+			</if>
+		</where> 
+		order by  ROOM_NAME2,to_number(regexp_substr(sd_name,'[0-9]*[0-9]',1)) -->
+	</select>
+	
+	<select id="getStuDrom" parameterType="pd" resultType="pd">
+		SELECT * FROM t_student_dorm d WHERE d.t_student_pkid=#{PKID} and rownum=1
+	</select>
+	
+	<select id="getdaoruStuDrom" parameterType="pd" resultType="pd">
+		  SELECT * FROM t_student_dorm d left join t_dorm_relation n on n.dorm_id=d.pkid
+     WHERE d.t_student_pkid=#{PKID} 
+     and d.SYS_DICTIONARIES_PKID=#{RXNIANFEN_PKID} 
+     and n.classtype_id=#{BANJI_TYPE_PKID} and rownum=1
+	</select>
+	
+	<select id="getDromList" parameterType="pd" resultType="pd">
+		<!-- SELECT * FROM t_student_dorm d WHERE d.SD_NAME=#{CHUANGHAO} -->
+		SELECT d.*,n.DEPARTMENT_ID FROM t_student_dorm d LEFT JOIN t_dorm_department n on d.pkid=n.dorm_id WHERE d.SD_NAME=#{CHUANGHAO}
+	</select>
+	
+	<select id="getdaoruDromList" parameterType="pd" resultType="pd">
+		SELECT d.*,n.CLASSTYPE_ID FROM t_student_dorm d LEFT JOIN t_dorm_relation n on d.pkid=n.dorm_id  WHERE d.SD_NAME=#{CHUANGHAO} and d.STATUS='0'
+	</select>
+	
+	
+	<select id="getinfoList" parameterType="pd" resultType="pd">
+		select *
+  from t_pay_item_list t
+  left join t_pay_item i on t.pay_item_pkid = i.pkid
+  left join t_pay_style e on e.pkid = PAY_TYPE_PKID
+ where t.pay_item_pkid != t.pay_item_parent_pkid and e.PAY_STYLE_NAME='住宿费'  
+  and e.INTERFACE_NAME='住宿费'  and t.AMOUNTCOLLECTION &gt; 0
+  and t.STUDENT_PKID=#{T_STUDENT_PKID}
+	</select>
+	<!--拼宿舍名字  -->
+	
+	<select id="getDormName" parameterType="pd" resultType="pd">
+		select GETWHOLEROOMNAME_FUNC(#{PKID}) as dormname from dual
+	</select>
+	
+	<update id="bindStuAndDorm" parameterType="pd">
+		update t_student_dorm 
+		set xgsj=sysdate,
+		status=1,
+		t_student_pkid=#{T_STUDENT_PKID}
+		where pkid=#{DORM_PKID}
+	</update>
+	
+		<insert id="batchsaveDormUsedLog" parameterType="java.util.List" useGeneratedKeys="false">
+		    INSERT INTO t_room_used_log
+		      (pkid, t_student_pkid, room_pkid, used_type, handle_resource)
+		    <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		    select
+		     sys_guid(), #{item.T_STUDENT_PKID,jdbcType=VARCHAR},#{item.DORM_PKID}, #{item.used_type}, #{item.handle_resource}
+		     from dual
+		    </foreach>
+		     
+	</insert>
+	<select id="dormOrderlistPage" parameterType="page" resultType="pd">
+		SELECT * FROM (
+			SELECT /*+ FIRST_ROWS(100) */ S.PKID STUDENT_PKID,SB.PKID,S.SHENFENZHENGHAO,S.XINGMING,(CASE WHEN S.XINGBIE = 'M' THEN '男' ELSE '女' END) XINGBIE,
+		    SD.NAME AS GRADE,SB.XUEHAO,PS.SCHOOLNAME,SDD.NAME AS CLASSTYPE,C.CLASS_NAME,SUM(L.AMOUNTCOLLECTION) AMOUNTRECEIVABLEALL,
+		    (case when TSD.T_STUDENT_PKID IS NOT NULL AND TSD.STATUS = '1' then 'Y' else 'N' END) IS_FENPEI, 
+		    GETWHOLEROOMNAME_FUNC(TSD.PKID) DORMNAME,PS.PKID AS SCHOOL_PKID,SDD.DICTIONARIES_ID AS CLASSTYPE_PKID
+		    FROM T_STUDENT S
+		    JOIN T_STUDENT_BM SB ON SB.STUDENT_PKID = S.PKID
+		    JOIN SYS_DICTIONARIES SD ON SD.DICTIONARIES_ID = SB.RXNIANFEN_PKID AND SD.PARENT_ID = 'GRADE'
+		    JOIN T_PART_SCHOOL PS ON PS.PKID = S.WHKXUEXIAO
+		    JOIN SYS_DICTIONARIES SDD ON SDD.DICTIONARIES_ID = SB.BANJI_TYPE_PKID AND SDD.PARENT_ID = 'CLASSTYPE'
+		    JOIN T_PAY_ITEM_LIST L ON L.STUDENT_BM_PKID = SB.PKID
+		    LEFT JOIN T_CLASS C ON C.PKID = SB.BANJI
+		    LEFT JOIN T_STUDENT_DORM TSD ON TSD.T_STUDENT_BM_PKID = SB.PKID
+		    WHERE 1=1  AND SB.ZHUANGTAI = 1 AND SB.ZXZT = 'ZX'
+		    AND SB.IS_TONGGUO IN ('1','2')
+			<if test="pd.PART_SCHOOL != null and pd.PART_SCHOOL !=''">
+				AND PS.PKID = #{pd.PART_SCHOOL}
+			</if>
+			<if test="pd.CLASS_TYPE !=null and pd.CLASS_TYPE !=''">
+				AND SDD.DICTIONARIES_ID = #{pd.CLASS_TYPE}
+			</if>
+			<if test="pd.XINGBIE !=null and pd.XINGBIE != ''">
+				AND S.XINGBIE = #{pd.XINGBIE}
+			</if>
+			<if test="pd.IS_FENPEI == '1'.toString()">
+				and TSD.T_STUDENT_BM_PKID IS NOT NULL AND TSD.STATUS = '1'
+			</if>
+			<if test="pd.IS_FENPEI == '0'.toString()">
+				and TSD.T_STUDENT_BM_PKID IS NULL 
+			</if>
+			<if test="pd.RUXUENIANFEN != null and pd.RUXUENIANFEN !=''">
+				and SB.RXNIANFEN_PKID = #{pd.RUXUENIANFEN}
+			</if>
+			<if test="pd.keywords !=null and pd.keywords != ''">
+				AND (
+				      S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				      or
+				      SB.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				      or 
+				      S.XINGMING LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				
+				)
+			</if>
+		    GROUP BY S.PKID,SB.PKID,S.SHENFENZHENGHAO,S.XINGMING,S.XINGBIE,SD.NAME,SB.XUEHAO,PS.SCHOOLNAME,SDD.NAME,C.CLASS_NAME,
+		    TSD.T_STUDENT_PKID,PS.PKID,SDD.DICTIONARIES_ID,TSD.STATUS,TSD.PKID
+  		) T WHERE AMOUNTRECEIVABLEALL > 0
+  		ORDER BY FIRST_PAY_TIME(PKID)
+	</select>
+	<select id="getStuDorm" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM sd where sd.T_STUDENT_BM_PKID = #{STUDENT_BM_PKID} and STATUS = '1' and ROWNUM = 1
+		for update
+	</select>
+	<!--查询是5的 即宿舍  -->
+	<select id="getDorms" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM sd where   SD_LEVEL=5
+	</select>
+	<select id="getDepRESTR" parameterType="pd" resultType="pd">
+		select AREATYPE from T_DORM_RESTRICTEDAREA where rownum = 1
+	</select>
+	<update id="updateDormDeptID" parameterType="pd">
+		update T_DORM_DEPARTMENT set DEPARTMENT_ID = #{DEPARTMENT_PKID}
+		where DORM_ID = #{dormId}
+	</update>
+	<select id="getoldDep" parameterType="pd" resultType="pd">
+		select * from T_DORM_DEPARTMENT t where t.DORM_ID = #{dormId}
+		and rownum = 1
+	</select>
+	<select id="getstuDep" parameterType="pd" resultType="pd">
+		select * from t_student s where s.pkid = #{STUDENT_PKID}
+    	and rownum = 1
+	</select>
+	<select id="getDormType" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM sd where sd.PKID = #{DORM_PKID}
+		and rownum = 1
+	</select>
+	<select id="getDromres" parameterType="String" resultType="pd">
+		select * from t_dorm_restrictedarea t  where 1=1 and rownum=1
+	</select>
+	<select id="getStuIsDorm" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM sd where sd.T_STUDENT_PKID = #{stuId}
+		and sd.STATUS = '1' AND ROWNUM = 1 
+	</select>
+	<select id="getWhkList" parameterType="pd" resultType="pd">
+		select * from t_part_school s where s.ZHUANGTAI = '1'
+		ORDER BY SCHOOLNAME, FUN_SPELLCODE(SUBSTR(SCHOOLNAME,1,2)),
+		 cast(REGEXP_SUBSTR(SCHOOLNAME, '[0-9]+') as int)
+		 
+	</select>
+	<select id="getClassTypeList" parameterType="pd" resultType="pd">
+		select * from sys_dictionaries d where d.parent_id = 'CLASSTYPE'
+	</select>
+	<update id="updateDormStu" parameterType="pd">
+		update T_STUDENT_DORM  sd
+		set sd.T_STUDENT_PKID = (select STUDENT_PKID from t_student_bm sb where sb.PKID = #{STUDENT_BM_PKID}),
+			sd.STATUS = '1',
+			sd.XGSJ = SYSDATE,
+			sd.T_STUDENT_BM_PKID = #{STUDENT_BM_PKID},
+			sd.SYS_DICTIONARIES_PKID = (select sb.RXNIANFEN_PKID from t_student_bm sb where sb.pkid = #{STUDENT_BM_PKID})
+		where sd.PKID = #{DORM_PKID}	
+	</update>
+	<insert id="saveUsedLog" parameterType="pd" useGeneratedKeys="false">
+		insert into T_ROOM_USED_LOG
+		(pkid, t_student_pkid, room_pkid, used_type, handle_resource,STUDENT_BM_PKID)
+		select
+		sys_guid(),STUDENT_PKID,#{DORM_PKID},'1','预订分配',#{STUDENT_BM_PKID}
+		from t_student_bm sb 
+		where sb.PKID = #{STUDENT_BM_PKID}
+	</insert>
+	<update id="updatefenpeiDorm" parameterType="pd">
+		update T_STUDENT_DORM m
+   		set m.SYS_DICTIONARIES_PKID = #{rxnf},
+       m.T_STUDENT_PKID        = #{stuId},
+       m.STATUS             = '1',
+        m.T_STUDENT_BM_PKID    = #{BMPKID},
+       m.XGSJ                  = SYSDATE
+ 		where m.pkid = #{dormId}
+
+	</update>
+	<update id="updatetuisuDorm" parameterType="pd">
+		update T_STUDENT_DORM m
+   		set m.SYS_DICTIONARIES_PKID = '',
+       m.T_STUDENT_PKID        = '',
+       m.STATUS             = '0',
+        m.T_STUDENT_BM_PKID             = '',
+       m.XGSJ                  = SYSDATE
+ 		where m.pkid = #{pkid}
+
+	</update>
+	
+	<update id="updateoldDorm" parameterType="pd">
+		 update T_STUDENT_DORM m
+       set  m.SYS_DICTIONARIES_PKID = '',
+       m.T_STUDENT_PKID        = '',
+       m.STATUS                = '0',
+       m.T_STUDENT_BM_PKID             = '',
+       m.XGSJ                  = SYSDATE
+       where m.pkid = #{dormId}
+
+	</update>
+	
+	<update id="updatenewDorm" parameterType="pd">
+	  
+       
+       
+       update T_STUDENT_DORM m
+       set m.SYS_DICTIONARIES_PKID = #{RXNIANFENPKID} ,
+       m.T_STUDENT_PKID        = #{STUPKID} ,
+       m.STATUS             = '1',
+        m.T_STUDENT_BM_PKID             = #{BMPKID},
+       m.XGSJ                  = SYSDATE
+     where m.pkid = #{newdormid}
+	</update>
+	
+	<insert id="savelog" parameterType="pd">
+	   insert into t_room_used_log
+     (pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+     values
+     (sys_guid(), #{T_STUDENT_PKID}, #{ROOM_PKID},#{USED_TYPE}, #{HANDLE_RESOURCE}, sysdate, sysdate, #{BANXING}, #{HZXX}, #{T_STUDENT_BM_PKID})
+	</insert>
+	
+	<select id="getdorminfo" parameterType="pd" resultType="pd">
+		select * from T_STUDENT_DORM d left join T_DORM_RELATION n on n.dorm_id=d.pkid where d.pkid=#{newdormid}
+	</select>
+	
+	<select id="getSCHOOLNAME" parameterType="pd" resultType="pd">
+		    SELECT wm_concat(SCHOOLNAME) SCHOOLNAME FROM T_PART_SCHOOL T 
+		    where t.pkid in 
+		    (select regexp_substr(#{schoolpkids},'[^,]+',1,rownum) from T_DORM_RELATION connect by rownum &lt;=length(regexp_replace(#{schoolpkids}, '[^,]', null)))
+	</select>
+	
+	<select id="getold" parameterType="pd" resultType="pd">
+		select SYS_DICTIONARIES_PKID from t_student_dorm r where r.pkid=#{oldpkid}
+	</select>
+	<select id="getnew" parameterType="pd" resultType="pd">
+		select SYS_DICTIONARIES_PKID from t_student_dorm r where r.pkid=#{newpkid}
+	</select>
+	
+	<update id="changeoldDormInfo" parameterType="pd">
+		 update t_student_dorm 
+		set xgsj=sysdate,
+		T_STUDENT_PKID=#{newStuId},
+		T_STUDENT_BM_PKID             = #{NEWBMPKID},
+    SYS_DICTIONARIES_PKID=#{NEWSYS_DICTIONARIES_PKID}
+		where pkid=#{oldpkid}
+	</update>
+	<update id="changenewDormInfo" parameterType="pd">
+		  update t_student_dorm 
+		set xgsj=sysdate,
+		T_STUDENT_PKID=#{oldStuId},
+		T_STUDENT_BM_PKID             = #{OLDBMPKID},
+    SYS_DICTIONARIES_PKID=#{OLDSYS_DICTIONARIES_PKID}
+		where pkid=#{newpkid}
+	</update>
+	<insert id="saveoldDormUsedLog" parameterType="pd" useGeneratedKeys="false">
+	Insert into t_room_used_log(pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+		    select sys_guid(),r.t_student_pkid,r.pkid,'1','对调',sysdate,sysdate,n.classtype_id,n.partschool_id,r.T_STUDENT_BM_PKID from 
+ t_student_dorm r left join T_DORM_RELATION n on n.dorm_id=r.pkid where  r.pkid=#{oldpkid}
+	</insert>
+	<insert id="savenewDormUsedLog" parameterType="pd" useGeneratedKeys="false">
+	Insert into t_room_used_log(pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+		   select sys_guid(),r.t_student_pkid,r.pkid,'1','对调',sysdate,sysdate,n.classtype_id,n.partschool_id,r.T_STUDENT_BM_PKID from 
+ t_student_dorm r left join T_DORM_RELATION n on n.dorm_id=r.pkid where  r.pkid=#{newpkid}
+	</insert>
+	
+	<insert id="savefenpeiDormUsedLog" parameterType="pd" useGeneratedKeys="false">
+	Insert into t_room_used_log(pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+		   select sys_guid(),#{stuId},#{dormId},'1','分配',sysdate,sysdate,n.classtype_id,n.partschool_id,#{BMPKID} from 
+ t_student_dorm r left join T_DORM_RELATION n on n.dorm_id=r.pkid where  r.pkid=#{dormId}
+	</insert>
+	<insert id="savetuisuDormUsedLog" parameterType="pd" useGeneratedKeys="false">
+	 
+   Insert into t_room_used_log(pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+		   select sys_guid(),#{t_student_pkid},#{pkid},'0','退宿',sysdate,sysdate,n.classtype_id,n.partschool_id,#{T_STUDENT_BM_PKID} from 
+ t_student_dorm r left join T_DORM_RELATION n on n.dorm_id=r.pkid where  r.pkid=#{pkid}
+	</insert>
+	
+	<update id="updatedaoruDorm" parameterType="pd">
+		 update T_STUDENT_DORM m
+   		set m.SYS_DICTIONARIES_PKID = #{RXNF},
+       m.T_STUDENT_PKID        = #{T_STUDENT_PKID},
+       m.STATUS             = '1',
+       m.XGSJ                  = SYSDATE,
+       m.T_STUDENT_BM_PKID   =#{BMPKID}
+ 		where m.pkid = #{DORM_PKID}
+
+	</update>
+	
+	
+	<insert id="savedaorulog" parameterType="pd">
+	    insert into t_room_used_log
+     (pkid, t_student_pkid, room_pkid, used_type, handle_resource, cjsj, xgsj, banxing, hzxx,STUDENT_BM_PKID)
+     values
+     (sys_guid(), #{T_STUDENT_PKID}, #{DORM_PKID},#{used_type}, #{handle_resource}, sysdate, sysdate, #{BX}, #{WHKXUEXIAO},#{BMPKID})
+ 
+	</insert>
+	<select id="getRuxuenianfenList" parameterType="pd" resultType="pd">
+		SELECT * FROM SYS_DICTIONARIES DIC WHERE DIC.PARENT_ID='GRADE'
+		ORDER BY  DIC.NAME
+	</select>
+</mapper>

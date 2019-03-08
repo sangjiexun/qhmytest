@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="HmdMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"BLACKLIST"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"ID",	
+		"NUMBER",
+		"PRID",
+		"FNAME",
+		"DATE",
+		"BZ",
+		"BS",
+		"XM",
+		"XMLX",
+		"CJ_NAME",
+		"ENID",
+		"MAC",
+		"UPDATEFLAG"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{ID},
+			#{NUMBER},
+			#{PRID},
+			#{FNAME},
+			#{DATE},
+			#{BZ},
+			#{BS},
+			#{XM},
+			#{XMLX},	
+			#{CJ_NAME},
+			#{ENID},
+			#{MAC},
+			#{UPDATEFLAG}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="saveqy" parameterType="pd"  useGeneratedKeys="false">
+		insert into BLACKLIST (ID,"NUMBER",FNAME,"DATE",BZ,BS,LX,XM,PRID,VER,MAC,CJ_NAME)   
+		VALUES(#{ID} ,
+			   #{NUMBER},
+			   #{FNAME},
+			   #{DATE} ,
+			   #{BZ} ,
+			   #{BS} ,
+			   '1',
+			   '平台',
+			   '1',
+			   #{VER}+1 ,
+			   #{MAC},
+			   #{CJ_NAME}  
+		)	
+  		
+	</insert>
+	<!-- 新增-->
+	<insert id="savegr" parameterType="pd"  useGeneratedKeys="false">
+		insert into BLACKLIST (ID,"NUMBER",FNAME,"DATE",BZ,BS,LX,XM,PRID,VER,MAC,CJ_NAME)   
+		VALUES(#{ID} ,
+			   #{NUMBER},
+			   #{FNAME},
+			   #{DATE} ,
+			   #{BZ} ,
+			   #{BS} ,
+			   '0',
+			   '平台',
+			   '1',
+			   #{VER}+1 ,
+			   #{MAC},
+			   #{CJ_NAME}  
+		)
+	</insert>
+	<!-- 新增delete表-->
+	<insert id="insertDelete" parameterType="pd"  useGeneratedKeys="false">
+		insert into URLDOWNBACKUP
+ 		 (id, tbname, tbid, prid, enid, ver,old_ver)
+  		select #{IDD}, 'blacklist', synchronpk, prid, enid, a.VER+1,c.ver1
+  		  from (select synchronpk, "PRID", "ENID", b.ver VER
+          		  from "BLACKLIST",
+                		 (select ver
+                		    from (select ver
+                            from (select ver
+                                    from URLDOWNBACKUP t
+                                   order by ver desc)
+                       		   union all
+                       	   select ver
+                            from (select ver from blacklist t order by ver desc))
+               	    where rownum = 1) b
+           where "ID" = #{ID})a,
+            (select ver ver1 from blacklist t where t.id = #{ID} ) c
+
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"ID" = #{ID,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"PRID" = #{PRID,jdbcType=VARCHAR},
+				"ENID" = #{ENID,jdbcType=VARCHAR},
+				"MAC" = #{MAC,jdbcType=VARCHAR},
+				"FNAME" = #{FNAME,jdbcType=VARCHAR},	
+				"XM" = #{XM,jdbcType=VARCHAR},
+				"BS" = #{BS,jdbcType=VARCHAR},
+				"DATE" = #{DATE,jdbcType=VARCHAR},
+				VER = #{VER,jdbcType=VARCHAR}+1,
+				"BZ" = #{BZ,jdbcType=VARCHAR}
+			where 
+				"ID" = #{ID,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		
+		select "ID",
+     	  "PRID",
+     	  "NUMBER",
+     	  "FNAME",
+      	 	"DATE",
+      		 "BZ",
+       		"ENID",
+       		"UPDATEFLAG",
+       		"BS",
+       		"XM",
+       		"CJ_NAME",
+      		 b.ver VER
+  		from "BLACKLIST",
+      		 (select ver
+         	 from (select ver
+                  from (select ver from URLDOWNBACKUP t order by ver desc)
+                	union all
+              	  select ver
+                  from (select ver from blacklist t order by ver desc))
+         		where rownum = 1) b
+ 		where "ID" = #{ID}
+	</select>
+	<select id="findCJName" parameterType="pd" resultType="pd">
+		select ver,#{NAME} CJ_NAME
+          from (select ver
+                  from (select ver from URLDOWNBACKUP t order by ver desc)
+                union all
+                select ver
+                  from (select ver from blacklist t order by ver desc)
+                   order by ver desc 
+                  )
+         where rownum = 1 	
+	</select>
+	<select id="findByname" parameterType="pd" resultType="pd">
+		select t.name
+  		from SYS_DEPARTMENT t
+ 		where t.department_type_id = '3'
+	</select>
+	<select id="findName" parameterType="pd" resultType="pd">
+		
+		select nm,num,xm_name,t.name qy_name
+		from  sys_department t,
+		(
+
+ 		select nm,prid,num,t.name xm_name,ed
+		from sys_department t ,(
+		select name nm,prid,"NUMBER" num,enid ed  from sys_user s where 1=1
+		and s.user_idcard = #{IDCARD}
+		)t1 where t1.prid = t.bianma  
+   		 )t2 where t2.ed = t.bianma 
+	</select>
+	<select id="findName1" parameterType="pd" resultType="pd">
+		select * from blacklist b where b.bs = #{IDCARD} and b.lx = '0'
+	</select>
+	<select id="findQYName" parameterType="pd" resultType="pd">
+		select name qy_name,xm_name,fb_name  from sys_department s,
+		( 
+		select fb_name,name xm_name,s.parent_id pd from sys_department s,
+		(       
+         
+		 SELECT name fb_name,s.parent_id pd from sys_department s where s.businessliccode =  #{IDCARD}
+ 		)t1 where t1.pd = s.department_id
+ 		)t2 where t2.pd = s.department_id
+	</select>
+	<select id="findQYName1" parameterType="pd" resultType="pd">
+		select * from blacklist b where b.bs = #{IDCARD} and b.lx = '1'
+	</select>
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+	select "ID",
+       "NUMBER",
+       "FNAME",
+      to_char((case 
+      when  length("DATE") > 10 then
+      to_date(substr("DATE",1,8),'yyyy-mm-dd')
+       when  length("DATE") = 10 then 
+        to_date("DATE",'yyyy-mm-dd')
+         end),'yyyy-mm-dd') "DATE",
+       "BZ",
+       "BS",
+       "XM",
+       "LX",
+       "CJ_NAME"
+   from "BLACKLIST" 
+   where lx = '0' 
+   <if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+		and
+			(
+				"FNAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				"BS" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			)
+				
+		</if>
+		
+	</select>
+	<select id="datalistPage2" parameterType="page" resultType="pd">
+	select "ID",
+       "NUMBER",
+       "FNAME",
+      to_char((case 
+      when  length("DATE") > 10 then
+      to_date(substr("DATE",1,8),'yyyy-mm-dd')
+       when  length("DATE") = 10 then 
+        to_date("DATE",'yyyy-mm-dd')
+         end),'yyyy-mm-dd') "DATE",
+       "BZ",
+       "BS",
+       "XM",
+       "LX",
+       "CJ_NAME"
+   from "BLACKLIST" 
+   where lx = '1' 
+   <if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+		and
+			(
+				"FNAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				"BS" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+			)
+				
+		</if>
+		
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

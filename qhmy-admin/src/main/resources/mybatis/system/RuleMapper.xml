@@ -1,0 +1,1200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="RuleMapper">
+	
+	
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"t_kongzhiqi"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"BIANMA",
+		"MINGCHENG",
+		"IPDIZHI",
+		"TONGDAOHAO",
+		"GONGZUOZHAN_BIANAM",
+		"LUXIANGJI_BIANMA",
+		"LUXIANGJI_TDH",
+		"LEIXING",
+		"DUANKOUHAO",
+		"CHUANKOUHAO",
+		"CHUANKOUBTL",
+		"DAILIIPDZ",
+		"DAILIDKH",
+		"KAOQINJIMAC",
+		"CJSJ",
+		"PROJECT_BIANMA",
+		"TONGXUNLX"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{BIANMA},
+		#{MINGCHENG},
+		#{IPDIZHI},
+		#{TONGDAOHAO},
+		#{GONGZUOZHAN_BIANAM},
+		#{LUXIANGJI_BIANMA},
+		#{LUXIANGJI_TDH},
+		#{LEIXING},
+		#{DUANKOUHAO},
+		#{CHUANKOUHAO},
+		#{CHUANKOUBTL},
+		#{DAILIIPDZ},
+		#{DAILIDKH},
+		#{KAOQINJIMAC},
+		#{CJSJ},
+		#{TONGXUNLX},
+		#{PROJECT_BIANMA}
+	</sql>
+	
+	
+	
+	
+		<select id="mqlistPage" parameterType="page" resultType="pd" >
+	 select 
+       PKID,
+       MENGANGMC,
+       SHIFOUKAOQIN,
+       ZHUANGTAI,
+       BEIZHU,
+       XIANGMUBM,
+       QIYE_BIANMA 
+       from t_mengang_rule  m
+ 		where 1=1
+ 		<if test="pd.XIANGMU_BIANMA!=null and pd.XIANGMU_BIANMA !=''">
+		and	m.XIANGMUBM=#{pd.XIANGMU_BIANMA}
+		</if>
+ 		
+	</select>
+	
+	
+	<select id="dylistPage" parameterType="page" resultType="pd" >
+	 select d.PKID,d.DIQU,d.BEIZHU,d.XIANGMU_BIANMA,
+       s.provincename,
+       case
+         when d.guize = '0' then
+          '登记提醒'
+         when d.guize = '1' then
+          '禁止等级'
+       end guize
+  from t_diyu_rule d
+  left join s_province s on d.shengfen_id = s.provinceid 
+ 		<if test="pd.XIANGMU_BIANMA!=null and pd.XIANGMU_BIANMA !=''">
+		and	d.XIANGMU_BIANMA=#{pd.XIANGMU_BIANMA}
+		</if>
+ 		
+	</select>
+	
+	
+	<select id="mzlistP" parameterType="page" resultType="pd" >
+	 select 
+       PKID,
+       MINZU,
+       GUIZE,
+       XIANGMU_BIANMA
+       from t_minzu_rule  t
+ 		where 1=1
+ 		<if test="pd.XIANGMU_BIANMA!=null and pd.XIANGMU_BIANMA !=''">
+		and	t.XIANGMU_BIANMA=#{pd.XIANGMU_BIANMA}
+		</if>
+ 		
+	</select>
+	<select id="mzlist" parameterType="page" resultType="pd" >
+	 select 
+       *
+       from t_minzu  
+	</select>
+	
+	
+	<select id="cllistPage" parameterType="page" resultType="pd" >
+	 select BIANMA,
+       MINGCHENG,
+       IPDIZHI,
+       TONGDAOHAO,
+       (select gongzuozhanmc from t_gongzuozhan g where g.bianma=k.gongzuozhan_bianam ) GONGZUOZHAN_BIANAM,
+       (select mingcheng from t_luxiangji l where l.bianhao=k.luxiangji_bianma ) LUXIANGJI_BIANMA,
+       LUXIANGJI_TDH,
+       case
+         when LEIXING='0' then
+          '以太网'
+         when LEIXING='1'  then
+          '串口'
+          when LEIXING='2'  then
+          'U盘'
+          when LEIXING='3'  then
+          '代理'
+         else
+          '未知'
+       end LEIXING,
+       DUANKOUHAO,
+       CHUANKOUHAO,
+       CHUANKOUBTL,
+       DAILIIPDZ,
+       DAILIDKH,
+       KAOQINJIMAC,
+       to_char(CJSJ, 'yyyy-mm-dd') CJSJ,
+       PROJECT_BIANMA
+       from t_kongzhiqi k
+ 		where 1=1
+ 		<if test="pd.jdid!=null and pd.jdid !=''">
+			and  k.project_bianma= (select xiangmubm
+          from v_t_project p
+         where p.ID = #{pd.jdid})
+		</if>
+	   <if test="pd.seText!=null and pd.seText !=''">
+			and (
+			k.MINGCHENG like CONCAT(CONCAT('%',#{pd.seText}),'%')
+			or
+			k.BIANMA like CONCAT(CONCAT('%',#{pd.seText}),'%')
+			)
+		</if>
+	</select>
+	<!-- 通过ID获取数据 -->
+	<select id="getbianma" parameterType="pd" resultType="pd">
+		select SEQ_KONGZHIQI.nextval as BIANMA from dual 
+	</select>
+	
+	<select id="findBybianma" parameterType="pd" resultType="pd">
+		select *  from t_kongzhiqi q where q.BIANMA=#{BIANMA}
+	</select>
+	
+	
+	<select id="gettypeid" parameterType="pd" resultType="pd">
+		select s.name,s.BIANMA,
+       case
+         when s.department_type_id = '1' then
+          '1'
+         when s.department_type_id = '2' then
+          '2'
+         else
+          '3'
+       end typeid
+  from v_sys_department s
+ where s.department_id = #{ID}
+
+	</select>
+	
+	<select id="getqygz" parameterType="pd" resultType="pd">
+		select  * from t_shiming_rule s where 1=1  
+		<if test="QYID!=null and QYID !=''">
+			and s.qiye_bianma= #{QYID}
+		</if>
+		<if test="FGSID!=null and FGSID !=''">
+			and s.qiye_bianma= #{FGSID}
+		</if>
+		<if test="XMID!=null and XMID !=''">
+			and s.XIANGMU_BIANMA=(select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		
+		<if test="XIANGMU_BIANMA!=null and XIANGMU_BIANMA !=''">
+			and s.XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+		</if>
+		
+	</select>
+	
+	
+	<select id="getxxbybianma" parameterType="pd" resultType="pd">
+		select  * from t_kaoqin_rule k where k.xiangmu_bianma=#{XIANGMU_BIANMA}
+		
+	</select>
+	
+	<select id="getyujing" parameterType="pd" resultType="pd">
+		select  * from t_yujing_rule k where k.XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+		
+	</select>
+	
+	
+	<select id="getdepid" parameterType="pd" resultType="pd">
+		      SELECT SD.ID ID, SD.BIANMA BIANMA, SD.PARENTID PARENTID, XM
+        FROM ((SELECT ID,
+                      XIANGMUBM AS BIANMA,
+                      DEPARTMENT_ID AS PARENTID,
+                      'TRUE' AS XM
+                 FROM V_T_PROJECT P) UNION ALL
+               SELECT DEPARTMENT_ID AS ID,
+                      BIANMA,
+                      PARENT_ID AS PARENTID,
+                      'FALSE' as XM
+                 FROM V_SYS_DEPARTMENT) SD
+                START WITH SD.ID = '0'
+               CONNECT BY PRIOR SD.ID = SD.PARENTID
+	</select>
+	<!-- 通过编码获取数据 -->
+	<select id="findbybm" parameterType="pd" resultType="pd">
+		select 
+		"DEPARTMENT_ID","NAME","JIANPIN","BIANMA","ZHUANGTAI"
+		from 
+		v_sys_department
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</select>
+	
+	<update id="updatechangemzwu" parameterType="pd">
+		update
+		t_minzu_rule
+		set 
+		"GUIZE" = ' '
+		where  
+		PKID=#{PKID}
+	</update>
+	
+	<update id="updatechangedjtx" parameterType="pd">
+		update
+		t_minzu_rule
+		set 
+		"GUIZE" = '0'
+		where  
+		PKID=#{PKID}
+	</update>
+	<update id="updatechangejzdj" parameterType="pd">
+		update
+		t_minzu_rule
+		set 
+		"GUIZE" = '1'
+		where  
+		PKID=#{PKID}
+	</update>
+	
+	<update id="updatechangemqty" parameterType="pd">
+		update
+		t_mengang_rule
+		set 
+		"ZHUANGTAI" = 0
+		where  
+		PKID=#{PKID}
+	</update>
+	
+	<update id="updatechangemqqy" parameterType="pd">
+		update
+		t_mengang_rule
+		set 
+		"ZHUANGTAI" = 1
+		where  
+		PKID=#{PKID}
+	</update>
+	
+	<update id="updatecf" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"CHENGFA_JZXJXG" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatecfgb" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"CHENGFA_JZXJXG" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updatenlqy" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NIANLING_JZXJXG" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatenlgb" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NIANLING_JZXJXG" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatezsqy" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"ZHENGSHU_JZXJXG" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatezsgb" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"ZHENGSHU_JZXJXG" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updateyxdj" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"YOUCHENGFAJLKYDJ" = 'Y',
+		"CHENGDUJIBIE" = ''
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatebyxdj" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"YOUCHENGFAJLKYDJ" = 'N',
+		"CHENGDUJIBIE" = #{LEVEL}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatecdjb" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"CHENGDUJIBIE" = #{LEVEL}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	
+	<update id="updateagetg" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"TGBKDJ_CK" = 'Y',
+		TONGGONGNL=#{AGETG}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updatetyagetg" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"TGBKDJ_CK" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	
+	<update id="updateagenx" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NXTXBDJ_CK" = 'Y',
+		NANXINGTXNL=#{AGENX}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatetyagenx" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NXTXBDJ_CK" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updateagenv" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"VXTXBDJ_CK" = 'Y',
+		NVXINGTXNL=#{AGENV}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatetyagenv" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"VXTXBDJ_CK" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatetgnl" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"TONGGONGNL" = #{AGETG}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatenxnl" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NANXINGTXNL" = #{AGENX}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatenvnl" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"NVXINGTXNL" = #{AGENV}
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updatezhengsqy" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"SHIFOUBXSCZS" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatezhengsty" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"SHIFOUBXSCZS" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updatehmdqy" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"HEIMINGDANX" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updatehmdty" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"HEIMINGDANX" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	<update id="updategrjzqy" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"SHIFOUQYGRJZ" = 'Y'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	<update id="updategrjzty" parameterType="pd">
+		update
+		t_shiming_rule
+		set 
+		"SHIFOUQYGRJZ" = 'N'
+		where  1=1
+		<if test="XMID!=null and XMID !=''">
+			and XIANGMU_BIANMA= (select t.XIANGMUBM from v_t_project t where t.ID=#{XMID})
+		</if>
+		<if test="ID!=null and ID !=''">
+			and QIYE_BIANMA= (select t.BIANMA from v_sys_department t where t.DEPARTMENT_ID=#{ID})
+		</if>
+			
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="getgzz" parameterType="pd" resultType="pd">
+		select BIANMA, GONGZUOZHANMC
+ 		 from t_gongzuozhan g
+		 where g.project_bianma =
+        (select xiangmubm
+          from v_t_project p
+         where p.ID =#{jdid} )
+	</select>
+	<select id="getgshengfen" parameterType="pd" resultType="pd">
+		select * from s_province t
+	</select>
+	
+	
+	<select id="getlxj" parameterType="pd" resultType="pd">
+		select BIANHAO,MINGCHENG
+  		from t_luxiangji T
+		 where T.project_bianma =
+       (select xiangmubm
+          from v_t_project p
+         where p.ID = #{jdid})
+
+	</select>
+	<select id="getxmbm" parameterType="pd" resultType="pd">
+		select xiangmubm
+          from v_t_project p
+         where p.ID = #{jdid}
+
+	</select>
+	
+	<insert id="saveqy" parameterType="pd">
+		insert into 
+		t_shiming_rule
+		(
+		"PKID",
+		"QIYE_BIANMA",
+		"YOUCHENGFAJLKYDJ",
+		"TONGGONGNL",
+		"NANXINGTXNL",
+		"NVXINGTXNL",
+		"SHIFOUBXSCZS",
+		"CJSJ",
+		"CHENGFA_JZXJXG",
+		"NIANLING_JZXJXG",
+		"ZHENGSHU_JZXJXG",
+		"HEIMINGDANX",
+		"TGBKDJ_CK",
+		"NXTXBDJ_CK",
+		"VXTXBDJ_CK"
+		
+		) values (
+		#{PKID},
+		#{QIYE_BIANMA},
+		#{YOUCHENGFAJLKYDJ},
+		#{TONGGONGNL},
+		#{NANXINGTXNL},
+		#{NVXINGTXNL},
+		#{SHIFOUBXSCZS},
+		SYSDATE,
+		#{CHENGFA_JZXJXG},
+		#{NIANLING_JZXJXG},
+		#{ZHENGSHU_JZXJXG},
+		#{HEIMINGDANX},
+		#{TGBKDJ_CK},
+		#{NXTXBDJ_CK},
+		#{VXTXBDJ_CK}
+		)
+	</insert>
+	
+	<insert id="savefgs" parameterType="pd">
+		insert into 
+		t_shiming_rule
+		(
+		"PKID",
+		"QIYE_BIANMA",
+		"YOUCHENGFAJLKYDJ",
+		"CHENGDUJIBIE",
+		"TONGGONGNL",
+		"NANXINGTXNL",
+		"NVXINGTXNL",
+		"SHIFOUBXSCZS",
+		"CJSJ",
+		"CHENGFA_JZXJXG",
+		"NIANLING_JZXJXG",
+		"ZHENGSHU_JZXJXG",
+		"TGBKDJ_CK",
+		"NXTXBDJ_CK",
+		"VXTXBDJ_CK"
+		
+		) values (
+		#{PKID},
+		#{QIYE_BIANMA},
+		#{YOUCHENGFAJLKYDJ},
+		#{CHENGDUJIBIE},
+		#{TONGGONGNL},
+		#{NANXINGTXNL},
+		#{NVXINGTXNL},
+		#{SHIFOUBXSCZS},
+		SYSDATE,
+		#{CHENGFA_JZXJXG},
+		#{NIANLING_JZXJXG},
+		#{ZHENGSHU_JZXJXG},
+		#{TGBKDJ_CK},
+		#{NXTXBDJ_CK},
+		#{VXTXBDJ_CK}
+		)
+	</insert>
+	<insert id="savexm" parameterType="pd">
+		insert into 
+		t_shiming_rule
+		(
+		"PKID",
+		"XIANGMU_BIANMA",
+		"YOUCHENGFAJLKYDJ",
+		"CHENGDUJIBIE",
+		"TONGGONGNL",
+		"NANXINGTXNL",
+		"NVXINGTXNL",
+		"SHIFOUBXSCZS",
+		"CJSJ",
+		"CHENGFA_JZXJXG",
+		"NIANLING_JZXJXG",
+		"ZHENGSHU_JZXJXG",
+		"TGBKDJ_CK",
+		"NXTXBDJ_CK",
+		"VXTXBDJ_CK",
+		"SHIFOUQYGRJZ"
+		
+		) values (
+		#{PKID},
+		#{XIANGMU_BIANMA},
+		#{YOUCHENGFAJLKYDJ},
+		#{CHENGDUJIBIE},
+		#{TONGGONGNL},
+		#{NANXINGTXNL},
+		#{NVXINGTXNL},
+		#{SHIFOUBXSCZS},
+		SYSDATE,
+		#{CHENGFA_JZXJXG},
+		#{NIANLING_JZXJXG},
+		#{ZHENGSHU_JZXJXG},
+		#{TGBKDJ_CK},
+		#{NXTXBDJ_CK},
+		#{VXTXBDJ_CK},
+		#{SHIFOUQYGRJZ}
+		)
+	</insert>
+	
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into 
+		t_kongzhiqi
+		(
+		"BIANMA",
+		"MINGCHENG",
+		"IPDIZHI",
+		"TONGDAOHAO",
+		"GONGZUOZHAN_BIANAM",
+		"LUXIANGJI_BIANMA",
+		"LUXIANGJI_TDH",
+		"LEIXING",
+		"DUANKOUHAO",
+		"CHUANKOUHAO",
+		"CHUANKOUBTL",
+		"DAILIIPDZ",
+		"DAILIDKH",
+		"KAOQINJIMAC",
+		"CJSJ",
+		"PROJECT_BIANMA"
+		) values (
+		
+		#{BIANMA},
+		#{MINGCHENG},
+		#{IPDIZHI},
+		#{TONGDAOHAO},
+		#{GZZBM},
+		#{LXJBM},
+		#{LXJTDH},
+		#{TONGXUNLX},
+		#{DUANKOUHAO},
+		#{CHUANKOUHAO},
+		#{CHUANKOUBTL},
+		#{DAILIIPDZ},
+		#{DAILIDKH},
+		#{KAOQINJIMAC},
+		SYSDATE,
+		#{PROJECT_BIANMA}
+		)
+	</insert>
+	
+	
+	
+	<!-- 新增-->
+	<insert id="savemz" parameterType="pd">
+		insert into 
+		t_minzu_rule
+		(
+		"PKID",
+		"MINZU",
+		"XIANGMU_BIANMA"
+		) values (
+		#{PKID},
+		#{MINZU},
+		#{XIANGMU_BIANMA}
+		)
+	</insert>
+	
+	
+	
+	
+	
+	<!-- 新增-->
+	<insert id="saveyj" parameterType="pd">
+		insert into 
+		t_yujing_rule
+		(
+		"PKID",
+		"XIANGMU_BIANMA",
+		"CHUQIN_BANZU",
+		"CHUQIN_DUIWU",
+		"CHUQIN_GONGZHONG",
+		"GONGRENZCSJ_TIAN",
+		"GONGRENZCSJ_XIAOSHI",
+		"GONGREN_YJWCC",
+		"ANQUANJY_YUE",
+		"ZHENGSHU_TIAN",
+		"CJSJ",
+		"CHUQIN_BANZU_BTN",
+		"CHUQIN_DUIWU_BTN",
+		"CHUQIN_GONGZHONG_BTN",
+		"GONGRENZCSJ_BTN",
+		"ANQUANJY_BTN",
+		"ZHENGSHU_BTN",
+		"GONGREN_YJWCC_BTN"
+		) values (
+		#{PKID},
+		#{XIANGMU_BIANMA},
+		#{CHUQIN_BANZU},
+		#{CHUQIN_DUIWU},
+		#{CHUQIN_GONGZHONG},
+		#{GONGRENZCSJ_TIAN},
+		#{GONGRENZCSJ_XIAOSHI},
+		#{GONGREN_YJWCC},
+		#{ANQUANJY_YUE},
+		#{ZHENGSHU_TIAN},
+		SYSDATE,
+		#{CHUQIN_BANZU_BTN},
+		#{CHUQIN_DUIWU_BTN},
+		#{CHUQIN_GONGZHONG_BTN},
+		#{GONGRENZCSJ_BTN},
+		#{ANQUANJY_BTN},
+		#{ZHENGSHU_BTN},
+		#{GONGREN_YJWCC_BTN}
+		)
+	</insert>
+	
+	
+	
+	
+	
+	
+	<!-- 新增-->
+	<insert id="savekq" parameterType="pd">
+		insert into 
+		t_kaoqin_rule
+		(
+		"PKID",
+		"WEIJIAOYUJC",
+		"CHANGSJBSKBSX",
+		"XIANGMU_BIANMA",
+		"CJSJ"
+		) values (
+		#{PKID},
+		#{WEIJIAOYUJC},
+		#{CHANGSJBSKBSX},
+		#{XIANGMU_BIANMA},
+		SYSDATE
+		)
+	</insert>
+	
+	
+	<insert id="savemq" parameterType="pd">
+		insert into 
+		t_mengang_rule
+		(
+		"PKID",
+		"MENGANGMC",
+		"SHIFOUKAOQIN",
+		"ZHUANGTAI",
+		"BEIZHU",
+		"CJSJ",
+		"XIANGMUBM",
+		"QIYE_BIANMA"
+		) values (
+		#{PKID},
+		#{MENGANGMC},
+		#{SHIFOUKAOQIN},
+		1,
+		#{BEIZHU},
+		SYSDATE,
+		#{XIANGMUBM},
+		#{QIYE_BIANMA}
+		)
+	</insert>
+	
+	
+	<insert id="savediyu" parameterType="pd">
+		insert into 
+		t_diyu_rule
+		(
+		"PKID",
+		"SHENGFEN_ID",
+		"DIQU",
+		"GUIZE",
+		"BEIZHU",
+		"XIANGMU_BIANMA",
+		"CJSJ"
+		) values (
+		#{PKID},
+		#{SHENGFEN},
+		#{DIQU},
+		#{GUIZE},
+		#{BEIZHU},
+		#{XIANGMUBM},
+		SYSDATE
+		)
+	</insert>
+	
+	<update id="updatebzcql" parameterType="pd">
+		update
+		t_yujing_rule
+		set 
+		<if test="CHUQIN_BANZU!=null and CHUQIN_BANZU !=''">
+			"CHUQIN_BANZU"=#{CHUQIN_BANZU}
+		</if>
+		<if test="CHUQIN_DUIWU!=null and CHUQIN_DUIWU !=''">
+			"CHUQIN_DUIWU"=#{CHUQIN_DUIWU}
+		</if>
+		<if test="CHUQIN_GONGZHONG!=null and CHUQIN_GONGZHONG !=''">
+			"CHUQIN_GONGZHONG"=#{CHUQIN_GONGZHONG}
+		</if>
+		<if test="GONGRENZCSJ_TIAN!=null and GONGRENZCSJ_TIAN !=''">
+			"GONGRENZCSJ_TIAN"=#{GONGRENZCSJ_TIAN}
+		</if>
+		<if test="GONGRENZCSJ_XIAOSHI!=null and GONGRENZCSJ_XIAOSHI !=''">
+			"GONGRENZCSJ_XIAOSHI"=#{GONGRENZCSJ_XIAOSHI}
+		</if>
+		<if test="ANQUANJY_YUE!=null and ANQUANJY_YUE !=''">
+			"ANQUANJY_YUE"=#{ANQUANJY_YUE}
+		</if>
+		<if test="ZHENGSHU_TIAN!=null and ZHENGSHU_TIAN !=''">
+			"ZHENGSHU_TIAN"=#{ZHENGSHU_TIAN}
+		</if>
+		<if test="GONGREN_YJWCC!=null and GONGREN_YJWCC !=''">
+			"GONGREN_YJWCC"=#{GONGREN_YJWCC}
+		</if>
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	
+	
+	
+	<update id="updateyjbtn" parameterType="pd">
+		update
+		t_yujing_rule
+		set 
+		<if test="CHUQIN_BANZU_BTN!=null and CHUQIN_BANZU_BTN!=''">
+			"CHUQIN_BANZU_BTN"=#{CHUQIN_BANZU_BTN}
+		</if>
+		<if test="CHUQIN_DUIWU_BTN!=null and CHUQIN_DUIWU_BTN!=''">
+			"CHUQIN_DUIWU_BTN"=#{CHUQIN_DUIWU_BTN}
+		</if>
+		<if test="CHUQIN_GONGZHONG_BTN!=null and CHUQIN_GONGZHONG_BTN!=''">
+			"CHUQIN_GONGZHONG_BTN"=#{CHUQIN_GONGZHONG_BTN}
+		</if>
+		<if test="GONGRENZCSJ_BTN!=null and GONGRENZCSJ_BTN!=''">
+			"GONGRENZCSJ_BTN"=#{GONGRENZCSJ_BTN}
+		</if>
+		<if test="GONGREN_YJWCC_BTN!=null and GONGREN_YJWCC_BTN!=''">
+			"GONGREN_YJWCC_BTN"=#{GONGREN_YJWCC_BTN}
+		</if>
+		<if test="ANQUANJY_BTN!=null and ANQUANJY_BTN!=''">
+			"ANQUANJY_BTN"=#{ANQUANJY_BTN}
+		</if>
+		<if test="ZHENGSHU_BTN!=null and ZHENGSHU_BTN!=''">
+			"ZHENGSHU_BTN"=#{ZHENGSHU_BTN}
+		</if>
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	<!-- 修改  updatejypx-->  
+	<update id="updatejyts" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		 "JIAOYUTIANSHU"=#{TIANSHU}
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	<update id="updateryts" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		 "BUSHUAKASXTS"=#{SXTIANSHU}
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	<update id="updatejypx" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		"WEIJIAOYUJC"=#{WEIJIAOYUJC}
+		<if test="TIANSHU!=null and TIANSHU !=''">
+			, "JIAOYUTIANSHU"=#{TIANSHU}
+		</if>
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	<update id="updaterysx" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		"CHANGSJBSKBSX"=#{CHANGSJBSKBSX}
+		<if test="SXTIANSHU!=null and SXTIANSHU !=''">
+			, "BUSHUAKASXTS"=#{SXTIANSHU}
+		</if>
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	
+	<update id="updateewm" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		"ERWEIMATONGX"=#{ERWEIMATONGX}
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	
+	<update id="updatedrkq" parameterType="pd">
+		update
+		t_kaoqin_rule
+		set 
+		"SHOUDONGDRKQSJ"=#{SHOUDONGDRKQSJ}
+		where 
+		"XIANGMU_BIANMA" = #{XIANGMU_BIANMA}
+	</update>
+	
+	
+	<update id="edit" parameterType="pd">
+		update
+		t_kongzhiqi
+		set 
+			"MINGCHENG" = #{MINGCHENG},
+			"IPDIZHI" = #{IPDIZHI},
+			"TONGDAOHAO" = #{TONGDAOHAO},
+			"GONGZUOZHAN_BIANAM" = #{GZZBM},
+			"LUXIANGJI_BIANMA" = #{LXJBM},
+			"LUXIANGJI_TDH" = #{LXJTDH},
+			"LEIXING" = #{TONGXUNLX},
+			"DUANKOUHAO" = #{DUANKOUHAO},
+			"CHUANKOUHAO" = #{CHUANKOUHAO},
+			"CHUANKOUBTL" = #{CHUANKOUBTL},
+			"DAILIIPDZ" = #{DAILIIPDZ},
+			"DAILIDKH" = #{DAILIDKH},
+			"KAOQINJIMAC" = #{KAOQINJIMAC},
+			"CJSJ" = sysdate
+		where 
+			"BIANMA" = #{BIANMA}
+	</update>
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		t_kongzhiqi
+		where 
+			"BIANMA" = #{BIANMA}
+	</delete>
+	
+	<delete id="deletedy" parameterType="pd">
+		delete from
+		t_diyu_rule
+		where 
+			"PKID" = #{PKID}
+	</delete>
+	
+	
+	<select id="findlistformc" parameterType="pd" resultType="pd">
+		select s.pkid  from t_mengang_rule s where s.MENGANGMC=#{MENGANGMC} 
+	</select>
+	
+	
+	
+	
+	
+	<select id="shangji" parameterType="pd" resultType="pd">
+		select  * from t_shiming_rule s where 
+		s.QIYE_BIANMA=#{BIANMA}
+		
+	</select>
+	<select id="getbm" parameterType="pd" resultType="pd">
+		select BIANMA from v_sys_department where DEPARTMENT_ID=(select PARENT_ID from v_sys_department where BIANMA=#{BIANMA})
+		
+	</select>
+	
+	<select id="getsjbm" parameterType="pd" resultType="pd">
+		select t.BIANMA from v_sys_department t where T.DEPARTMENT_ID= (select v.DEPARTMENT_ID from v_t_project v where v.XIANGMUBM=#{BIANMA})
+		
+	</select>
+	
+	
+	<select id="xmshangji" parameterType="pd" resultType="pd">
+		select  * from t_shiming_rule s where 
+		s.QIYE_BIANMA=#{BIANMA}
+		
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

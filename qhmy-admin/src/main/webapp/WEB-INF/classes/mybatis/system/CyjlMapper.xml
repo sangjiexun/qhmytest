@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CyjlMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"CYJLCYJL"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",	
+		"CYJL_ID"r}_ID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{NAME},	
+			#{CYJL_ID}"}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"CYJL_ID" = #{CYJL_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"NAME" = #{NAME},	
+			"CYJL_ID" = "CYJL_ID"
+			where 
+				"CYJL_ID" = #{CYJL_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"CYJL_ID" = #{CYJL_ID}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">	
+	select  c4.name name,sfid,sex,xm_name,team_name,to_char(startdate,'yyyy-mm-dd') startdate,to_char(enddate,'yyyy-mm-dd') enddate,working_days,is_wg from cyjl c4,(
+	select c.id  id ,t.name xm_name from sys_department t ,cyjl c where t.bianma = c.prid) c1,(
+	select  c.id  id , t.name team_name from sys_department t,cyjl c where t.department_id = c.team_pk) c2
+	where (c1.id = c4.id or c4.id = c2.id)
+	<if test="pd.xmmc!=null and pd.xmmc!='' ">
+       			and c1.xm_name = #{pd.xmmc}
+    </if>
+	<if test = "pd.startLoginStart!=null and pd.startLoginStart!=''" >
+          and to_char(c4.startdate,'yyyy-mm-dd') &gt;= #{pd.startLoginStart}
+     </if >
+      <if test = "pd.lastLoginStart!=null and pd.lastLoginStart!=''" >
+          and to_char(c4.startdate,'yyyy-mm-dd') &lt;= #{pd.lastLoginStart}
+      </if >
+          <if test = "pd.startLoginStart!=null and pd.startLoginStart!=''" >
+          and to_char(c4.enddate,'yyyy-mm-dd') &gt;= #{pd.startLoginStart}
+      </if >
+          <if test = "pd.lastLoginStart!=null and pd.lastLoginStart!=''" >
+          and to_char(c4.enddate,'yyyy-mm-dd') &lt;= #{pd.lastLoginStart}
+     </if >
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"CYJL_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

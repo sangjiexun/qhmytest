@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="LdljgfxMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_USER_EXTENDS"
+	</sql>
+	<!-- 字段 -->
+	<sql id="Field">
+	 	"USER_ID",
+ 		"PRID",
+	 	"USER_NO",
+	 	"USER_CARD",
+	 	"USER_SEX",
+	 	"USER_NATION",
+	 	"USER_XUELI",
+	 	"USER_NATIVE",
+	 	"USER_BIRTHDAY",
+	 	"USER_POST",
+	 	"USER_ADDRESS",
+	 	"USER_EMAIL",
+	 	"USER_1",
+	 	"USER_2",
+	 	"BS",
+	 	"JIGUAN",
+	 	"YXDATE",
+	 	"NEWADDRESS",
+	 	"PICTURE",
+	 	"PICTUREZ",
+	 	"PICTUREB",
+	 	"BLACKLIST",
+	 	"TEL",
+		"GK_JOBID",
+	 	"GK_FENBAO_PK",
+	 	"GK_TEAM_PK",
+		"GK_GZ_PK",
+	 	"GK_STARTDATE",
+	 	"GK_TEAMZ",
+	 	"GK_ENDDATE",
+	 	"GK_YAJIN_PK",
+	 	"GK_GIVEMONEY",
+	 	"GK_REASON",
+	 	"GK_SAFEID",
+	 	"GK_BEIAN",
+	 	"GK_ZJBANLI",
+	 	"GK_PHOTO",
+	 	"QT_HTBH",
+	 	"QT_HTDATE",
+	 	"QT_PXDATE",
+	 	"QT_TJDATE",
+	 	"QT_POST_PK",
+	 	"QT_GZJS",
+	 	"QT_PEOPLE",
+	 	"QT_TEL",
+	 	"QT_YXDAY",
+	 	"QT_JCCARD",
+	 	"QT_ADDRESS",
+	 	"QT_FUJIA",
+	 	"QT_IFHT",
+	 	"QT_IFCNS",
+	 	"QT_IFPHOTO",
+		"QT_IFJCK",
+		"QT_IFGZK",
+		"QT_IFBXK",
+	 	"QT_EXIT",
+		"LIFTNUM",
+	 	"ROOMNUM",
+	 	"BEDNUM",
+	 	"CHECKINDATE",
+	 	"NOWBH",
+	 	"LW_ZJBH",
+	 	"LW_ZJMC",
+	 	"LW_ZJLX",
+	 	"LW_ZJPIC",
+		"TG",
+	 	"WG",
+	 	"LG",
+	 	"LW_WHCD",
+		"RG_JE",
+	 	"RG_DW",
+		"ZJH",
+	 	"LW_CARDTYPE",
+	 	"ENID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{USER_ID},
+ 		#{PRID},
+	 	#{USER_NO},
+	 	#{USER_CARD},
+	 	#{USER_SEX},
+	 	#{USER_NATION},
+	 	#{USER_XUELI},
+	 	#{USER_NATIVE},
+	 	#{USER_BIRTHDAY},
+	 	#{USER_POST},
+	 	#{USER_ADDRESS},
+	 	#{USER_EMAIL},
+	 	#{USER_1},
+	 	#{USER_2},
+	 	#{BS},
+	 	#{JIGUAN},
+	 	#{YXDATE},
+	 	#{NEWADDRESS},
+	 	#{PICTURE},
+	 	#{PICTUREZ},
+	 	#{PICTUREB},
+	 	#{BLACKLIST},
+	 	#{TEL},
+		#{GK_JOBID},
+	 	#{GK_FENBAO_PK},
+	 	#{GK_TEAM_PK},
+		#{GK_GZ_PK},
+	 	#{GK_STARTDATE},
+	 	#{GK_TEAMZ},
+	 	#{GK_ENDDATE},
+	 	#{GK_YAJIN_PK},
+	 	#{GK_GIVEMONEY},
+	 	#{GK_REASON},
+	 	#{GK_SAFEID},
+	 	#{GK_BEIAN},
+	 	#{GK_ZJBANLI},
+	 	#{GK_PHOTO},
+	 	#{QT_HTBH},
+	 	#{QT_HTDATE},
+	 	#{QT_PXDATE},
+	 	#{QT_TJDATE},
+	 	#{QT_POST_PK},
+	 	#{QT_GZJS},
+	 	#{QT_PEOPLE},
+	 	#{QT_TEL},
+	 	#{QT_YXDAY},
+	 	#{QT_JCCARD},
+	 	#{QT_ADDRESS},
+	 	#{QT_FUJIA},
+	 	#{QT_IFHT},
+	 	#{QT_IFCNS},
+	 	#{QT_IFPHOTO},
+		#{QT_IFJCK},
+		#{QT_IFGZK},
+		#{QT_IFBXK},
+	 	#{QT_EXIT},
+		#{LIFTNUM},
+	 	#{ROOMNUM},
+	 	#{BEDNUM},
+	 	#{CHECKINDATE},
+	 	#{NOWBH},
+	 	#{LW_ZJBH},
+	 	#{LW_ZJMC},
+	 	#{LW_ZJLX},
+	 	#{LW_ZJPIC},
+		#{TG},
+	 	#{WG},
+	 	#{LG},
+	 	#{LW_WHCD},
+		#{RG_JE},
+	 	#{RG_DW},
+		#{ZJH},
+	 	#{LW_CARDTYPE},
+	 	#{ENID}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"LDLJGFX_ID" = #{LDLJGFX_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"QQ" = #{QQ},	
+			"LDLJGFX_ID" = "LDLJGFX_ID"
+			where 
+				"LDLJGFX_ID" = #{LDLJGFX_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select type_number,name from sys_gongzhong
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		 SELECT distinct SYS_USER_EXTENDS.user_id id,
+                 (to_char(sysdate, 'yyyy') -
+                 to_char(to_date(USER_BIRTHDAY, 'yyyy-MM-dd'), 'yyyy')) ages
+   from SYS_USER_EXTENDS, SYS_USER, sys_department
+  where 1 = 1
+    and sys_user.department_id =
+        (select department_id from sys_department where name = #{pd.xiangmu})
+    and sys_user.user_id = SYS_USER_EXTENDS.user_id
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	<select id="gongzhonglistPage" parameterType="page" resultType="pd">
+		  SELECT distinct SYS_USER_EXTENDS.user_id id, gk_gz_pk, sys_gongzhong.name name
+   from SYS_USER_EXTENDS, SYS_USER, sys_department, sys_gongzhong
+  where 1 = 1
+    and sys_user.department_id =
+        (select department_id from sys_department where name = #{pd.xiangmu})
+    and sys_user.user_id = SYS_USER_EXTENDS.user_id
+    and sys_gongzhong.type_number = sys_user_extends.gk_gz_pk
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	
+	<!-- 列表学历(全部) -->
+	
+	<select id="xuelilistPage" parameterType="page" resultType="pd">
+		  SELECT distinct SYS_USER_EXTENDS.user_id  id,
+                SYS_USER_EXTENDS.USER_XUELI name
+  from SYS_USER_EXTENDS, SYS_USER, sys_department
+ where 1 = 1
+   and sys_user.department_id =
+       (select department_id from sys_department where name = #{pd.xiangmu})
+   and sys_user.user_id = SYS_USER_EXTENDS.user_id
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	<!-- 列表民族(全部) -->
+	
+	<select id="MinZulistPage" parameterType="page" resultType="pd">
+		  SELECT distinct SYS_USER_EXTENDS.user_id  id,
+                SYS_USER_EXTENDS.USER_NATIVE name
+  from SYS_USER_EXTENDS, SYS_USER, sys_department
+ where 1 = 1
+   and sys_user.department_id =
+       (select department_id from sys_department where name = #{pd.xiangmu})
+   and sys_user.user_id = SYS_USER_EXTENDS.user_id
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	
+	<!-- 列表籍贯(全部) -->
+	
+	<select id="JiGuanlistPage" parameterType="page" resultType="pd">
+		  SELECT distinct SYS_USER_EXTENDS.user_id  id,
+                SYS_USER_EXTENDS.USER_NATION name
+  from SYS_USER_EXTENDS, SYS_USER, sys_department
+ where 1 = 1
+   and sys_user.department_id =
+       (select department_id from sys_department where name = #{pd.xiangmu})
+   and sys_user.user_id = SYS_USER_EXTENDS.user_id
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	
+	<!-- 列表性别(全部) -->
+	
+	<select id="SexlistPage" parameterType="page" resultType="pd">
+		  SELECT distinct SYS_USER_EXTENDS.user_id  id,
+                SYS_USER_EXTENDS.USER_SEX name
+  from SYS_USER_EXTENDS, SYS_USER, sys_department
+ where 1 = 1
+   and sys_user.department_id =
+       (select department_id from sys_department where name = #{pd.xiangmu})
+   and sys_user.user_id = SYS_USER_EXTENDS.user_id
+		<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and SYS_USER_EXTENDS.user_1 &gt;=#{pd.startLoginStart}
+  </if>
+  <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+        and SYS_USER_EXTENDS.user_1 &lt;=#{pd.lastLoginStart}
+  </if>
+	</select>
+	
+	
+	
+	<!-- 列表籍贯(全部) -->
+	<select id="listJiGuan" parameterType="pd" resultType="pd">
+	select distinct USER_NATION name from SYS_USER_EXTENDS
+	</select>
+	
+	<!-- 列表性别(全部) -->
+	<select id="listSex" parameterType="pd" resultType="pd">
+	select distinct USER_SEX name from SYS_USER_EXTENDS
+	</select>
+	
+	
+	
+	
+	<!-- 列表工种(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+	select type_number,name from sys_gongzhong
+	</select>
+	
+	<!-- 列表学历(全部) -->
+	<select id="listXueLi" parameterType="pd" resultType="pd">
+	select distinct USER_XUELI name from SYS_USER_EXTENDS
+	</select>
+	
+	
+	<!-- 列表民族(全部) -->
+	<select id="listMinZu" parameterType="pd" resultType="pd">
+	select distinct USER_NATIVE name from SYS_USER_EXTENDS
+	</select>
+	
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"LDLJGFX_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

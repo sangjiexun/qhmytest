@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="JinChangZhouBao" language="groovy" pageWidth="1240" pageHeight="1754" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="81afee77-ed25-435c-b77a-37ebde0d6beb">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="33"/>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="table" uuid="e2d6c3a7-551f-472e-85e5-f8c106075794">
+		<parameter name="table" class="net.sf.jasperreports.engine.JRDataSource"/>
+		<field name="FENBAOSHANGMC" class="java.lang.String"/>
+		<field name="XIANGMUJC" class="java.lang.String"/>
+		<field name="BZ_NAME" class="java.lang.String"/>
+		<field name="DATE" class="java.lang.String"/>
+		<field name="JC_RENSHU" class="java.lang.String"/>
+		<field name="TC_RENSHU" class="java.lang.String"/>
+		<field name="ZC_RENSHU" class="java.lang.String"/>
+		<field name="GONGHAO" class="java.lang.String"/>
+		<field name="XINGMING" class="java.lang.String"/>
+		<field name="SHFENFENZHENG" class="java.lang.String"/>
+		<field name="JINCHANGSHIJIAN" class="java.lang.String"/>
+		<field name="GZ_NAME" class="java.lang.String"/>
+		<field name="QIANHT" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="table" class="net.sf.jasperreports.engine.JRDataSource"/>
+	<field name="XIANGMUJC" class="java.lang.String"/>
+	<field name="FENBAOSHANGMC" class="java.lang.String"/>
+	<field name="BZ_NAME" class="java.lang.String"/>
+	<field name="DATE" class="java.lang.String"/>
+	<field name="JC_RENSHU" class="java.lang.String"/>
+	<field name="TC_RENSHU" class="java.lang.String"/>
+	<field name="ZC_RENSHU" class="java.lang.String"/>
+	<field name="GONGHAO" class="java.lang.String"/>
+	<field name="XINGMING" class="java.lang.String"/>
+	<field name="SHFENFENZHENG" class="java.lang.String"/>
+	<field name="JINCHANGSHIJIAN" class="java.lang.String"/>
+	<field name="GZ_NAME" class="java.lang.String"/>
+	<field name="QIANHT" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="193" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="1369d122-ab4f-4d4e-9dfb-c88543babf7c" x="495" y="36" width="219" height="103"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="微软雅黑" size="48" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[进场周报]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="589" splitType="Stretch">
+			<componentElement>
+				<reportElement uuid="3a89c399-c87a-46ac-aec1-6c09936806f3" key="table" style="table" x="0" y="0" width="1200" height="589"/>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="table" uuid="3ae52878-3927-471a-b28f-4eee3b18252d">
+						<dataSourceExpression><![CDATA[$P{table}]]></dataSourceExpression>
+					</datasetRun>
+					<jr:columnGroup width="1195" uuid="73045f95-334c-492f-8616-0b6d05edccaf">
+						<jr:tableHeader height="81" rowSpan="1">
+							<textField>
+								<reportElement uuid="5c1e5dca-0871-4f10-af72-e944b8d4faaf" style="table_TH" x="0" y="0" width="1195" height="81"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="48" isBold="false" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{XIANGMUJC}]]></textFieldExpression>
+							</textField>
+						</jr:tableHeader>
+						<jr:columnGroup width="403" uuid="ddefed8d-8a52-435b-bcee-c86779cec329">
+							<jr:tableFooter height="197" rowSpan="1">
+								<staticText>
+									<reportElement uuid="f5634a72-27d5-4637-bc83-e7633510b4f2" style="table_TD" x="0" y="0" width="403" height="197"/>
+									<textElement textAlignment="Left" verticalAlignment="Top">
+										<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<text><![CDATA[申明：此表登记工人为我单位在该
+工程本周全部进场人数，情况属实。]]></text>
+								</staticText>
+							</jr:tableFooter>
+							<jr:columnHeader style="table_TD" height="68" rowSpan="1">
+								<staticText>
+									<reportElement uuid="37b71482-34ce-4edb-acf7-cbb4da4730b7" style="table_TD" x="0" y="0" width="175" height="68"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="30" isBold="false" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H" isPdfEmbedded="true"/>
+									</textElement>
+									<text><![CDATA[分包单位：]]></text>
+								</staticText>
+								<textField>
+									<reportElement uuid="602b4261-83d7-47b7-964b-13fbf9b20955" style="table_TD" x="175" y="0" width="228" height="68"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{FENBAOSHANGMC}]]></textFieldExpression>
+								</textField>
+							</jr:columnHeader>
+							<jr:columnGroup width="403" uuid="0b04fb66-5955-4e1b-9db3-0eb98c69b3b2">
+								<jr:columnHeader height="78" rowSpan="1">
+									<staticText>
+										<reportElement uuid="817f3520-d80b-4f98-bcd3-4114438c7409" style="table_TD" x="0" y="0" width="279" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<text><![CDATA[本周进场工人总数：]]></text>
+									</staticText>
+									<textField>
+										<reportElement uuid="155f44d6-3f9c-4570-8566-12aa8f057dab" style="table_TD" x="279" y="0" width="124" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{JC_RENSHU}]]></textFieldExpression>
+									</textField>
+								</jr:columnHeader>
+								<jr:columnGroup width="403" uuid="31ce8095-adaa-483e-84b4-f1bc0e494ca8">
+									<jr:columnGroup width="403" uuid="9c1744b5-f7d3-4ccb-8913-e8e8e61cb276">
+										<jr:column width="147" uuid="2665e5f0-0862-411f-9dc6-1d04398b63ea">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="0b5fef87-ee2f-4e74-9eed-439ff18f9458" style="table_TH" x="0" y="0" width="147" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[编号]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="f929e589-85cd-4883-bcd1-5196518bad0e" style="table_TD" x="0" y="0" width="147" height="66"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H" isPdfEmbedded="true"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{GONGHAO}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+										<jr:column width="256" uuid="8bd3016e-83c1-4d38-a298-1d83d10d49a8">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="ccc6c5e0-f310-4fad-a2ab-77584f71f87b" style="table_TH" x="0" y="0" width="256" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[工人姓名]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="842099d4-270f-4a14-b00f-0a004384b183" style="table_TD" x="0" y="0" width="256" height="66"/>
+													<textElement textAlignment="Left" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{XINGMING}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+									</jr:columnGroup>
+								</jr:columnGroup>
+							</jr:columnGroup>
+						</jr:columnGroup>
+						<jr:columnGroup width="414" uuid="c4840e96-c0cc-4c77-bfb8-aba1f1cf3d31">
+							<jr:tableFooter height="197" rowSpan="1">
+								<staticText>
+									<reportElement uuid="b1116776-d952-477c-afd6-c845c7de566f" style="table_TD" x="0" y="0" width="414" height="197"/>
+									<textElement textAlignment="Left" verticalAlignment="Top">
+										<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<text><![CDATA[班组长签字：_______________；
+用工企业劳务管理员签字：_________________，
+用工企业项目负责人（授权队长）签字：____________；
+填表时间：____________]]></text>
+								</staticText>
+							</jr:tableFooter>
+							<jr:columnHeader height="68" rowSpan="1">
+								<staticText>
+									<reportElement uuid="4728c062-dda9-4350-a8fd-57ae841e98ab" style="table_TD" x="0" y="0" width="180" height="68"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<text><![CDATA[班组名称：]]></text>
+								</staticText>
+								<textField>
+									<reportElement uuid="94cf78d9-f95e-43f7-85cb-6d4d70b66565" style="table_TD" x="180" y="0" width="234" height="68"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{BZ_NAME}]]></textFieldExpression>
+								</textField>
+							</jr:columnHeader>
+							<jr:columnGroup width="414" uuid="7ef8db1d-1244-46f1-8d5d-2ea7d7b109ca">
+								<jr:columnHeader height="78" rowSpan="1">
+									<staticText>
+										<reportElement uuid="f578090e-b973-4b98-b72c-1dd0b796ac6e" style="table_TD" x="0" y="0" width="271" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<text><![CDATA[本周离场工人总数：]]></text>
+									</staticText>
+									<textField>
+										<reportElement uuid="b6d06ff7-a6f9-47aa-9e34-a99ddbe5abeb" style="table_TD" x="271" y="0" width="143" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{TC_RENSHU}]]></textFieldExpression>
+									</textField>
+								</jr:columnHeader>
+								<jr:columnGroup width="414" uuid="4aa1366a-3a73-4f31-b23a-310d37b1cd8c">
+									<jr:columnGroup width="414" uuid="89b274fd-43d9-4093-a1d0-01564567086e">
+										<jr:column width="251" uuid="977815e1-bcce-4f88-aea4-ea1d910b387d">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="057bfac3-e786-4de6-95ea-50f35cdf287e" style="table_TH" x="0" y="0" width="251" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[身份证号]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="4ed088a8-70b9-4090-96ac-4848817987cf" style="table_TD" x="0" y="0" width="251" height="66"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{SHFENFENZHENG}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+										<jr:column width="163" uuid="33a9176a-7644-4cdc-a666-5b0f029a2626">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="db76a583-29ae-4dc1-968c-63b33f6f5f4e" style="table_TH" x="0" y="0" width="163" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[进场时间]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="871b095f-6044-493e-a2f1-538ca3c32e42" style="table_TD" x="0" y="0" width="163" height="66"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{JINCHANGSHIJIAN}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+									</jr:columnGroup>
+								</jr:columnGroup>
+							</jr:columnGroup>
+						</jr:columnGroup>
+						<jr:columnGroup width="378" uuid="241ba51a-0402-448b-a326-403fe37b1e8b">
+							<jr:tableFooter height="197" rowSpan="1">
+								<staticText>
+									<reportElement uuid="8acf613e-ca4b-4786-be95-3d5a16f65bbf" style="table_TD" x="0" y="0" width="378" height="197"/>
+									<textElement textAlignment="Left" verticalAlignment="Top">
+										<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<text><![CDATA[  用工企业盖章：]]></text>
+								</staticText>
+							</jr:tableFooter>
+							<jr:columnHeader height="68" rowSpan="1">
+								<staticText>
+									<reportElement uuid="4ec89df7-2b73-4488-89fb-84617cb093ca" style="table_TD" x="0" y="0" width="92" height="68"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<text><![CDATA[日期：]]></text>
+								</staticText>
+								<textField>
+									<reportElement uuid="3ecaf0c5-bf05-4bd7-b5fe-5ac468c839aa" style="table_TD" x="92" y="0" width="286" height="68"/>
+									<textElement textAlignment="Left" verticalAlignment="Middle">
+										<font fontName="微软雅黑" size="20" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{DATE}]]></textFieldExpression>
+								</textField>
+							</jr:columnHeader>
+							<jr:columnGroup width="378" uuid="537f752c-1d83-474d-bea9-ef2b85f9679f">
+								<jr:columnHeader height="78" rowSpan="1">
+									<staticText>
+										<reportElement uuid="f11ffc79-994d-4a8f-b534-27629a00a478" style="table_TD" x="0" y="0" width="280" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<text><![CDATA[本周在场工人总数：]]></text>
+									</staticText>
+									<textField>
+										<reportElement uuid="69757852-bc97-44d0-a041-a5793e55683d" style="table_TD" x="280" y="0" width="98" height="78"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{ZC_RENSHU}]]></textFieldExpression>
+									</textField>
+								</jr:columnHeader>
+								<jr:columnGroup width="378" uuid="6f105ea1-9934-4d50-a631-e8259b1cf1d8">
+									<jr:columnGroup width="378" uuid="8ec791f8-c678-418f-90bd-3b3c0cb53511">
+										<jr:column width="242" uuid="913a308f-578e-49b7-811f-b2fd70b057a4">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="3842d0fc-8747-45b0-9df9-85ca4793cc80" style="table_TH" x="0" y="0" width="242" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[工种]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="9c010856-2329-44cc-8fa2-f2a9e45d54d9" style="table_TD" x="0" y="0" width="242" height="66"/>
+													<textElement textAlignment="Left" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{GZ_NAME}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+										<jr:column width="136" uuid="14515ae6-810f-43e0-a109-6862f57d56df">
+											<jr:columnHeader height="89" rowSpan="1">
+												<staticText>
+													<reportElement uuid="999347cc-799e-41ff-93c9-675738811706" style="table_TH" x="0" y="0" width="136" height="89"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<text><![CDATA[是否签订劳动合同]]></text>
+												</staticText>
+											</jr:columnHeader>
+											<jr:detailCell height="66" rowSpan="1">
+												<textField>
+													<reportElement uuid="5de698a7-708d-467d-96af-c4106be3b295" style="table_TD" x="0" y="0" width="136" height="66"/>
+													<textElement textAlignment="Center" verticalAlignment="Middle">
+														<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+													</textElement>
+													<textFieldExpression><![CDATA[$F{QIANHT}]]></textFieldExpression>
+												</textField>
+											</jr:detailCell>
+										</jr:column>
+									</jr:columnGroup>
+								</jr:columnGroup>
+							</jr:columnGroup>
+						</jr:columnGroup>
+					</jr:columnGroup>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+</jasperReport>

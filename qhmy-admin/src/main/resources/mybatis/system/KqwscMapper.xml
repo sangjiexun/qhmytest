@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="KqwscMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_DEPARTMENT"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",	
+		"NAME_EN",
+		"BIANMA",
+		"QY_NAME",
+		"IS_ONLINE"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{NAME},	
+			#{NAME_EN},
+			#{BIANMA},
+			#{QY_NAME},
+			#{IS_ONLINE}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"WZX_ID" = #{WZX_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"NAME" = #{NAME},	
+			"WZX_ID" = "WZX_ID"
+			where 
+				"WZX_ID" = #{WZX_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"WZX_ID" = #{WZX_ID}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+	   select sys_department.name name,sys_department.department_id depid,
+       name_en,
+       bianma,
+       department_type_id,
+       projectcode,
+       trunc(sysdate) - checkon.statisdate days,
+       sys_config.param_value param_value
+  from sys_department, sys_user, checkon, sys_config
+ where sys_department.department_type_id = '1'
+   and sys_department.department_id = sys_user.department_id
+   and sys_user.user_id = checkon.userserial
+   and sys_config.param_comment = '考勤记录未上传报警时间（天）'
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+					
+					sys_department.name LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					
+			
+				)
+		</if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"WZX_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

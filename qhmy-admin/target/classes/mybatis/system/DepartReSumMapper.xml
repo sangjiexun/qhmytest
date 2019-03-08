@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DepartReSumMapper">
+	<!-- 院系报到统计 -->
+	<select id="getDepartReSumListPage"  parameterType="pd" resultType="pd">
+	    
+	   SELECT T.RUXUENIANFEN, 
+              NVL(T.XUEYUANNAME,' ') XUEYUANNAME,
+              COUNT(T.PKID) LUQUCOUNT,
+              SUM(DECODE(T.XINGBIE,'男',1,0)) LUQUCOUNT_NAN,  
+              SUM(DECODE(T.XINGBIE,'女',1,0)) LUQUCOUNT_NV,
+              SUM(DECODE(TT.IS_RECEIVED,'Y',1,0)) BAODAOCOUNT,
+              SUM(DECODE(TT.RECEIVED_XINGBIE,'Y男',1,0)) BAODAOCOUNT_NAN,
+              SUM(DECODE(TT.RECEIVED_XINGBIE,'Y女',1,0)) BAODAOCOUNT_NV,
+              SUM(DECODE(T.IS_RECEIVED,'N',1,0)) BAODAOCOUNT_WEI,
+              SUM(DECODE(T.RECEIVED_XINGBIE,'N男',1,0)) BAODAOCOUNT_NAN_WEI,
+              SUM(DECODE(T.RECEIVED_XINGBIE,'N女',1,0)) BAODAOCOUNT_NV_WEI,
+              SUM(DECODE(TT.IS_RECEIVED,'Y',1,0))/COUNT(T.PKID)*100  BAODAOLV,
+              to_char(SUM(DECODE(TT.IS_RECEIVED,'Y',1,0))/COUNT(T.PKID)*100, 'fm99,999,990.00')||'%'   BAODAOLV1            
+         FROM (   
+		       SELECT DIC.NAME RUXUENIANFEN,S.BAODAOSJ,S.NIANJI,
+		              (SELECT SD.NAME FROM SYS_DEPARTMENT SD WHERE SD.LEIBIE = 2 START WITH SD.DEPARTMENT_ID = S.DEPARTMENT_PKID CONNECT BY PRIOR SD.PARENT_ID = SD.DEPARTMENT_ID) XUEYUANNAME,
+		              (SELECT SD.DEPARTMENT_ID FROM SYS_DEPARTMENT SD WHERE SD.LEIBIE = 2 START WITH SD.DEPARTMENT_ID = S.DEPARTMENT_PKID CONNECT BY PRIOR SD.PARENT_ID = SD.DEPARTMENT_ID) XUEYUANID,
+		              S.PKID,
+		              NVL(S.IS_RECEIVED,'N') IS_RECEIVED,
+		              S.XINGBIE,
+		              NVL(S.IS_RECEIVED,'N')||S.XINGBIE AS RECEIVED_XINGBIE
+		         FROM T_STUDENT S
+		         JOIN SYS_DICTIONARIES DIC ON S.NIANJI = DIC.BIANMA
+            WHERE S.ZHUANGTAI = 1
+              AND S.ZAIXUEZT = 'ZX'
+              AND DIC.PARENT_ID = 'GRADE'
+              AND DIC.IS_USED ='Y'
+          
+        ) T LEFT JOIN (
+        SELECT S.PKID,
+		              NVL(S.IS_RECEIVED,'N') IS_RECEIVED,
+		              S.XINGBIE,
+		              NVL(S.IS_RECEIVED,'N')||S.XINGBIE AS RECEIVED_XINGBIE
+		         FROM T_STUDENT S
+		         JOIN SYS_DICTIONARIES DIC ON S.NIANJI = DIC.BIANMA
+            WHERE S.ZHUANGTAI = 1
+              AND S.ZAIXUEZT = 'ZX'
+              AND DIC.PARENT_ID = 'GRADE'
+              AND DIC.IS_USED ='Y'
+              <if test="BAODAOSJBEGIN!=null and BAODAOSJBEGIN!=''">
+				  AND S.BAODAOSJ &gt;=to_date(#{BAODAOSJBEGIN},'yyyy-MM-dd')
+			  </if>
+			  <if test="BAODAOSJEND!=null and BAODAOSJEND!=''">
+				  AND S.BAODAOSJ &lt; to_date(#{BAODAOSJEND},'yyyy-MM-dd')+1
+			  </if>
+        )TT 
+        ON T.PKID = TT.PKID 
+        WHERE 1=1
+        <if test="DEPARTMENTID!=null and DEPARTMENTID!=''">
+			and T.XUEYUANID = #{DEPARTMENTID}
+		</if>
+		<if test="NIANJI!=null and NIANJI!=''">
+			and T.NIANJI = #{NIANJI}
+		</if> 
+
+        GROUP BY T.RUXUENIANFEN,T.XUEYUANNAME ORDER BY RUXUENIANFEN DESC
+          
+	    
+	</select>
+
+	
+</mapper>

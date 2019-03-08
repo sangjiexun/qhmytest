@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="XcbbMapper">
+	
+	
+	<resultMap type="usermessage" id="userMessageMap">
+		<result column="xmname" property="xmname"/>
+		<result column="fbgsname" property="fbgsname"/>
+		<result column="bzname" property="bzname"/>
+		<result column="jobid" property="jobid"/>
+		<result column="gz" property="gz"/>
+		<result column="uname" property="uname"/>
+		<result column="idcard" property="idcard"/>
+		<result column="jcrq" property="jcrq"/>
+		<result column="lcrq" property="lcrq"/>
+		<result column="sd" property="sd"/>
+		<result column="gs" property="gs"/>
+	</resultMap>
+	
+	
+	<!--表名 -->
+	<sql id="tableName">
+		sys_department
+	</sql>
+	
+	<sql id="table1">
+		sys_user
+	</sql>
+	
+	<sql id="table2">
+		sys_user_extends
+	</sql>
+	
+	<sql id="table3">
+		WorkingHours
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"DEPARTMENT_ID",	
+		"NAME",	
+		"NAME_EN",
+		"BIANMA",	
+		"PARENT_ID",
+		"BZ",	
+		"HEADMAN",
+		"TEL",	
+		"FUNCTIONS",
+		"ADDRESS",	
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",	
+		"BUSINESSLICCODE",
+		"PROJECTCODE"
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{DEPARTMENT_ID},	
+			#{NAME},	
+			#{NAME_EN},
+			#{BIANMA},	
+			#{PARENT_ID},	
+			#{BZ},
+			#{HEADMAN},	
+			#{TEL},	
+			#{FUNCTIONS},
+			#{ADDRESS},	
+			#{DEPARTMENT_TYPE_ID},	
+			#{CREWSIZE},
+			#{REGISTADDRESS},	
+			#{BUSINESSLICCODE},	
+			#{PROJECTCODE}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+<!-- 所有信息-->
+	<select id="getmessagelistPage" parameterType="page" resultType="pd">
+          select count(u.idcard) cou,  
+          		max(qy.name)               qyname,
+     
+       max(xm.name)               xmname,
+       max(fbgs.DEPARTMENT_ID)    fbgsid,
+       max(fbgs.name)             fbgsname,
+       max(bz.name)               bzname,
+       max(bz.id)                 bzid,
+       max(u.name)                uname,
+       max(u.islabour)            islabour,
+       max(u.userid)              userid,
+       u.idcard              idcard,
+       max(userm.jobid)           as jobid,
+       max(userm.userno)          userno,
+       max(userm.gz)              gz
+            from sys_department qy
+            join
+           (select DEPARTMENT_ID id, NAME, Parent_Id
+              from sys_department
+             where DEPARTMENT_TYPE_ID = 2
+               <if test="pd.xmmc!=null and pd.xmmc!=''">
+				and "NAME"=#{pd.xmmc}
+			   </if>
+             ) xm
+              on (xm.Parent_Id = qy.DEPARTMENT_ID)
+            join (select DEPARTMENT_ID, NAME, Parent_Id
+                    from sys_department
+                   where DEPARTMENT_TYPE_ID = 3
+                   <if test="pd.fbdw!=null and pd.fbdw!=''">
+					and "NAME"=#{pd.fbdw}
+				   </if>
+                   ) fbgs
+              on (fbgs.Parent_Id = xm.id)
+          
+            join (select DEPARTMENT_ID id, NAME, Parent_Id
+                    from sys_department
+                   where DEPARTMENT_TYPE_ID = 4
+                   <if test="pd.bz!=null and pd.bz!=''">
+					and "NAME"=#{pd.bz}
+				   </if>
+                   ) bz
+              on (bz.Parent_Id = fbgs.DEPARTMENT_ID)
+            join (select name,user_idcard idcard, islabour, DEPARTMENT_ID id, USER_ID userid
+                    from sys_user
+                   where islabour = 'y') u
+              on (u.id = bz.id)
+            join (select USER_ID      usid,
+                         user_no      userno,
+                         gk_JobID      jobid,
+                         gk_gz_pk     gz,
+                         gk_StartDate jcrq,
+                         gk_EndDate   lcrq
+                    from sys_user_extends where 1=1 
+                    <if test="pd.gz!=null and pd.gz!=''">
+					and gk_gz_pk=#{pd.gz}
+				   </if>
+                    ) userm
+              on (userm.usid = u.userid)
+            join (select workhours,statisdate,userserial us from checkon where 1 = 1 
+            <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and to_char(statisdate,'yyyy-mm-dd') &gt;= #{pd.startLoginStart} and to_char(statisdate,'yyyy-mm-dd')&lt;= #{pd.lastLoginStart}
+			</if>
+            ) workh
+              on (workh.us = userm.usid)
+           where DEPARTMENT_TYPE_ID = 1 
+           	<if test="pd.qymc!=null and pd.qymc!=''">
+				and qy."NAME"=#{pd.qymc}
+			</if>
+		group by qy.name,
+      
+       u.idcard
+       order by uname
+	</select>
+	
+	<select id="getmessageliPage1" parameterType="page" resultType="pd">
+          select  u.name                uname,
+                 workh.workhours      wh,
+       			workh.statisdate sd,
+       			u.idcard idcard
+            from sys_department qy
+            join
+           (select DEPARTMENT_ID id, NAME, Parent_Id
+              from sys_department
+             where DEPARTMENT_TYPE_ID = 2
+               <if test="pd.xmmc!=null and pd.xmmc!=''">
+				and "NAME"=#{pd.xmmc}
+			   </if>
+             ) xm
+              on (xm.Parent_Id = qy.DEPARTMENT_ID)
+            join (select DEPARTMENT_ID, NAME, Parent_Id
+                    from sys_department
+                   where DEPARTMENT_TYPE_ID = 3
+                   <if test="pd.fbdw!=null and pd.fbdw!=''">
+					and "NAME"=#{pd.fbdw}
+				   </if>
+                   ) fbgs
+              on (fbgs.Parent_Id = xm.id)
+          
+            join (select DEPARTMENT_ID id, NAME, Parent_Id
+                    from sys_department
+                   where DEPARTMENT_TYPE_ID = 4
+                   <if test="pd.bz!=null and pd.bz!=''">
+					and "NAME"=#{pd.bz}
+				   </if>
+                   ) bz
+              on (bz.Parent_Id = fbgs.DEPARTMENT_ID)
+            join (select name,user_idcard idcard, islabour, DEPARTMENT_ID id, USER_ID userid
+                    from sys_user
+                   where islabour = 'y') u
+              on (u.id = bz.id)
+            join (select USER_ID      usid,
+                         user_no      userno,
+                         gk_JobID      jobid,
+                         gk_gz_pk     gz,
+                         gk_StartDate jcrq,
+                         gk_EndDate   lcrq
+                    from sys_user_extends where 1=1 
+                    <if test="pd.gz!=null and pd.gz!=''">
+					and gk_gz_pk=#{pd.gz}
+				   </if>
+                    ) userm
+              on (userm.usid = u.userid)
+            join (select workhours,statisdate,userserial us from checkon where 1 = 1 
+            <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and to_char(statisdate,'yyyy-mm-dd') &gt;= #{pd.startLoginStart} and to_char(statisdate,'yyyy-mm-dd')&lt;= #{pd.lastLoginStart}
+			</if>
+            ) workh
+              on (workh.us = userm.usid)
+           where DEPARTMENT_TYPE_ID = 1 
+           	<if test="pd.qymc!=null and pd.qymc!=''">
+				and qy."NAME"=#{pd.qymc}
+			</if>
+			order by  uname
+	</select>
+	
+	<!--获得班组-->
+	<select id="getbz" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='4' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+			 </select>
+	
+	<!-- 获取分包公司信息 -->
+	<select id="findByname" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='3' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	
+	<!-- 获取项目信息 -->
+	<select id="findqyxm" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='2' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	
+
+	<select id="bzlistPage" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='4' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		
+	</select>
+
+	<select id="XMlistPage"  parameterType="pd"  resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where DEPARTMENT_TYPE_ID=#{DEPARTMENT_ID}
+	</select>
+	
+	<select id="fbgslistPage" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where  "NAME"=#{NAME}
+		
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"XCBB_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- 列表(全部) -->
+	<select id="listxmAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where DEPARTMENT_TYPE_ID='2'
+	</select>
+	
+	
+	<select id="finddate" parameterType="pd" resultType="pd">
+		select
+		PARAM_VALUE
+		from sys_config
+		where PARAM_NAME = 'kqksrq'
+	</select>
+	<!-- zhoudibo -->
+</mapper>

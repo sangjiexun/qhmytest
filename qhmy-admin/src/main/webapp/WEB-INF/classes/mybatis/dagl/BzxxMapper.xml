@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BzxxMapper">
+	
+	<resultMap type="Department" id="departmentResultMap">
+		<id column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="NAME" property="NAME"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+		<result column="DEPARTMENT_TYPE_ID" property="DEPARTMENT_TYPE_ID"/>
+	</resultMap>
+	
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_DEPARTMENT"
+	</sql>
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",
+		"NAME_EN",
+		"BIANMA",
+		"PARENT_ID",
+		"HEADMAN",
+		"TEL",
+		"FUNCTIONS",
+		"ADDRESS",
+		"BZ",
+		"DEPARTMENT_ID",
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",
+		"BUSINESSLICCODE",
+		"PROJECTCODE"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{NAME},
+		#{NAME_EN},
+		#{BIANMA},
+		#{PARENT_ID},
+		#{HEADMAN},
+		#{TEL},
+		#{FUNCTIONS},
+		#{ADDRESS},
+		#{BZ},
+		#{DEPARTMENT_ID},
+		#{DEPARTMENT_TYPE_ID},
+		#{CREWSIZE},
+		#{REGISTADDRESS},
+		#{BUSINESSLICCODE},
+		#{PROJECTCODE}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into 
+	<include refid="tableName"></include>
+		(
+	<include refid="Field"></include>
+		) values (
+	<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+		set 
+			"NAME" = #{NAME},
+			"NAME_EN" = #{NAME_EN},
+			"HEADMAN" = #{HEADMAN},
+			"TEL" = #{TEL},
+			"FUNCTIONS" = #{FUNCTIONS},
+			"ADDRESS" = #{ADDRESS},
+			"BZ" = #{BZ},	
+			"CREWSIZE" = #{CREWSIZE},
+			"REGISTADDRESS" = #{REGISTADDRESS},
+			"BUSINESSLICCODE" = #{BUSINESSLICCODE},
+			"PROJECTCODE" = #{PROJECTCODE}
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_ID" = #{DEPARTMENT_ID}
+	</select>
+	
+	<!-- 通过编码获取数据 -->
+	<select id="findByBianma" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			"BIANMA" = #{BIANMA}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="Department">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where
+			1=1 and "DEPARTMENT_TYPE_ID" = '4' 
+		<if test="pd.DEPARTMENT_ID!= null and pd.DEPARTMENT_ID != '' and pd.TYPE_ID!=null and pd.TYPE_ID!='' "><!-- 检索 -->
+		and 1=1
+			<if test="pd.TYPE_ID == 1 ">
+			and "PARENT_ID" in (select DEPARTMENT_ID from sys_department where "PARENT_ID" in (select DEPARTMENT_ID from sys_department where "PARENT_ID" = #{pd.DEPARTMENT_ID}))
+			</if>
+			<if test="pd.TYPE_ID == 2 ">
+			and "PARENT_ID" in  (select DEPARTMENT_ID from sys_department where "PARENT_ID" = #{pd.DEPARTMENT_ID})
+			</if>
+			<if test="pd.TYPE_ID == 3 ">
+			and "PARENT_ID"  = #{pd.DEPARTMENT_ID}
+			</if>
+			<if test="pd.TYPE_ID == 4 ">
+			and "DEPARTMENT_ID"  = #{pd.DEPARTMENT_ID} 
+			</if>
+		</if>
+		<if test="pd.DEPARTMENT_ID == null or pd.DEPARTMENT_ID == ''"><!-- 检索 -->
+		and  parent_id in (select department_id  from sys_department where "DEPARTMENT_TYPE_ID"='3')
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 "NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 "NAME_EN" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				 or
+				 "BIANMA" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+		order by "NAME"
+	</select>
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listSubDepartmentByParentId1" parameterType="String" resultMap="departmentResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+		"PARENT_ID" = #{parentId} order by "NAME" 
+	</select>
+	<select id="datalistPage1" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where
+			1=1
+			and "DEPARTMENT_TYPE_ID" = '4'
+		<if test="pd.DEPARTMENT_ID!= null and pd.DEPARTMENT_ID != ''"><!-- 检索 -->
+		and "PARENT_ID" = (select department_id from SYS_DEPARTMENT where "PARENT_ID"= #{pd.DEPARTMENT_ID})
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 "NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 "NAME_EN" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				 or
+				 "BIANMA" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+		order by "NAME"
+	</select>
+	
+	<!-- 通过ID获取其子级列表 -->
+	<select id="listSubDepartmentByParentId" parameterType="String" resultMap="departmentResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+		"PARENT_ID"  = #{parentId} order by "NAME" 
+	</select>
+	<select id="listSubDepartmentByParentId2" parameterType="String" resultMap="departmentResultMap">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+		"DEPARTMENT_ID"  = #{department_id} order by "NAME" 
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<!-- 通过DEPARTMENT_TYPE_ID=1获取数据 -->
+	<select id="findByTypeId" parameterType="pd" resultType="pd">
+		select 
+			"DEPARTMENT_ID","NAME"
+		from 
+		<include refid="tableName"></include>
+		where 
+			"DEPARTMENT_TYPE_ID" = #{DEPARTMENT_TYPE_ID}
+	</select>
+	
+	
+	<!-- 获取所有数据user控制层用 -->
+	<select id="findAll"  resultType="Department">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		
+	</select>
+	
+	
+	<select id="typeName"  resultType="Project">
+	
+		select * from SYS_DEPARTMENT_TYPE 
+	
+	</select>
+	
+</mapper>

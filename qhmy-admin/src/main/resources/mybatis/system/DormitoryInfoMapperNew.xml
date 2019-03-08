@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DormitoryInfoMapperNew">
+
+<!-- 宿舍资源新mapper -->
+	
+	<!-- 获取项目规则 -->
+	<select id="getPayItemRuleByPkid" parameterType="pd" resultType="pd">
+		SELECT t.*,PIL.AMOUNTRECEIVABLE
+	    FROM T_PAY_ITEM_RULE T 
+	    JOIN T_PAY_ITEM I ON I.PKID = T.PAY_ITEM_PKID
+	    JOIN t_pay_style PS ON I.PAY_TYPE_PKID = PS.PKID
+	    JOIN T_PAY_ITEM_LIST PIL ON PIL.PAY_ITEM_PKID=T.PAY_ITEM_PKID AND PIL.PAY_ITEM_RULE=T.PKID
+	    JOIN T_STUDENT S ON S.DEPARTMENT_PKID  IN  (SELECT REGEXP_SUBSTR(T.PROFESSION, '[^,]+', 1, LEVEL)
+	       FROM DUAL
+	      CONNECT BY REGEXP_SUBSTR(T.PROFESSION, '[^,]+', 1, LEVEL) IS NOT NULL) AND S.NIANJI IN  (SELECT REGEXP_SUBSTR(T.GRADE, '[^,]+', 1, LEVEL)
+	    FROM DUAL
+	    CONNECT BY REGEXP_SUBSTR(T.GRADE, '[^,]+', 1, LEVEL) IS NOT NULL)
+	    AND S.CENGCI_PKID  IN 
+	    (SELECT REGEXP_SUBSTR(T.CENGCI_PKID, '[^,]+', 1, LEVEL)
+	    FROM DUAL
+	    CONNECT BY REGEXP_SUBSTR(T.CENGCI_PKID, '[^,]+', 1, LEVEL) IS NOT NULL)
+	    AND S.PICI_PKID IN 
+	    (SELECT REGEXP_SUBSTR(T.PICI_PKID, '[^,]+', 1, LEVEL)
+	    FROM DUAL
+	    CONNECT BY REGEXP_SUBSTR(T.PICI_PKID, '[^,]+', 1, LEVEL) IS NOT NULL) 
+	    WHERE PIL.STUDENT_PKID=#{STUDENT_PKID}
+	    AND t.pay_item_pkid=#{parentPayItemPkid}
+	    AND T.STATUS = '1'
+	    and I.STATUS IN ('0','1','2')
+	    and rownum=1
+	</select>
+	
+	<!-- 
+	是否精确到专业
+	 -->
+	 <select id="getJingQueFanWei" parameterType="pd" resultType="pd">
+	 	select * from t_dorm_restrictedarea t where rownum=1
+	 </select>
+	 
+	 <!-- 获取宿舍所属专业 -->
+	 <select id="getDormBelongDept" parameterType="String" resultType="pd">
+	 	select * from t_dorm_department t where t.dorm_id=#{dorm_pkid}
+	 </select>
+	 
+	 <!-- 更新宿舍所属院系专业 -->
+	 
+	 <update id="updateDormBelongDept" parameterType="pd">
+	 	update t_dorm_department set DEPARTMENT_ID=#{DEPARTMENT_ID} where dorm_id=#{DORM_ID}
+	 </update>
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+	 
+</mapper>

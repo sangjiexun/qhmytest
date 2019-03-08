@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="payMapper">
+	
+	
+	<resultMap type="usermessage" id="userMessageMap">
+		<result column="xmname" property="xmname"/>
+		<result column="fbgsname" property="fbgsname"/>
+		<result column="bzname" property="bzname"/>
+		<result column="jobid" property="jobid"/>
+		<result column="gz" property="gz"/>
+		<result column="uname" property="uname"/>
+		<result column="idcard" property="idcard"/>
+		<result column="jcrq" property="jcrq"/>
+		<result column="lcrq" property="lcrq"/>
+		<result column="sd" property="sd"/>
+		<result column="gs" property="gs"/>
+	</resultMap>
+	
+	
+	<!--表名 -->
+	<sql id="tableName">
+		sys_department
+	</sql>
+	
+	<sql id="table1">
+		sys_user
+	</sql>
+	
+	<sql id="table2">
+		sys_user_extends
+	</sql>
+	
+	<sql id="table3">
+		WorkingHours
+	</sql>
+	<sql id="table4">
+		sys_gongzhong
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"DEPARTMENT_ID",	
+		"NAME",	
+		"NAME_EN",
+		"BIANMA",	
+		"PARENT_ID",
+		"BZ",	
+		"HEADMAN",
+		"TEL",	
+		"FUNCTIONS",
+		"ADDRESS",	
+		"DEPARTMENT_TYPE_ID",
+		"CREWSIZE",
+		"REGISTADDRESS",	
+		"BUSINESSLICCODE",
+		"PROJECTCODE"
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{DEPARTMENT_ID},	
+			#{NAME},	
+			#{NAME_EN},
+			#{BIANMA},	
+			#{PARENT_ID},	
+			#{BZ},
+			#{HEADMAN},	
+			#{TEL},	
+			#{FUNCTIONS},
+			#{ADDRESS},	
+			#{DEPARTMENT_TYPE_ID},	
+			#{CREWSIZE},
+			#{REGISTADDRESS},	
+			#{BUSINESSLICCODE},	
+			#{PROJECTCODE}
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+
+	
+	<!-- 所有信息-->
+	<select id="getmessagelistPage" parameterType="page" resultType="pd">
+	  select distinct u3.name name,id,gz_name,mjkq, realkq, gzbz, yfgz, sfgz,nopay ,u3.bz bz,to_char(u3.sdate,'mm') sdate,qy_id QYID, xm_id XMID
+   	  from sys_department tt,
+       (select  name, u1.id id, gz_name,mjkq, realkq, gzbz, yfgz, sfgz, nopay,bz,user_id, qy_id, xm_id, fb_id, team_id, sdate
+          from (select p.name            name,
+                       p.sfid            id,
+                       s.name            gz_name,
+                       p.workattendance  mjkq,
+                       p.realattendance  realkq,
+                       p.payrollstandard gzbz,
+                       p.payroll         yfgz,
+                       p.allexpenses     sfgz,
+                       p.notpay          nopay,
+                       p.remark          bz,
+                       u.user_id         user_id
+                  from payroll p, sys_gongzhong s, sys_user u
+                 where p.jobtype = s.type_number
+                   and p.sfid = u.user_idcard) u1,
+               (select t.department_id qy_id,
+                       xm_id,
+                       fb_id,
+                       team_id,
+                       u1.id,
+                       c.statisdate    sdate
+                  from sys_department t,
+                       checkon c,
+                       (select ue.enid         enid,
+                               t.department_id xm_id,
+                               ue.gk_fenbao_pk fb_id,
+                               ue.gk_team_pk   team_id,
+                               ue.user_id      id
+                          from sys_user_extends ue, sys_department t
+                         where t.bianma = ue.prid) u1
+                 where u1.enid = t.bianma
+                   and c.userserial = u1.id) u2
+         where u1.user_id = u2.id) u3
+   	  where tt.department_id = (case
+         when tt.department_type_id = '4' then
+          u3.team_id
+         when tt.department_type_id = '3' then
+          u3.fb_id
+         when tt.department_type_id = '2' then
+          u3.xm_id
+         when tt.department_type_id = '1' then
+          u3.qy_id
+         else
+          tt.department_id
+       end)
+   <if test="pd.DEPARTMENT_ID!=null and pd.DEPARTMENT_ID!=''">
+     and tt.department_id = #{pd.DEPARTMENT_ID}
+   </if>
+    <if test="pd.gz!=null and pd.gz!=''">
+     and gz_name = #{pd.gz}
+   </if>
+   <if test="pd.keywords != null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				 u3.name LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				 or 
+				 id LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				)
+	</if>
+   <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+        and to_char(u3.sdate,'yyyy-mm') = #{pd.startLoginStart}
+  </if>
+	</select>
+	<select id="getmessagelistPage1" parameterType="page" resultType="pd">
+	select yif_expenses,yi_cou,ygf_expenses,ygf_cou,ygf_expenses-yif_expenses wf_expeneses,ygf_cou-yi_cou wf_cou,yiq_expenses,yiq_cou,qy_id QYID,xm_id XMID from 
+(select sum(p.allexpenses)yiq_expenses,count(*) yiq_cou  from payroll p  where p.state_bs = '2'),
+(
+select sum(p.allexpenses)yif_expenses,count(*) yi_cou from payroll p 
+),(
+select sum(cou_m) ygf_expenses, count(*)ygf_cou,qy_id,xm_id from
+(
+select cou_m,id,t.department_id dd,qy_id,xm_id from sys_department t,(select t.department_id qy_id,xm_id,fb_id,team_id,id,cou_m from sys_department t,
+(
+select t.department_id xm_id,team_id,fb_id,id,cou_m,u2.enid enid from sys_department t ,(
+select s.gk_team_pk team_id,s.gk_fenbao_pk fb_id,s.prid prid ,id,cou_m,s.enid enid from sys_user_extends s ,(
+select s.user_id id,count(*)*s.rg_je cou_m from checkon c ,sys_user_extends s where s.user_id = c.userserial
+<if test="pd.DAYSTART!=null and pd.DAYSTART!='' and pd.DAYEND !=null and pd.DAYEND !=''">
+ and  to_char(c.statisdate,'yyyy-mm-dd') &gt;= #{pd.DAYSTART} and to_char(c.statisdate,'yyyy-mm-dd') &lt;= #{pd.DAYEND} 
+</if>
+group by s.rg_je,s.user_id
+ )u1
+ where s.user_id = u1.id
+)u2 where u2.prid = t.bianma
+)u3 where u3.enid = t.bianma
+)u4 where t.department_id =(case
+         when t.department_type_id = '4' then
+           u4.team_id
+         when t.department_type_id = '3' then
+           u4.fb_id
+         when t.department_type_id = '2' then
+            u4.xm_id
+         when t.department_type_id = '1' then 
+            u4.qy_id
+         else
+           t.department_id
+         end) 
+         <if test=" pd.DEPARTMENT_ID!=null and pd.DEPARTMENT_ID!=''">
+       	 and t.department_id = #{pd.DEPARTMENT_ID}
+  		</if>
+        )group by qy_id,xm_id)  where ygf_cou != 0
+	</select>
+	
+	
+	
+	
+	
+	<!--获得班组-->
+	<select id="getbz" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='4' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+			 </select>
+	
+	<!-- 获取分包公司信息 -->
+	<select id="findByname" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='3' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	
+	
+	<!-- 获取项目信息 -->
+	<select id="findqyxm" parameterType="pd" resultType="pd">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 
+			 DEPARTMENT_TYPE_ID='2' and PARENT_ID=(select DEPARTMENT_ID from sys_department where "NAME"=#{NAME})
+	</select>
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		
+		
+	</select>
+
+
+<!-- 列出企业信息 -->
+	<select id="XMlist"  parameterType="pd"  resultType="pd">
+		select name from SYS_GONGZHONG where 1=1
+		<if test="dd!=null and dd!=''">
+		and department_id = #{dd}
+		</if>
+	</select>
+	<select id="getkqday"  parameterType="pd"  resultType="pd">
+		select param_value from SYS_CONFIG  where param_name = 'kqksrq'
+	</select>
+	
+	
+	
+	<!-- zhoudibo -->
+</mapper>

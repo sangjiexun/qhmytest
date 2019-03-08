@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PayRecordMapper">
+	<!-- 查询交易明细表数据 -->
+	<select id="payRecordlistPage" parameterType="page" resultType="pd">
+		SELECT SP.PKID,S.SHENFENZHENGHAO,S.XINGMING,departmentstr(D.DEPARTMENT_ID) AS DEP_NAME,C.CENGCI_NAME,P.PICI_NAME,J.XINGMING AS JIESHAOREN_NAME,
+		(CASE WHEN SP.PAY_MODE = '0' THEN '返款费' ELSE '合作费' END) AS PAY_MODE,to_char(SP.CJSJ,'YYYY-MM-DD HH24:MI:SS') AS CJSJ,SP.PAY_MONEY,
+		(CASE WHEN SP.IS_TONGGUO = '1' THEN '通过' ELSE '未通过' END) IS_TONGGUO
+		FROM  T_SCHOOLPAY SP
+		JOIN T_STUDENT S ON SP.STUDENT_PKID = S.PKID 
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN T_CENGCI C ON C.PKID = S.CENGCI_PKID
+		JOIN T_PICI P ON P.PKID = S.PICI_PKID
+		JOIN T_JIESHAOREN J ON J.PKID = S.JIESHAOREN_PKID
+		<if test="pd.DATESTART != null and pd.DATESTART != ''">
+			and SP.CJSJ &gt;= TO_DATE(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND != ''">
+			and SP.CJSJ &lt;= TO_DATE(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.TREENAME != null and pd.TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pd.TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="pd.IS_TONGGUO != null and pd.IS_TONGGUO != ''">
+			and SP.IS_TONGGUO = #{pd.IS_TONGGUO}
+		</if>
+		<if test="pd.PAY_TYPE != null and pd.PAY_TYPE != ''">
+			and SP.PAY_MODE = #{pd.PAY_TYPE}
+		</if>
+		<if test="pd.PAY_TYPE != null and pd.PAY_TYPE != ''">
+			and SP.PAY_MODE = #{pd.PAY_TYPE}
+		</if>
+		<if test="pd.stuPkid != null and pd.stuPkid != ''">
+			and SP.STUDENT_PKID = #{pd.stuPkid}
+		</if>
+		<if test="pd.keywords != null and pd.keywords != ''">
+			and  (
+			S.XINGMING LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			or 
+			S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			or 
+			S.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			)
+		</if>
+		ORDER BY SP.CJSJ DESC
+	</select>
+	<select id="getPayRecord" parameterType="pd" resultType="pd">
+	 	SELECT SP.*,S.SHENFENZHENGHAO  FROM T_SCHOOLPAY SP 
+	 	JOIN T_STUDENT S ON SP.STUDENT_PKID = S.PKID 
+	 	WHERE SP.PKID = #{PKID}
+	</select>
+	<select id="getShenFenZheng" parameterType="pd" resultType="pd">
+		select * from t_student t where t.SHENFENZHENGHAO = #{SHENFENZHENGHAO} and ZHUANGTAI = '1' and ZAIXUEZT = 'ZX'
+	</select>
+	<update id="update" parameterType="pd">
+		UPDATE T_SCHOOLPAY SET PAY_MODE = #{PAY_MODE},PAY_MONEY = #{PAY_MONEY},
+		STUDENT_PKID = #{STUDENT_PKID}	where PKID = #{PKID}
+	</update>
+	<insert id="save" parameterType="pd">
+		INSERT INTO T_SCHOOLPAY (STUDENT_PKID,PAY_MODE,PAY_MONEY,PKID)
+		VALUES (#{STUDENT_PKID},#{PAY_MODE},#{PAY_MONEY},sys_guid())
+	</insert>
+	<select id="payRecordExcel" parameterType="pd" resultType="pd">
+		SELECT SP.PKID,S.SHENFENZHENGHAO,S.XINGMING,departmentstr(D.DEPARTMENT_ID) AS DEP_NAME,C.CENGCI_NAME,P.PICI_NAME,J.XINGMING AS JIESHAOREN_NAME,
+		(CASE WHEN SP.PAY_MODE = '0' THEN '返款费' ELSE '合作费' END) AS PAY_MODE,to_char(SP.CJSJ,'YYYY-MM-DD HH24:MI:SS') AS CJSJ,SP.PAY_MONEY
+		FROM  T_SCHOOLPAY SP
+		JOIN T_STUDENT S ON SP.STUDENT_PKID = S.PKID 
+		JOIN SYS_DEPARTMENT D ON D.DEPARTMENT_ID = S.DEPARTMENT_PKID
+		JOIN T_CENGCI C ON C.PKID = S.CENGCI_PKID
+		JOIN T_PICI P ON P.PKID = S.PICI_PKID
+		JOIN T_JIESHAOREN J ON J.PKID = S.JIESHAOREN_PKID
+		<if test="DATESTART != null and DATESTART != ''">
+			and SP.CJSJ &gt;= TO_DATE(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND != ''">
+			and SP.CJSJ &lt;= TO_DATE(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="IS_TONGGUO != null and IS_TONGGUO != ''">
+			and SP.IS_TONGGUO = #{IS_TONGGUO}
+		</if>
+		<if test="TREENAME != null and TREENAME != ''">
+			and D.DEPARTMENT_ID in (SELECT REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{TREENAME}, '[^,]+', 1, LEVEL) IS NOT NULL)
+		</if>
+		<if test="PAY_TYPE != null and PAY_TYPE != ''">
+			and SP.PAY_MODE = #{PAY_TYPE}
+		</if>
+		<if test="PAY_TYPE != null and PAY_TYPE != ''">
+			and SP.PAY_MODE = #{PAY_TYPE}
+		</if>
+		<if test="stuPkid != null and stuPkid != ''">
+			and SP.STUDENT_PKID = #{stuPkid}
+		</if>
+		<if test="keywords != null and keywords != ''">
+			and  (
+			S.XINGMING LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			or 
+			S.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			or 
+			S.XUEHAO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		ORDER BY SP.CJSJ DESC
+	</select>
+	<delete id="delete" parameterType="pd">
+		delete from T_SCHOOLPAY sp where sp.pkid = #{PKID}
+	</delete>
+	<insert id="batchSaveRec" parameterType="java.util.List" useGeneratedKeys="false">
+		insert into
+		T_SCHOOLPAY
+		(
+		PKID,
+		STUDENT_PKID,
+		PAY_MODE,
+		PAY_MONEY
+		)
+	 <foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		select 
+		#{item.PKID,jdbcType=VARCHAR},
+		#{item.STUDENT_PKID,jdbcType=VARCHAR},
+		#{item.PAY_MODE,jdbcType=VARCHAR},
+		#{item.PAY_MONEY,jdbcType=NUMERIC}
+		from dual
+	</foreach>
+	
+	</insert>
+	<update id="batchTongGuo" parameterType="pd">
+		update T_SCHOOLPAY t set IS_TONGGUO = '1'
+		where t.PKID in (SELECT REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL)
+			FROM DUAL
+			CONNECT BY REGEXP_SUBSTR(#{pkids}, '[^,]+', 1, LEVEL) IS NOT NULL)
+	</update>
+</mapper>

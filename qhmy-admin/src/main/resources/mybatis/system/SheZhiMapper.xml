@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SheZhiMapper">
+
+	<select id="getOne" parameterType="pd" resultType="pd">
+		select  * from t_shezhi s where s.GAOXIAO_PKID=#{GAOXIAO_PKID}
+	</select>
+		<insert id="savetb" parameterType="pd">
+		insert into 
+		t_shezhi
+		(
+		"PKID",
+		"GAOXIAO_PKID",
+		<if test="SFKQSJTB!=null and SFKQSJTB !=''">
+		"SFKQSJTB",
+		</if>
+		<if test="IPDIZHI!=null and IPDIZHI!=''">
+			"IPDIZHI",
+		</if>
+		<if test="DUANKOU!=null and DUANKOU !=''">
+			"DUANKOU",
+		</if>
+		<if test="JIEKOUDIZHI!=null and JIEKOUDIZHI !=''">
+			"JIEKOUDIZHI",
+		</if>
+		<if test="TONGBUFS!=null and TONGBUFS !=''">
+			"TONGBUFS",
+		</if>
+		"CJSJ"
+		) values (
+		#{PKID},
+		#{GAOXIAO_PKID},
+		<if test="SFKQSJTB!=null and SFKQSJTB !=''">
+		#{SFKQSJTB},
+		</if>
+		<if test="IPDIZHI!=null and IPDIZHI!=''">
+			#{IPDIZHI},
+		</if>
+		<if test="DUANKOU!=null and DUANKOU !=''">
+			#{DUANKOU},
+		</if>
+		<if test="JIEKOUDIZHI!=null and JIEKOUDIZHI !=''">
+			#{JIEKOUDIZHI},
+		</if>
+		<if test="TONGBUFS!=null and TONGBUFS !=''">
+			#{TONGBUFS},
+		</if>
+		sysdate
+		)
+	</insert>
+	<update id="updatetb" parameterType="pd">
+		update
+		t_shezhi
+		set 
+		<if test="SFKQSJTB!=null and SFKQSJTB !=''">
+			"SFKQSJTB"=#{SFKQSJTB},
+		</if>
+		<if test="IPDIZHI!=null and IPDIZHI!=''">
+			"IPDIZHI"=#{IPDIZHI},
+		</if>
+		<if test="DUANKOU!=null and DUANKOU !=''">
+			"DUANKOU"=#{DUANKOU},
+		</if>
+		<if test="JIEKOUDIZHI!=null and JIEKOUDIZHI !=''">
+			"JIEKOUDIZHI"=#{JIEKOUDIZHI},
+		</if>
+		<if test="TONGBUFS!=null and TONGBUFS !=''">
+		"TONGBUFS"=#{TONGBUFS},
+		</if>
+			"XGSJ"=sysdate
+		where 
+		"GAOXIAO_PKID" = #{GAOXIAO_PKID}
+	</update>
+	
+
+	
+</mapper>

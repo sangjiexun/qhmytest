@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CengciMapper">
+	<!-- 查询层次表数据 -->
+	<select id="cengci_listPage" parameterType="page" resultType="pd">
+		SELECT PKID, CENGCI_BIANMA, CENGCI_NAME,XUENIANZHI, IS_USE, BEIZHU, CJSJ, XGSJ ,CCDAIMA
+		FROM T_CENGCI T
+		WHERE 1=1
+		<if test="pd.keyWord !=null and pd.keyWord!=''">
+			AND T.CENGCI_NAME LIKE CONCAT(CONCAT('%', #{pd.keyWord}),'%')
+		</if>
+		ORDER BY t.CJSJ DESC 
+	</select>
+	<!-- 根据层次PKID查询层次详细信息 -->
+	<select id="getCengci" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CENGCI T WHERE T.PKID = #{PKID}
+	</select>
+	<!-- 更新层次信息 -->
+	<update id="update" parameterType="pd" >
+		UPDATE T_CENGCI 
+		SET CENGCI_BIANMA = #{CENGCI_BIANMA},
+		CENGCI_NAME = #{CENGCI_NAME},
+		IS_USE = #{IS_USE},
+		BEIZHU = #{BEIZHU,jdbcType=VARCHAR},
+		XUENIANZHI = #{XUENIANZHI},
+		CCDAIMA=#{CCDAIMA},
+		XGSJ = SYSDATE
+		WHERE PKID = #{PKID}
+	</update>
+	<!-- 新增层次 -->
+	<insert id="save" parameterType="pd">
+		INSERT INTO T_CENGCI (PKID, CENGCI_BIANMA,XUENIANZHI, CENGCI_NAME, IS_USE, BEIZHU,CCDAIMA)
+		VALUES (sys_guid(),#{CENGCI_BIANMA},#{XUENIANZHI},#{CENGCI_NAME},#{IS_USE},#{BEIZHU,jdbcType=VARCHAR},#{CCDAIMA})
+	</insert>
+	<!-- 删除层次 -->
+	<delete id="delete" parameterType="pd">
+		DELETE FROM T_CENGCI T WHERE T.PKID = #{PKID}
+	</delete>
+	<!-- 更新启用状态 -->
+	<update id="updateIsUse" parameterType="pd">
+		UPDATE T_CENGCI
+		SET IS_USE = #{IS_USE},
+		XGSJ = SYSDATE
+		WHERE PKID = #{PKID}
+	</update>
+	<!-- 获取层次是否被学生使用 -->
+	<select id="getStuJieShao" parameterType="pd" resultType="pd">
+		SELECT 1 FROM T_STUDENT S WHERE S.CENGCI_PKID = #{PKID} AND ROWNUM = 1
+	</select>
+	<!-- 查询层次名称是否已存在 -->
+	<select id="getCENGCI_NAME" parameterType="pd" resultType="pd">
+		SELECT * FROM T_CENGCI T WHERE T.CENGCI_NAME = #{CENGCI_NAME} AND ROWNUM = 1
+	</select>
+	<!-- 获取层次编码 -->
+	<select id="getBianMa" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_CENGCI.nextval,3,'0') as CENGCI_BIANMA from dual
+	</select>
+	<select id="getCCDAIMA" parameterType="pd" resultType="pd">
+	   select * from t_cengci c where c.ccdaima='${CCDAIMA}' AND ROWNUM = 1
+	
+	</select>
+	
+	
+	
+	
+	
+</mapper>

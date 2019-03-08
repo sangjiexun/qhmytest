@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SchoolRollMapper">
+	<!-- 查询表数据 -->
+	<select id="stuyear_listPage" parameterType="page" resultType="pd">
+		SELECT *
+		FROM sys_dictionaries T
+		WHERE 1=1 and parent_id='XUEJI'
+		<if test="pd.keyWord !=null and pd.keyWord!=''">
+			AND T.NAME LIKE CONCAT(CONCAT('%', #{pd.keyWord}),'%')
+		</if>
+		ORDER BY t.CJSJ DESC 
+	</select>
+	<!-- 根据PKID查询详细信息 -->
+	<select id="getStuYear" parameterType="pd" resultType="pd">
+		SELECT * FROM sys_dictionaries T WHERE T.DICTIONARIES_ID = #{DICTIONARIES_ID}
+	</select>
+	<!-- 更新 -->
+	<update id="update" parameterType="pd" >
+		UPDATE sys_dictionaries 
+		SET 
+		NAME = #{NAME},
+		IS_USED = #{IS_USED},
+		bz = #{BZ,jdbcType=VARCHAR}
+		WHERE DICTIONARIES_ID = #{DICTIONARIES_ID}
+	</update>
+	<!-- 新增 -->
+	<insert id="save" parameterType="pd">
+		<selectKey keyProperty="bianma" resultType="int" order="BEFORE">
+   			 select   SEQ_SCHOOLROLL.NEXTVAL FROM dual
+ 		</selectKey>
+		INSERT INTO sys_dictionaries
+  (dictionaries_id, NAME, name_en, bianma, order_by, parent_id, bz, tbsname, sfqy, department_id, colleges_pkid, is_used)
+VALUES
+  (#{PKID}, #{NAME}, #{v_name_en,jdbcType=VARCHAR}, 
+  #{bianma}, 1, 'XUEJI', #{BZ,jdbcType=VARCHAR}, 
+  #{v_tbsname,jdbcType=VARCHAR},1, #{v_department_id,jdbcType=VARCHAR}, #{v_colleges_pkid,jdbcType=VARCHAR},#{IS_USED})
+
+	</insert>
+	<!-- 更新启用状态 -->
+	<update id="updateIsUse" parameterType="pd">
+		UPDATE sys_dictionaries
+		SET IS_USED = #{IS_USED}
+		WHERE dictionaries_id = #{DICTIONARIES_ID}
+	</update>
+	<!-- 查询名称是否已存在 -->
+	<select id="getStuYear_NAME" parameterType="pd" resultType="pd">
+		SELECT * FROM sys_dictionaries T WHERE T.name = #{NAME} AND ROWNUM = 1 and PARENT_ID='XUEJI'
+	</select>
+	<!-- 获取编码 -->
+	<select id="getBianMa" parameterType="pd" resultType="pd">
+		SELECT lpad(SEQ_STUYEAR.nextval,4,'0') as BIANMA from dual
+	</select>
+	
+	<delete id="del" parameterType="pd">
+		delete from sys_dictionaries where dictionaries_id = #{DICTIONARIES_ID}
+	</delete>
+	<select id="getIsUsed" parameterType="pd" resultType="pd">
+		select * from t_student s where s.ZHUANGTAI = '1' and s.XUEJI_PKID = #{DICTIONARIES_ID}
+		and ROWNUM = 1
+	</select>
+</mapper>

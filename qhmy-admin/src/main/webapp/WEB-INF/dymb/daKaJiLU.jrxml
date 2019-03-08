@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="daKaJiLU" language="groovy" pageWidth="1240" pageHeight="1754" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ef7518f6-1226-4d2d-9acd-99b3bb195328">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="table" uuid="ded15a4b-bf0e-4206-9ebd-196a5ac2fbbe">
+		<field name="XINGMING" class="java.lang.String"/>
+		<field name="SHFENFENZHENG" class="java.lang.String"/>
+		<field name="KAHAO" class="java.lang.String"/>
+		<field name="SHUAKASHEBEIH" class="java.lang.String"/>
+		<field name="SHUAKASHIJIAN" class="java.lang.String"/>
+		<field name="SHANGCHUANSJ" class="java.lang.String"/>
+		<field name="JINHUOCHU" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="table" class="net.sf.jasperreports.engine.JRDataSource"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="112" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="75ee3479-9ce9-4872-9660-944a3e7607da" x="444" y="16" width="304" height="73"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="微软雅黑" size="48" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+				</textElement>
+				<text><![CDATA[打卡记录]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="169" splitType="Stretch">
+			<componentElement>
+				<reportElement uuid="2f8f5aa1-b25b-4810-a1dd-c59fe131f5b7" style="table" x="0" y="10" width="1200" height="159"/>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="table" uuid="3923705a-3057-4537-a4e5-a19f991ae5fd">
+						<dataSourceExpression><![CDATA[$P{table}]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="102" uuid="bed8a709-569b-4dcc-adda-cd524b50c70f">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="5c78985d-5e0b-4255-a12a-2f8b03664ba0" style="table_TH" x="0" y="0" width="102" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[姓名]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="cd7f0c73-ab7c-4cff-bf02-533ee7709faa" style="table_TD" x="0" y="0" width="102" height="95"/>
+								<textElement verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{XINGMING}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="208" uuid="ebfa2726-4677-47ca-abb4-f19c3a73db07">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="77c251a2-7a72-40d7-8595-245f1ace959a" style="table_TH" x="0" y="0" width="208" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[身份证号]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="a3575e18-ecca-4da5-99d3-08c16e4b682f" style="table_TD" x="0" y="0" width="208" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="22" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{SHFENFENZHENG}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="135" uuid="d7b46c17-9004-46ae-8df0-56cfad41115a">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="4ad08ebe-ee55-4ba3-9540-c0e75f64b912" style="table_TH" x="0" y="0" width="135" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[卡号]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="79741a08-d944-4e09-8d20-0852bfc46cd3" style="table_TD" x="0" y="0" width="135" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="22" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{KAHAO}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="179" uuid="dba7a0d6-8121-45d2-ad33-4d9e6c1ed696">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="f37ef043-2a42-46de-a630-d3dd0b6de3c5" style="table_TH" x="0" y="0" width="179" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[刷卡设备号]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="86a6e284-dd32-4242-9339-8130db5b319d" style="table_TD" x="0" y="0" width="179" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{SHUAKASHEBEIH}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="223" uuid="a4682739-16ac-4d92-b994-3232662af142">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="4081dd46-80de-4930-87ce-b5144146a918" style="table_TH" x="0" y="0" width="223" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[刷卡时间]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="10c76980-8199-448f-bf4d-94d596423922" style="table_TD" x="0" y="0" width="223" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="22" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{SHUAKASHIJIAN}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="241" uuid="a54fcab2-4d68-4b97-96a6-89264423ddd6">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="1fea0e95-f1a8-49ac-bb7d-13d1b0fb9a0d" style="table_TH" x="0" y="0" width="241" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[刷卡记录上传时间]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="b874ae3c-1731-494a-ae0c-bb88412b261d" style="table_TD" x="0" y="0" width="241" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="22" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{SHANGCHUANSJ}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="111" uuid="1f78cef8-7b4f-40df-bda1-24d391d8d52d">
+						<jr:columnHeader height="61" rowSpan="1">
+							<staticText>
+								<reportElement uuid="b42cff66-6850-4491-b900-d61a95a31708" style="table_TH" x="0" y="0" width="111" height="61"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="30" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<text><![CDATA[进出门]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="95" rowSpan="1">
+							<textField>
+								<reportElement uuid="2e0d0ae9-1274-48cf-ab77-b60f752cfe70" style="table_TD" x="0" y="0" width="111" height="95"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="微软雅黑" size="24" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{JINHUOCHU}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="115" splitType="Stretch">
+			<textField>
+				<reportElement uuid="7cf1fd83-a971-49ca-bdaa-c21616f96821" x="513" y="20" width="171" height="83"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="微软雅黑" size="26" pdfFontName="STSong-Light" pdfEncoding="UniGB-UCS2-H"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

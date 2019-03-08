@@ -1,0 +1,1002 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="UserMapper">
+
+	<resultMap type="User" id="userAndRoleResultMap">
+		<id column="USER_ID" property="USER_ID"/>
+		<result column="USERNAME" property="USERNAME"/>
+		<result column="PASSWORD" property="PASSWORD"/>
+		<result column="NAME" property="NAME"/>
+		<result column="RIGHTS" property="RIGHTS"/>
+		<result column="LAST_LOGIN" property="LAST_LOGIN"/>
+		<result column="IP" property="IP"/>
+		<result column="STATUS" property="STATUS"/>
+		<result column="SKIN" property="SKIN"/>
+		<association property="role" column="ROLE_ID" javaType="Role">
+			<id column="ROLE_ID" property="ROLE_ID"/>
+			<result column="ROLE_NAME" property="ROLE_NAME"/>
+			<result column="ROLE_RIGHTS" property="RIGHTS"/>
+		</association>
+	</resultMap>
+	<resultMap type="User" id="userResultMap">
+		<id column="USER_ID" property="USER_ID"/>
+		<result column="USERNAME" property="USERNAME"/>
+		<result column="PASSWORD" property="PASSWORD"/>
+		<result column="NAME" property="NAME"/>
+		<result column="RIGHTS" property="RIGHTS"/>
+		<result column="LAST_LOGIN" property="LAST_LOGIN"/>
+		<result column="IP" property="IP"/>
+		<result column="STATUS" property="STATUS"/>
+		<result column="ROLE_ID" property="ROLE_ID"/>
+		<result column="SKIN" property="SKIN"/>
+	</resultMap>
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_USER"
+	</sql>
+	<sql id="roleTableName">
+		"SYS_ROLE"
+	</sql>
+	<sql id="departmentTableName">
+		"SYS_DEPARTMENT"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"USER_ID",
+		"USERNAME",
+		"PASSWORD",
+		"NAME",
+		"RIGHTS",
+		"ROLE_ID",
+		"LAST_LOGIN",
+		"IP",
+		"STATUS",
+		"BZ",
+		"SKIN",
+		"EMAIL",
+		"NUMBER",
+		"PHONE",
+		"DEPARTMENT_ID",
+		"USER_IDCARD",
+		"ISLABOUR",
+		"USER_TYPE"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{USER_ID},
+		#{USERNAME},
+		#{PASSWORD},
+		#{NAME,jdbcType=VARCHAR},
+		#{RIGHTS,jdbcType=VARCHAR},
+		#{ROLE_ID,jdbcType=VARCHAR},
+		#{LAST_LOGIN,jdbcType=VARCHAR},
+		#{IP,jdbcType=VARCHAR},
+		#{STATUS,jdbcType=VARCHAR},
+		#{BZ,jdbcType=VARCHAR},
+		#{SKIN,jdbcType=VARCHAR},
+		#{EMAIL,jdbcType=VARCHAR},
+		#{NUMBER,jdbcType=VARCHAR},
+		#{PHONE,jdbcType=VARCHAR},
+		#{DEPARTMENT_ID,jdbcType=VARCHAR},
+		#{ISLABOUR,jdbcType=VARCHAR},
+		#{USER_IDCARD,jdbcType=VARCHAR},
+		#{USER_TYPE}
+	</sql>
+	
+	<!-- 判断用户名和密码 -->
+	<select id="getUserInfo" parameterType="pd" resultType="pd">
+		select     "USER_ID",   "USERNAME",   "PASSWORD",   "NAME",   "RIGHTS",   
+		"ROLE_ID",   "LAST_LOGIN",   "IP",   "STATUS",   "BZ",   "SKIN",   "EMAIL",   
+		"NUMBER",   "PHONE",   "DEPARTMENT_ID",   "USER_IDCARD",   "ISLABOUR",   
+		"USER_TYPE"    
+		from       "SYS_USER"
+		where 1=1
+		<if test="USERNAME!=null and PASSWORD!=null">
+		and "USERNAME" = #{USERNAME} and "PASSWORD"=#{PASSWORD}
+		</if>
+		<if test="USER_ID!=null and USER_ID>0">
+		and "USER_ID" = #{USER_ID}
+		</if>
+<!-- 		<if test="desc=='1'.toString() "></if> -->
+		
+	<!--  luzhen update 学生不在SYS_USER表中存在	<if test="LX=='1'.toString()">
+		and "USER_TYPE" = '1'
+		</if>
+		<if test="LX=='-1'.toString()">
+		and "USER_TYPE" = '2'
+		</if>
+    -->
+		
+		
+	</select>
+	<select id="isInsert"  parameterType="pd" resultType="pd">
+		SELECT PKID FROM T_DUIWU WHERE DUIZHANGSFZH = #{DUIZHANGSFZH} AND QIYE_BIANMA = #{DTTOP_BM} AND ROWNUM = 1
+	</select>
+	<select id="getFBS_PKID" parameterType="pd" resultType="pd">
+		SELECT PKID AS FENBAOSHAGN_PKID  FROM T_FENBAOSHANG F 
+		WHERE F.YINGYEZHIZHAOH = #{YINGYEZHIZHAOH} and ROWNUM = 1 and QIYE_BIANMA = #{DTTOP_BM}
+	</select>
+	<!-- 更新登录时间 -->
+	<update id="updateLastLogin" parameterType="pd" >
+		update
+		<include refid="tableName"></include>
+		set 
+			"LAST_LOGIN" = #{LAST_LOGIN} 
+		where "USER_ID" = #{USER_ID}
+	</update>
+	
+	<!-- 通过用户ID获取用户信息和角色信息 -->
+	<select id="getUserAndRoleById" parameterType="String" resultMap="userAndRoleResultMap">
+		select  u."USER_ID",
+				u."USERNAME",
+				u."NAME",
+				u."RIGHTS" as "USER_RIGHTS",
+				u."PASSWORD",
+				u."SKIN",
+				r."ROLE_ID",
+				r."ROLE_NAME",
+				r."RIGHTS" as "ROLE_RIGHTS" 
+		from 
+		<include refid="tableName"></include> u 
+		left join 
+		<include refid="roleTableName"></include> r 
+		on u."ROLE_ID"=r."ROLE_ID"
+		where u."STATUS"=0 
+		and u."USER_ID"=#{USER_ID}
+	</select>
+	
+	<!-- 通过USERNAME获取数据 -->
+	<select id="findByUsername" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"USERNAME" = #{USERNAME}
+	</select>
+	<select id="hmdYZ" parameterType="pd" resultType="pd"> 
+		select * from T_HEIMINGDAN_RY where SHENFENZHENGHAO = #{SHFENFENZHENG} and LAOWUDUIWU = 2
+	</select>
+	<!-- 存入IP -->
+	<update id="saveIP" parameterType="pd" >
+		update 
+		<include refid="tableName"></include> 
+		set 
+			"IP" = #{IP}
+		where 
+			"USERNAME" = #{USERNAME}
+	</update>
+	<update id="updateTXImg" parameterType="pd">
+		UPDATE T_STUDENT SET TOUXIANG = #{TOUXIANG},XGSJ = SYSDATE WHERE SHENFENZHENGHAO = #{SHENFENZHENGHAO}
+	</update>
+	<!-- 列出某角色下的所有用户 -->
+	<select id="listAllUserByRoldId"  parameterType="pd" resultType="pd" >
+		select "USER_ID"
+		from 
+		<include refid="tableName"></include>
+		where 
+			"ROLE_ID" = #{ROLE_ID}
+	</select>
+	<select id="isDelete"  parameterType="pd" resultType="pd">
+		select DUIWU_PKID from T_PROJECT_DUIWU where DUIWU_PKID = #{PKID} AND ZHUANGTAI !='-1'
+	</select>
+	
+	<!-- 分页查询用户列表 -->
+	<select id="userlistPage" parameterType="page" resultType="pd" >
+		SELECT DISTINCT U.*, DS.DEPARTMENT_NAME AS DEPARTMENT_NAME, R.ROLE_NAME
+		  FROM SYS_USER U
+		  LEFT JOIN T_COLLEGES_DEPARTMENT DS
+		    ON (DS.PKID = U.DEPARTMENT_ID)
+		  LEFT JOIN SYS_ROLE R
+		    ON (R.ROLE_ID = U.ROLE_ID)
+		WHERE 1=1 
+		
+		  <if test="pd.seText!=null and pd.seText!=''">
+		  	AND (
+		  	U.USERNAME LIKE CONCAT(CONCAT('%', #{pd.seText}),'%') 
+		    OR U.PHONE LIKE CONCAT(CONCAT('%', #{pd.seText}),'%')
+		    OR U.NAME LIKE CONCAT(CONCAT('%', #{pd.seText}),'%')
+		    )
+		  </if>
+		
+		<if test="pd.department_id!=null and pd.department_id!=''">
+		  	START WITH  U.DEPARTMENT_ID=#{pd.department_id}
+      		CONNECT BY PRIOR DS.PKID = DS.PARENT_PKID 
+		</if>
+		
+		ORDER BY U.CJSJ DESC
+	</select>
+	<!-- end 分页查询用户列表 -->
+	
+	<select id="getXmCount"  parameterType="pd" resultType="pd">
+		select COUNT(P.DUIWU_PKID) COUNT_XM FROM T_PROJECT_DUIWU P WHERE P.DUIWU_PKID = #{PKID} AND P.ZHUANGTAI IN ('0','1')
+	</select>
+	<select id="getHmdCount" parameterType="pd" resultType="pd">
+		select COUNT(H.PKID) COUNT_HMD FROM T_HEIMINGDAN_RY H WHERE EXISTS (SELECT 1 FROM T_LAOWURENYUAN L
+		WHERE L.SHFENFENZHENG = H.SHENFENZHENGHAO AND L.DUIWU_PKID = #{PKID}) 
+	</select>
+	<!-- 通过邮箱获取数据 -->
+	<select id="findByUE" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"EMAIL" = #{EMAIL}
+		<if test="USERNAME != null and USERNAME != ''">
+			and "USERNAME" != #{USERNAME} 
+		</if>
+	</select>
+	<select id="getDaoChu" parameterType="pd" resultType="pd" >
+	SELECT D.PKID,
+	       DUIZHANGMC,
+	       DUIZHANGSFZH,
+	       DUIZHANGDH,
+	       BEIZHU,
+	       TO_CHAR(SHOUCIHEZUORQ,'YYYY-MM-DD') SHOUCIHEZUOSJ,
+	       FENBAOSHANG_PKID,
+	       FENBAOSHANGMC,
+	       YINGYEZHIZHAOH,
+	       JINGYINGFANWEI,
+	       QIYELEIBIE,
+	       ZIZHIDENGJI,
+	       PINGJIAZHUANGTAI,
+	       PINGJIADENGJI,
+	       FADINGDBR,
+	       FADINGLXDH,
+	       ZHUCEZJ,
+	       ZHUCEDI,
+	       DIZHI,
+	       YOUBIAN,
+	       DUIWUGUIMO,
+	       KAIHUYINHANG,
+	       YINHANGZH,
+	       YINGYEZHIZHAONJ,
+	       ZUZHIJIGOUDM,
+	       ANQUANSGXKZH,
+	       TO_CHAR(XUKEZHENGYXRQ,'YYYY-MM-DD') XUKEZHENGYXRQ,
+	       XUKEZHENGFZJG,
+	       WEITUODLR,
+	       WEITUODLRDH
+	  FROM T_DUIWU D
+	  JOIN t_fenbaoshang F ON D.FENBAOSHANG_PKID = F.PKID
+ 		and D.QIYE_BIANMA = #{DTTOP_BM}
+		<if test="searchText!='' and searchText!= null">
+		and (
+		D.DUIZHANGMC LIKE CONCAT(CONCAT('%', #{searchText}),'%')
+		or 
+		F.FENBAOSHANGMC LIKE CONCAT(CONCAT('%', #{searchText}),'%')
+		or 
+		F.JINGYINGFANWEI LIKE CONCAT(CONCAT('%', #{searchText}),'%')
+		or 
+		F.ZHUCEDI LIKE CONCAT(CONCAT('%', #{searchText}),'%')
+		)
+		</if>
+	</select>
+	<!-- 通过编号获取数据 -->
+	<select id="findByUN" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"NUMBER" = #{NUMBER}
+		<if test="USERNAME != null and USERNAME != ''">
+			and "USERNAME" != #{USERNAME} 
+		</if>
+	</select>
+	
+	
+	<!-- 通过身份证号获取数据 -->
+	<select id="findByUSER_IDCARD" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"USER_IDCARD" = #{USER_IDCARD}
+		<if test="USERNAME != null and USERNAME != ''">
+			and "USERNAME" != #{USERNAME} 
+		</if>
+	</select>
+	
+	
+	<!-- 通过劳务人员身份证号获取数据 -->
+	<select id="findByLW_IDCARD" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"USER_IDCARD" = #{USER_IDCARD}
+		<if test="USERNAME != null and USERNAME != ''">
+			and "USERNAME" != #{USERNAME} 
+		</if>
+	</select>
+	
+	
+	
+	
+	<!-- 通过user_id获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd" >
+		select 
+			<include refid="Field"></include>
+		from 
+			<include refid="tableName"></include>
+		where 
+			"USER_ID" = #{USER_ID}
+	</select>
+	<select id="getFenBaoShangDW" parameterType="pd" resultType="pd" >
+		SELECT PKID,
+	       FENBAOSHANGMC,
+	       YINGYEZHIZHAOH,
+	       JINGYINGFANWEI,
+	       QIYELEIBIE,
+	       ZIZHIDENGJI,
+	       PINGJIAZHUANGTAI,
+	       PINGJIADENGJI,
+	       FADINGDBR,
+	       FADINGLXDH,
+	       ZHUCEZJ,
+	       ZHUCEDI,
+	       DIZHI,
+	       YOUBIAN,
+	       DUIWUGUIMO,
+	       KAIHUYINHANG,
+	       YINHANGZH,
+	       YINGYEZHIZHAONJ,
+	       ZUZHIJIGOUDM,
+	       ANQUANSGXKZH,
+	       to_char(XUKEZHENGYXRQ,'YYYY-MM-DD') XUKEZHENGYXRQ,
+	       XUKEZHENGFZJG,
+	       WEITUODLR,
+	       WEITUODLRDH,
+	       CJSJ,
+	       XGSJ,
+	       QIYE_BIANMA
+		FROM 
+				T_FENBAOSHANG F
+		WHERE 
+			"QIYE_BIANMA" = #{DTTOP_BM}
+		<if test="keywords!=null and keywords!=''">
+			and FENBAOSHANGMC LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+		</if>
+		<if test="PKID!=null and PKID!=''">
+			and PKID = #{PKID}
+		</if>
+	</select>
+	<select id="getFenBaoShangDWFJ" parameterType="pd" resultType="pd" >
+		select 
+			*
+		from 
+			T_FENBAOSHANG_FJ F
+		where 
+			"FENBAOSHENG_PKID" = #{PKID}
+	</select>
+	<select id="getDWFENBAO" parameterType="pd" resultType="pd" >
+	SELECT T.PKID,
+       DUIZHANGMC,
+       DUIZHANGSFZH,
+       DUIZHANGDH,
+       TO_CHAR(SHOUCIHEZUORQ,'YYYY-MM-DD') SHOUCIHEZUOSHIJIAN,
+       BEIZHU,
+       FENBAOSHANG_PKID,
+       FENBAOSHANGMC,
+       YINGYEZHIZHAOH,
+       JINGYINGFANWEI,
+       QIYELEIBIE,
+       ZIZHIDENGJI,
+       PINGJIAZHUANGTAI,
+       PINGJIADENGJI,
+       FADINGDBR,
+       FADINGLXDH,
+       ZHUCEZJ,
+       ZHUCEDI,
+       DIZHI,
+       YOUBIAN,
+       DUIWUGUIMO,
+       KAIHUYINHANG,
+       YINHANGZH,
+       YINGYEZHIZHAONJ,
+       ZUZHIJIGOUDM,
+       ANQUANSGXKZH,
+       to_char(XUKEZHENGYXRQ,'YYYY-MM-DD') XUKEZHENGYXRQ,
+       XUKEZHENGFZJG,
+       WEITUODLR,
+       WEITUODLRDH,
+       T.QIYE_BIANMA
+  	   FROM T_DUIWU T
+  	   JOIN T_FENBAOSHANG F ON T.FENBAOSHANG_PKID = F.PKID
+  	   where T.PKID = #{PKID}
+	</select>
+	<!-- 新增用户 -->
+	<insert id="save" parameterType="pd" >
+		insert into T_DUIWU (PKID, DUIZHANGMC, DUIZHANGSFZH, DUIZHANGDH, BEIZHU, FENBAOSHANG_PKID, QIYE_BIANMA, CJSJ,SHOUCIHEZUORQ)
+		values (#{PKID},#{DUIZHANGMC,jdbcType=VARCHAR},#{DUIZHANGSFZH,jdbcType=VARCHAR},#{DUIZHANGDH,jdbcType=VARCHAR},#{BEIZHU,jdbcType=VARCHAR},#{FENBAOSHANG_PKID},#{DTTOP_BM},SYSDATE,to_date(#{SHOUCIHEZUOSHIJIAN,jdbcType=DATE},'YYYY-MM-DD'))
+	</insert>
+	<insert id="saveFBS" parameterType="pd" >
+	insert into T_FENBAOSHANG (
+	   PKID,FENBAOSHANGMC,YINGYEZHIZHAOH,JINGYINGFANWEI,QIYELEIBIE,ZIZHIDENGJI,PINGJIAZHUANGTAI,PINGJIADENGJI,FADINGDBR,
+       FADINGLXDH,ZHUCEZJ,ZHUCEDI,DIZHI,YOUBIAN,DUIWUGUIMO,KAIHUYINHANG,YINHANGZH,YINGYEZHIZHAONJ,ZUZHIJIGOUDM,ANQUANSGXKZH,
+       XUKEZHENGYXRQ,XUKEZHENGFZJG,WEITUODLR,WEITUODLRDH,CJSJ,QIYE_BIANMA )
+       VALUES (#{FENBAOSHANG_PKID},#{FENBAOSHANGMC},#{YINGYEZHIZHAOH},#{JINGYINGFANWEI},#{QIYELEIBIE},#{ZIZHIDENGJI,jdbcType=VARCHAR}
+       ,#{PINGJIAZHUANGTAI,jdbcType=VARCHAR},#{PINGJIADENGJI,jdbcType=VARCHAR},#{FADINGDBR,jdbcType=VARCHAR},#{FADINGLXDH,jdbcType=VARCHAR},
+       #{ZHUCEZJ,jdbcType=INTEGER},#{ZHUCEDI,jdbcType=VARCHAR},#{DIZHI,jdbcType=VARCHAR}
+       ,#{YOUBIAN,jdbcType=VARCHAR},#{DUIWUGUIMO,jdbcType=VARCHAR},#{KAIHUYINHANG,jdbcType=VARCHAR},#{YINHANGZH,jdbcType=VARCHAR},
+       #{YINGYEZHIZHAONJ,jdbcType=VARCHAR},#{ZUZHIJIGOUDM,jdbcType=VARCHAR},#{ANQUANSGXKZH,jdbcType=VARCHAR}
+       ,TO_DATE(#{XUKEZHENGYXRQ,jdbcType=DATE},'YYYY-MM-DD'),#{XUKEZHENGFZJG,jdbcType=VARCHAR},#{WEITUODLR,jdbcType=VARCHAR},#{WEITUODLRDH,jdbcType=VARCHAR},SYSDATE,#{DTTOP_BM})
+	</insert>
+	<insert id="saveZiZhi" parameterType="pd" >
+		insert into T_QIYEZIZHI (PKID, ZIZHIMC, ZIZHIWJBH, BEIZHU, CJSJ, DUIWU_PKID,TRNUMBER)
+		values (#{PKID_ZIZHI},#{ZIZHIMC,jdbcType=VARCHAR},#{ZIZHIWJBH,jdbcType=VARCHAR},#{BEIZHU,jdbcType=VARCHAR},SYSDATE,#{PKID},#{index})
+	</insert>
+	
+	<insert id="insertTest" parameterType="pd">
+		insert into TEST (id,xingming)  values ("1","luzhen")
+	</insert>
+	
+	<!-- 修改 -->
+	<update id="fenbaoUpdate" parameterType="pd" >
+		update  T_FENBAOSHANG
+		set "FENBAOSHANGMC" = #{FENBAOSHANGMC},
+			YINGYEZHIZHAOH = #{YINGYEZHIZHAOH},
+			JINGYINGFANWEI = #{JINGYINGFANWEI},
+			QIYELEIBIE = #{QIYELEIBIE},
+			ZIZHIDENGJI = #{ZIZHIDENGJI,jdbcType=VARCHAR},
+			PINGJIAZHUANGTAI = #{PINGJIAZHUANGTAI,jdbcType=VARCHAR},
+			PINGJIADENGJI = #{PINGJIADENGJI,jdbcType=VARCHAR},
+	        FADINGDBR = #{FADINGDBR,jdbcType=VARCHAR},
+	        FADINGLXDH= #{FADINGLXDH,jdbcType=VARCHAR},
+	        ZHUCEZJ= #{ZHUCEZJ,jdbcType=INTEGER},
+	        ZHUCEDI= #{ZHUCEDI,jdbcType=VARCHAR},
+	        DIZHI= #{DIZHI,jdbcType=VARCHAR},
+	        YOUBIAN= #{YOUBIAN,jdbcType=VARCHAR},
+	        DUIWUGUIMO= #{DUIWUGUIMO,jdbcType=VARCHAR},
+	        KAIHUYINHANG= #{KAIHUYINHANG,jdbcType=VARCHAR},
+	        YINHANGZH= #{YINHANGZH,jdbcType=VARCHAR},
+	        YINGYEZHIZHAONJ= #{YINGYEZHIZHAONJ,jdbcType=VARCHAR},
+	        ZUZHIJIGOUDM= #{ZUZHIJIGOUDM,jdbcType=VARCHAR},
+	        ANQUANSGXKZH= #{ANQUANSGXKZH,jdbcType=VARCHAR},
+	        XUKEZHENGYXRQ= TO_DATE(#{XUKEZHENGYXRQ,jdbcType=DATE},'YYYY-MM-DD'),
+	        XUKEZHENGFZJG= #{XUKEZHENGFZJG,jdbcType=VARCHAR},
+	        WEITUODLR= #{WEITUODLR,jdbcType=VARCHAR},
+	        WEITUODLRDH= #{WEITUODLRDH,jdbcType=VARCHAR},
+	        XGSJ= SYSDATE,
+	        QIYE_BIANMA = #{DTTOP_BM}
+			where 
+				"PKID" = #{FENBAOSHANG_PKID}
+	</update>
+	<update id="edit" parameterType="pd" >
+		update  T_DUIWU
+		set "DUIZHANGMC" = #{DUIZHANGMC},
+			DUIZHANGSFZH = #{DUIZHANGSFZH},
+			DUIZHANGDH = #{DUIZHANGDH},
+			BEIZHU = #{BEIZHU,jdbcType=VARCHAR},
+			FENBAOSHANG_PKID = #{FENBAOSHANG_PKID},
+			SHOUCIHEZUORQ = to_date(#{SHOUCIHEZUOSHIJIAN},'YYYY-MM-DD'),
+			XGSJ=SYSDATE,
+	        QIYE_BIANMA = #{DTTOP_BM}
+			where 
+				"PKID" = #{PKID}
+	</update>
+	<!-- 删除用户 -->
+	<delete id="deleteDW" parameterType="pd" flushCache="false">
+		delete from 
+		T_DUIWU 
+		where 
+			"PKID" = #{PKID}
+	</delete>
+	
+	<delete id="delZizhiFj" parameterType="pd" flushCache="false">
+		delete from t_qiyezizhi_fj fj where fj.duiwu_pkid=#{DUIWU_PKID} and fj.trnumber=#{trNumber} and fj.CLIENT_ID=#{fileid}
+	</delete>
+	
+	<delete id="delZizhiFjByDuiwu" parameterType="pd" flushCache="false">
+		delete from t_qiyezizhi_fj fj where fj.duiwu_pkid=#{duiwu_pkid}
+	</delete>
+	
+	<delete id="deleteZiZhi" parameterType="pd" flushCache="false">
+		delete from 
+		T_QIYEZIZHI 
+		where 
+			"DUIWU_PKID" = #{PKID}
+	</delete>
+	<delete id="deleteZZ" parameterType="pd" flushCache="false">
+		delete from 
+		T_QIYEZIZHI 
+		where 
+			"DUIWU_PKID" = #{PKID}
+	</delete>
+	<!-- 批量删除用户 -->
+	<delete id="deleteAllU" parameterType="String" >
+		delete from <include refid="tableName"></include>
+		where 
+			"USER_ID" in
+  			 <foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                  #{item}
+             </foreach>
+	</delete>
+	
+	<!-- 用户列表(全部) -->
+	<select id="listAllUser" parameterType="pd" resultType="pd" >
+		select  	
+		
+		u."USERNAME",
+		u."NAME",
+		u."LAST_LOGIN",
+		u."IP",
+		u."STATUS",
+		u."BZ",
+		u."SKIN",
+		u."EMAIL",
+		u."NUMBER",
+		u."PHONE",
+		u."DEPARTMENT_ID",
+		u."ISLABOUR",
+		u."USER_IDCARD",
+		r."ROLE_NAME",
+		r."ROLE_ID"
+		
+		
+		
+		from <include refid="tableName"></include> u, <include refid="roleTableName"></include> r 
+		where u."ROLE_ID" = r."ROLE_ID" 
+		and u."ISLABOUR" ='n'
+		<if test="keywords!= null and keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+					 u."USERNAME" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or 
+					 u."EMAIL" LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+					 or
+					 u."NUMBER" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or
+					 u."NAME" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or
+					 u."PHONE" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+		</if>
+		<if test="ROLE_ID != null and ROLE_ID != ''"><!-- 角色检索 -->
+			and u."ROLE_ID"=#{ROLE_ID} 
+		</if>
+		<if test="lastLoginStart!=null and lastLoginStart!=''"><!-- 登录时间检索 -->
+			and u."LAST_LOGIN" &gt;= #{lastLoginStart} 
+		</if>
+		<if test="lastLoginEnd!=null and lastLoginEnd!=''"><!-- 登录时间检索 -->
+			and u."LAST_LOGIN" &lt;= #{lastLoginEnd} 
+		</if>
+		order by u."LAST_LOGIN" desc
+	</select>
+	
+	<!-- 获取总数 -->
+	<select id="getUserCount" parameterType="String" resultType="pd">
+		select 
+			count("USER_ID") "userCount"
+		from 
+		<include refid="tableName"></include>
+	</select>
+	<select id="getIdentify" parameterType="pd" resultType="pd">
+		SELECT * FROM T_DUIWU where DUIZHANGSFZH = #{DUIZHANGSFZH} and QIYE_BIANMA = #{DTTOP_BM}
+	</select>
+	<select id="getZIZHI" parameterType="String" resultType="pd">
+		SELECT PKID as PKID_ZIZHI, ZIZHIMC, ZIZHIWJBH, BEIZHU, CJSJ, DUIWU_PKID ,TRNUMBER,
+			(select count(1) as sl from t_qiyezizhi_fj fj where q.duiwu_pkid=fj.duiwu_pkid and q.trnumber=fj.trnumber) as sl
+		 FROM T_QIYEZIZHI q where DUIWU_PKID = #{PKID}  order by trnumber 
+	</select>
+	<!-- 获取所有用户 -->
+	<select id="findAll"  resultType="User">
+		select 
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where "ISLABOUR" = "Y"
+		
+	</select>
+	
+	
+	<select id="findAllLabour1" parameterType="pd" resultType="pd" >
+		select  	
+		u."USER_ID",
+		u."USERNAME",
+		u."NAME",
+		u."LAST_LOGIN",
+		u."IP",
+		u."STATUS",
+		u."BZ",
+		u."SKIN",
+		u."EMAIL",
+		u."NUMBER",
+		u."PHONE",
+		u."DEPARTMENT_ID",
+		u."ISLABOUR",
+		u."USER_IDCARD",
+		r."ROLE_NAME",
+		r."ROLE_ID"
+		
+		
+		
+		from <include refid="tableName"></include> u, <include refid="roleTableName"></include> r 
+		where u."ROLE_ID" = r."ROLE_ID" 
+		and u."ISLABOUR" !='n'
+		<if test="keywords!= null and keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+					 u."USERNAME" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or 
+					 u."EMAIL" LIKE CONCAT(CONCAT('%', #{keywords}),'%') 
+					 or
+					 u."NUMBER" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or
+					 u."NAME" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+					 or
+					 u."PHONE" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+		</if>
+		<if test="ROLE_ID != null and ROLE_ID != ''"><!-- 角色检索 -->
+			and u."ROLE_ID"=#{ROLE_ID} 
+		</if>
+		<if test="lastLoginStart!=null and lastLoginStart!=''"><!-- 登录时间检索 -->
+			and u."LAST_LOGIN" &gt;= #{lastLoginStart} 
+		</if>
+		<if test="lastLoginEnd!=null and lastLoginEnd!=''"><!-- 登录时间检索 -->
+			and u."LAST_LOGIN" &lt;= #{lastLoginEnd} 
+		</if>
+		<if test="DEPARTMENT_ID!=null and DEPARTMENT_ID!=''"><!-- 部门检索 -->
+			and u."DEPARTMENT_ID" &lt;= #{DEPARTMENT_ID} 
+		</if>
+		order by u."LAST_LOGIN" desc
+	</select>
+	
+
+	
+	<!-- 用户列表 -->
+	<select id="findAllLabourlistPage" parameterType="Page" resultType="pd" >
+	 select V_SYS_USER."NAME" NAME,
+        "NUMBER",
+        EMAIL,
+        USER_IDCARD,
+        PHONE,
+        V_SYS_USER.BZ BZ,
+        islabour,
+        sys_user_extends.PRID PRID,
+        USER_NO,
+        USER_CARD,
+        USER_SEX,
+        USER_NATION,
+        USER_XUELI,
+        USER_NATIVE,
+        USER_BIRTHDAY,
+        USER_POST,
+        USER_ADDRESS,
+        USER_EMAIL,
+        USER_1,
+        USER_2,
+        BS,
+        JIGUAN,
+        YXDATE,
+        NEWADDRESS,
+        BLACKLIST,
+         sys_user_extends."TEL" TEL,
+        "GK_JOBID",
+       fb.name  GK_FENBAO_PK,
+       bz.name  GK_TEAM_PK,
+        sys_gongzhong.name GK_GZ_PK,
+        GK_STARTDATE,
+        GK_TEAMZ,
+        GK_ENDDATE,
+        GK_YAJIN_PK,
+        GK_GIVEMONEY,
+        GK_REASON,
+        GK_SAFEID,
+        GK_BEIAN,
+        GK_ZJBANLI,
+        QT_HTBH,
+        QT_HTDATE,
+        QT_PXDATE,
+        QT_TJDATE,
+        QT_POST_PK,
+        QT_GZJS,
+        QT_PEOPLE,
+        QT_TEL,
+        QT_YXDAY,
+        QT_JCCARD,
+        QT_ADDRESS,
+        QT_FUJIA,
+        QT_IFHT,
+        QT_IFCNS,
+        QT_IFPHOTO,
+        QT_IFJCK,
+        QT_IFGZK,
+        QT_IFBXK,
+        QT_EXIT,
+        LIFTNUM,
+        ROOMNUM,
+        BEDNUM,
+        CHECKINDATE,
+        NOWBH,
+        LW_ZJBH,
+        LW_ZJMC,
+        LW_ZJLX,
+        TG,
+        WG,
+        LG,
+        LW_WHCD,
+        RG_JE,
+        RG_DW,
+        ZJH,
+        LW_CARDTYPE,
+        sys_user_extends.ENID ENID
+   from V_SYS_USER , sys_user_extends,(select * from V_SYS_DEPARTMENT where DEPARTMENT_TYPE_ID='3') fb,(select * from V_SYS_DEPARTMENT where DEPARTMENT_TYPE_ID='4') bz,sys_gongzhong
+  where V_SYS_USER.user_id = sys_user_extends.user_id and sys_user_extends.gk_team_pk = bz.department_id and sys_user_extends.gk_fenbao_pk=fb.department_id and sys_user_extends.gk_gz_pk=sys_gongzhong.type_number
+    
+    and "ISLABOUR" = 'y'
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and  
+				(
+					 "USER_SEX" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or 
+					 "USER_NO" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+					 or
+					 "NUMBER" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or
+					 V_SYS_USER."NAME" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or
+					 "PHONE" LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+				)
+		</if>
+		
+		<if test="pd.lastLoginStart!=null and pd.lastLoginStart!=''"><!-- 登录时间检索 -->
+			and "GK_STARTDATE" &gt;= #{pd.lastLoginStart} 
+		</if>
+		<if test="pd.lastLoginEnd!=null and pd.lastLoginEnd!=''"><!-- 登录时间检索 -->
+			and "GK_STARTDATE" &lt;= #{pd.lastLoginEnd} 
+		</if>
+		<if test="pd.DEPARTMENT_ID!=null and pd.DEPARTMENT_ID!='' and pd.DEPARTMENT_TYPE_ID==1"><!-- 部门检索 -->
+	
+		 and sys_user_extends.prid in (select BIANMA from V_SYS_DEPARTMENT where parent_id=#{pd.DEPARTMENT_ID})
+		</if>
+		<if test="pd.DEPARTMENT_ID!=null and pd.DEPARTMENT_ID!='' and pd.DEPARTMENT_TYPE_ID==2">
+		 and sys_user_extends.prid =(select BIANMA from V_SYS_DEPARTMENT where department_id=#{pd.DEPARTMENT_ID})
+		</if>
+ 
+		
+		
+		order by "NAME" desc
+	</select>
+	
+	
+	<select id="getAttendance" parameterType="pd" resultType="pd">
+
+
+select statisdate statisDate,sum(TOTALCOUNT) yingdao, sum(ACTUALCOUNT) shidao, name
+  from ATTENDANCE, V_SYS_DEPARTMENT
+ where V_SYS_DEPARTMENT.bianma = attendance.prid
+ <if test="username!='admin'"><!-- 登录用户名检索 -->
+			 and V_SYS_DEPARTMENT.bianma in (select bianma from V_SYS_DEPARTMENT where parent_id=#{DEPARTMENT_ID})
+</if>
+  
+ group by statisDate,NAME
+
+
+	</select>
+	
+	
+	<select id="queryUserOrgAndProject" parameterType="pd" resultType="pd">
+		select level,id,name,pid,leixing,bianma from (
+			select d.department_id as id,d.name,d.parent_id as pid,'ORG' as leixing,d.BIANMA as bianma from v_sys_department d 
+						where exists(
+						      select 1 from v_sys_user_org uo where uo.department_id=d.department_id 
+							 and uo.user_id=#{USER_ID}
+							<if test="keywords != null and keywords != ''">
+							                	and
+									(
+									 d.NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+									)
+							</if>
+						)
+						union all
+						select p.id as id,p.xiangmumc as name,p.department_id as pid,'PRO' as leixing,p.XIANGMUBM as bianma from v_t_project p 
+						where exists(
+						      select 1 from v_sys_user_project up where up.project_id=p.id
+							  and up.user_id=#{USER_ID}
+					   <if test="keywords != null and keywords != ''">
+							and
+								(
+								 p.XIANGMUMC LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+								)
+						</if>
+						)
+			) T 
+			connect by prior T.id=T.pid
+			order by LEVEL,BIANMA
+	</select>
+	
+	<!-- 管理员 -->
+	<select id="queryUserOrgAndProjectGly" parameterType="pd" resultType="pd">
+	select level,id,name,pid,leixing,bianma from (   
+	select d.department_id as id,
+               d.name,
+               d.parent_id as pid,
+               'ORG' as leixing,
+               d.BIANMA as bianma from v_sys_department d where 1=1 
+               
+               <if test="qiye_bianma!=null and qiye_bianma!=''">
+               		and bianma like CONCAT(CONCAT('', #{qiye_bianma}),'%')
+               </if>
+                 
+               <if test="keywords != null and keywords != ''">
+				and (
+					d.NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+			   </if>
+	 union all
+	 select p.id as id,
+	               p.xiangmumc as name,
+	               p.department_id as pid,
+	               'PRO' as leixing,
+	               p.XIANGMUBM as bianma
+	     from v_t_project p where exists(       
+	      select 1 from  v_sys_department d where 1=1 
+	      
+	      <if test="qiye_bianma!=null and qiye_bianma!=''">
+              and bianma like CONCAT(CONCAT('', #{qiye_bianma}),'%')
+          </if>
+	       
+	      and p.DEPARTMENT_ID = d.DEPARTMENT_ID 
+	 	 )
+	 	 
+	 	 <if test="keywords != null and keywords != ''">
+			and (
+				p.XIANGMUMC LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		 </if>
+    
+    ) T 
+    connect by prior T.id=T.pid
+	order by level
+	</select>
+	
+	<delete id="delFenbaoshangFjById" parameterType="pd">
+		delete from T_FENBAOSHANG_FJ where client_id=#{fileid} and FENBAOSHENG_PKID=#{PKID}
+	</delete>
+	
+	<delete id="delFenbaoshangFjByDuiwuid" parameterType="pd">
+		delete from T_FENBAOSHANG_FJ where 1=1 and FENBAOSHENG_PKID=#{PKID}
+	</delete>
+	
+	
+	<insert id="saveFenbaoshangfj">
+		insert into t_fenbaoshang_fj
+		  (fenbaosheng_pkid, fujianlujing, zhenshimc, bendiwenjianmc, "SIZE", client_id)
+		values
+		  (#{PKID}, #{fujianlujing}, #{filename}, #{filename}, #{filesize}, #{fileid})
+	</insert>
+	
+	<!-- 保存用户 -->
+	<insert id="saveU" parameterType="pd" useGeneratedKeys="false">
+		INSERT INTO SYS_USER
+		  (USER_ID, USERNAME, PASSWORD, NAME, STATUS, PHONE,  DEPARTMENT_ID)
+		VALUES
+		  (#{user_id}, #{username}, #{pwd},#{name}, #{status},#{phone},#{department_id})
+	</insert>
+	<!-- end 保存用户 -->
+	
+	<!-- 更新用户 -->
+	<update id="updateU" parameterType="pd">
+		UPDATE SYS_USER U SET U.NAME=#{name,jdbcType=VARCHAR},
+		U.STATUS=#{status,jdbcType=VARCHAR},
+		U.PHONE=#{phone,jdbcType=VARCHAR},
+		U.DEPARTMENT_ID = #{DEPARTMENT_PKID,jdbcType=VARCHAR},
+		U.USERNAME = #{username,jdbcType=VARCHAR}
+		WHERE U.USER_ID=#{user_id}
+	</update>
+	<!-- end 更新用户 -->
+	
+	<select id="getZizhiFjByZizhiPkid" parameterType="pd" resultType="pd">
+		select * from t_qiyezizhi_fj fj where fj.duiwu_pkid=(select duiwu_pkid from t_qiyezizhi q where q.pkid=#{PKID_ZIZHI}) and fj.trnumber=#{trNumber}
+	</select>
+	
+	<select id="getZizhiFjByDuiwu" parameterType="pd" resultType="pd">
+		select * from t_qiyezizhi_fj fj where fj.duiwu_pkid = #{duiwu_pkid}
+	</select>
+	
+	<insert id="saveQyzzFj">
+		insert into t_qiyezizhi_fj
+		  (duiwu_pkid, fujianlujing, zhenshimc, bendiwenjianmc, "SIZE",  client_id, trnumber)
+		values
+		  (#{DUIWU_PKID}, #{fujianlujing}, #{filename}, #{filename}, #{filesize},  #{fileid}, #{trNumber})
+	</insert>
+	
+	<!-- 根据组织id查询组织对象 -->
+	<select id="getDepartmentSchool" parameterType="pd" resultType="pd">
+		select * from T_COLLEGES_DEPARTMENT ds where 1=1 
+		<if test="department_id!=null and department_id!=''">
+			and ds.PKID=#{department_id}
+		</if>
+	</select>
+	
+	<!-- 根据user id查询用户对象 -->
+	<select id="findUserById" parameterType="pd" resultType="pd">
+		select u.*,ds.department_name from sys_user u left join T_COLLEGES_DEPARTMENT ds on(u.department_id=ds.PKID) where 1=1 
+		<if test="user_id!=null and user_id!=''">
+			and u.user_id=#{user_id}
+		</if>
+	</select>
+	<!-- end 根据user id查询用户对象 -->
+	
+	
+	<!-- 更新 用户 状态-->
+	<update id="updateUserStatusList" parameterType="pd">
+		update sys_user u set u.status=#{status} 
+		where u.user_id in 
+		<foreach item="item" index="index" collection="pkids" open="(" separator="," close=")">  
+		 #{item}
+		</foreach> 
+	</update>
+	<!-- end 更新 用户 状态-->
+	
+	
+	<!-- 更新 用户 密码-->
+	<update id="updatePwd" parameterType="pd">
+		update sys_user u set u.password=#{pwd} 
+		where u.user_id in 
+		<foreach item="item" index="index" collection="pkids" open="(" separator="," close=")">  
+		 #{item}
+		</foreach> 
+	</update>
+	<!-- end 更新 用户 状态-->
+	
+	<!-- 更新 用户 角色-->
+	<update id="saveUserRole" parameterType="pd">
+		update sys_user u set u.role_id=#{role_id} 
+		where u.user_id in 
+		<foreach item="item" index="index" collection="pkids" open="(" separator="," close=")">  
+		 #{item}
+		</foreach> 
+	</update>
+	<select id="usernameIdentify" parameterType="pd" resultType="pd">
+		select * from sys_user u where u.USERNAME = #{USERNAME} and rownum = 1
+	</select>
+	<!-- end 更新 用户 角色-->
+	
+	<!-- 
+	<select id="getAttendance" parameterType="pd" resultType="pd">
+	select a.StatisDate as statisDate,
+       sum(a.TotalCount) as yingdao,
+       sum(ActualCount) as shidao,
+         b.name as name
+  from Attendance a
+  left join V_SYS_DEPARTMENT b
+    on a.teampk = b.department_id
+ where b.parent_id in (select d.department_id
+                         from V_SYS_DEPARTMENT d
+                         left join V_SYS_DEPARTMENT e
+                           on d.department_type_id = 3
+                          and e.department_type_id = 2
+                          and d.parent_id = e.department_id
+                          and e.department_id =#{DEPARTMENT_ID})
+ group by statisDate,b.name
+ order by statisDate  desc
+
+	</select> -->
+	
+	<!-- zhoudibo -->
+	
+	<!-- 更新密码 kangcl -->
+	<update id="saveNewPwd" parameterType="pd">
+		update sys_user set password=#{pwd} where user_id=#{userid}
+	</update>
+	<!-- 删除用户 -->
+	<delete id="delUser" parameterType="pd" >
+		delete from SYS_USER
+		where 
+			user_id in
+  			 <foreach item="item" index="index" collection="pkids" open="(" separator="," close=")"> 
+                  #{item}
+             </foreach>
+	</delete>
+</mapper>

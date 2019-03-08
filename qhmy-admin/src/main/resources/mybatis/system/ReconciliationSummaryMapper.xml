@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ReconciliationSummaryMapper">
+	
+	<!-- begin对账汇总 table数据 -->
+	<select id="recSummarylistPage" parameterType="page" resultType="pd">
+	SELECT
+	to_char(t.dzrq,'yyyy-MM-dd') as rq,
+	(SELECT
+	COUNT(DISTINCT(pay_order_pkid)) FROM t_pay_transaction_log WHERE
+	transaction_status NOT IN(0,-1,1) AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) ZDZS,
+	(SELECT SUM(transaction_money) FROM t_pay_transaction_log WHERE
+	transaction_status NOT IN(0,-1,1) AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) ZDZJE,
+	(SELECT COUNT(DISTINCT(pay_order_pkid)) FROM t_pay_transaction_log WHERE
+	transaction_status =2 AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) SUCCCOUNTS,
+	(SELECT nvl(SUM(transaction_money),0) FROM t_pay_transaction_log WHERE
+	transaction_status =2 AND trunc(transaction_date)=t.dzrq AND
+    transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) SUCCMONEYCOUNTS
+    FROM (
+    SELECT trunc(a.transaction_date) dzrq FROM t_pay_transaction_log a WHERE
+    a.transaction_mode='ONLINE' AND a.transaction_status NOT IN(0,-1,1) and a.TRANSACTION_HOST_SN is not null
+    GROUP BY trunc(a.transaction_date) ) t where 1=1  
+	<if test="pd.STARTDATE!=null and pd.STARTDATE!=''">
+		and t.dzrq>=to_date(#{pd.STARTDATE},'yyyy-MM-dd')
+	</if>
+	<if test="pd.ENDDATE!=null and pd.ENDDATE!=''">
+		and t.dzrq &lt;=to_date(#{pd.ENDDATE},'yyyy-MM-dd')
+	</if>
+	order by t.dzrq desc
+</select>
+	<!-- end对账汇总table数据 -->
+
+
+<!--begin 对账明细  -->
+<select id="detaillistPage" parameterType="page" resultType="pd">
+	SELECT
+	TO_CHAR(TPL.TRANSACTION_DATE,'yyyy-MM-dd hh24:MI:ss')RIQI,G.SHENFENZHENGHAO,G.payitem,G.money,G.TOTALMONEY,TPL.TRANSACTION_MONEY,
+	G.GRADE_NAME,G.CLASSTYPE_NAME,STUNAME,
+	(
+	CASE
+		WHEN TRANSACTION_PAY_PLATFORM='NXS'
+		THEN '农信社'
+		WHEN TRANSACTION_PAY_PLATFORM='ZFB'
+		THEN '支付宝'
+		WHEN TRANSACTION_PAY_PLATFORM='WX'
+		THEN '微信'
+		WHEN TRANSACTION_PAY_PLATFORM='UNION'
+		THEN '银联'
+		ELSE
+		''
+	END
+	) AS TRANSACTION_PAY_PLATFORM,
+	(
+	CASE
+		WHEN TRANSACTION_STATUS=2
+		THEN '对账成功'
+		WHEN TRANSACTION_STATUS=-2
+		THEN '对账失败'
+		ELSE
+		''
+	END
+	) AS TRANSACTION_STATUS,
+	TPL.PAY_ORDER_ORDERNO,
+	TPL.TRANSACTION_HOST_SN
+	FROM T_PAY_TRANSACTION_LOG TPL JOIN
+	(
+	SELECT
+	T.*,
+	(SELECT SHENFENZHENGHAO FROM T_STUDENT S WHERE T.STUDENT_PKID=S.PKID ) SHENFENZHENGHAO ,
+	(SELECT XINGMING FROM T_STUDENT S WHERE T.STUDENT_PKID=S.PKID ) STUNAME,
+	(SELECT SD.NAME  FROM T_STUDENT_BM SB
+	JOIN SYS_DICTIONARIES SD ON SD.DICTIONARIES_ID = SB.RXNIANFEN_PKID 
+	WHERE T.STUDENT_BM_PKID=SB.PKID) GRADE_NAME ,
+	(SELECT SD.NAME  FROM T_STUDENT_BM SB 
+	JOIN SYS_DICTIONARIES SD ON SD.DICTIONARIES_ID = SB.BANJI_TYPE_PKID
+	WHERE T.STUDENT_BM_PKID=SB.PKID
+	 ) CLASSTYPE_NAME
+	FROM 
+	(SELECT t.*,PS.PAY_STYLE_NAME PAYITEM,d.money,L.STUDENT_BM_PKID 
+	FROM t_pay_order t 
+	JOIN t_pay_order_detail d ON t.pkid=d.pay_order_pkid
+	JOIN T_PAY_ITEM_LIST L ON L.PKID = D.T_PAY_ITEM_LIST_PKID  
+	JOIN t_pay_item i ON L.T_PAY_ITEM_PKID=i.pkid
+	JOIN T_PAY_STYLE PS ON PS.PKID = I.PAY_TYPE_PKID
+	WHERE D.MONEY > 0
+	) T
+	)G
+	ON tpl.pay_order_pkid=g.pkid WHERE 1=1 and tpl.transaction_status NOT IN(0,-1,1)
+	AND tpl.transaction_mode='ONLINE' and TPL.TRANSACTION_HOST_SN is not null
+	<if test="pd.RIQI!=null and pd.RIQI!=''">
+		and trunc(TPL.TRANSACTION_DATE)=to_date(#{pd.RIQI},'yyyy-MM-dd')
+	</if>
+	<if test="pd.STARTDATE!=null and pd.STARTDATE!=''">
+		and trunc(TPL.TRANSACTION_DATE)>=to_date(#{pd.STARTDATE},'yyyy-MM-dd')
+	</if>
+	<if test="pd.ENDDATE!=null and pd.ENDDATE!=''">
+		and trunc(TPL.TRANSACTION_DATE) &lt;=to_date(#{pd.ENDDATE},'yyyy-MM-dd')
+	</if>
+	<if test="pd.KEYWORDS!=null and pd.KEYWORDS!=''">
+		and (STUNAME LIKE CONCAT('%',CONCAT(#{pd.KEYWORDS},'%'))
+		or SHENFENZHENGHAO LIKE CONCAT('%',CONCAT(#{pd.KEYWORDS},'%'))
+		)
+	</if>
+	<if test="pd.TRANSACTION_PAY_PLATFORM !=null and pd.TRANSACTION_PAY_PLATFORM !=''">
+		and TPL.TRANSACTION_PAY_PLATFORM=#{pd.TRANSACTION_PAY_PLATFORM}
+	</if>
+	<if test="pd.TRANSACTION_STATUS !=null and pd.TRANSACTION_STATUS !=''">
+		and TPL.TRANSACTION_STATUS=#{pd.TRANSACTION_STATUS}
+	</if>
+	
+	
+	order by TPL.TRANSACTION_DATE desc
+</select>
+
+
+<!-- 导出对账汇总  -->
+<select id="exportSummarylist" parameterType="pd" resultType="pd">
+select w.*,(w.ZDZS-w.SUCCCOUNTS)faildcounts from(
+	SELECT
+	to_char(t.dzrq,'yyyy-MM-dd') as rq,
+	(SELECT
+	COUNT(DISTINCT(pay_order_pkid)) FROM t_pay_transaction_log WHERE
+	transaction_status NOT IN(0,-1,1) AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) ZDZS,
+	(SELECT SUM(transaction_money) FROM t_pay_transaction_log WHERE
+	transaction_status NOT IN(0,-1,1) AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) ZDZJE,
+	(SELECT COUNT(DISTINCT(pay_order_pkid)) FROM t_pay_transaction_log WHERE
+	transaction_status =2 AND trunc(transaction_date)=t.dzrq AND
+	transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) SUCCCOUNTS,
+	(SELECT nvl(SUM(transaction_money),0) FROM t_pay_transaction_log WHERE
+	transaction_status =2 AND trunc(transaction_date)=t.dzrq AND
+    transaction_mode='ONLINE' and TRANSACTION_HOST_SN is not null) SUCCMONEYCOUNTS
+    FROM (
+    SELECT trunc(a.transaction_date) dzrq FROM t_pay_transaction_log a WHERE
+    a.transaction_mode='ONLINE' AND a.transaction_status NOT IN(0,-1,1) and a.TRANSACTION_HOST_SN is not null
+    GROUP BY trunc(a.transaction_date) ) t where 1=1  
+	<if test="STARTDATE!=null and STARTDATE!=''">
+		and t.dzrq>=to_date(#{STARTDATE},'yyyy-MM-dd')
+	</if>
+	<if test="ENDDATE!=null and ENDDATE!=''">
+		and t.dzrq &lt;=to_date(#{ENDDATE},'yyyy-MM-dd')
+	</if>
+	order by t.dzrq desc
+	)w
+</select>
+
+
+<!--导出Excel  -->
+<select id="exportSummaryDetail" parameterType="pd" resultType="pd">
+	SELECT
+	TO_CHAR(TPL.TRANSACTION_DATE,'yyyy-MM-dd hh24:MI:ss')RIQI,G.SHENFENZHENGHAO,G.payitem,G.money,G.TOTALMONEY,TPL.TRANSACTION_MONEY,
+	G.GRADE_NAME,G.CLASSTYPE_NAME,STUNAME,
+	(
+	CASE
+		WHEN TRANSACTION_PAY_PLATFORM='NXS'
+		THEN '农信社'
+		WHEN TRANSACTION_PAY_PLATFORM='ZFB'
+		THEN '支付宝'
+		WHEN TRANSACTION_PAY_PLATFORM='WX'
+		THEN '微信'
+		WHEN TRANSACTION_PAY_PLATFORM='UNION'
+		THEN '银联'
+		ELSE
+		''
+	END
+	) AS TRANSACTION_PAY_PLATFORM,
+	(
+	CASE
+		WHEN TRANSACTION_STATUS=2
+		THEN '对账成功'
+		WHEN TRANSACTION_STATUS=-2
+		THEN '对账失败'
+		ELSE
+		''
+	END
+	) AS TRANSACTION_STATUS,
+	TPL.PAY_ORDER_ORDERNO,
+	TPL.TRANSACTION_HOST_SN
+	FROM T_PAY_TRANSACTION_LOG TPL JOIN
+	(
+	SELECT
+	T.*,
+	(SELECT SHENFENZHENGHAO FROM T_STUDENT S WHERE T.STUDENT_PKID=S.PKID ) SHENFENZHENGHAO ,
+	(SELECT XINGMING FROM T_STUDENT S WHERE T.STUDENT_PKID=S.PKID ) STUNAME,
+	(SELECT SD.NAME  FROM T_STUDENT_BM SB
+	JOIN SYS_DICTIONARIES SD ON SD.DICTIONARIES_ID = SB.RXNIANFEN_PKID 
+	WHERE T.STUDENT_BM_PKID=SB.PKID) GRADE_NAME ,
+	(SELECT SD.NAME  FROM T_STUDENT_BM SB 
+	JOIN SYS_DICTIONARIES SD ON SD.DICTIONARIES_ID = SB.BANJI_TYPE_PKID
+	WHERE T.STUDENT_BM_PKID=SB.PKID
+	 ) CLASSTYPE_NAME
+	FROM 
+	(SELECT t.*,PS.PAY_STYLE_NAME PAYITEM,d.money,L.STUDENT_BM_PKID 
+	FROM t_pay_order t 
+	JOIN t_pay_order_detail d ON t.pkid=d.pay_order_pkid
+	JOIN T_PAY_ITEM_LIST L ON L.PKID = D.T_PAY_ITEM_LIST_PKID  
+	JOIN t_pay_item i ON L.T_PAY_ITEM_PKID=i.pkid
+	JOIN T_PAY_STYLE PS ON PS.PKID = I.PAY_TYPE_PKID
+	WHERE D.MONEY > 0
+	) T
+	)G
+	ON tpl.pay_order_pkid=g.pkid WHERE 1=1 and tpl.transaction_status NOT IN(0,-1,1)
+	AND tpl.transaction_mode='ONLINE' and TPL.TRANSACTION_HOST_SN is not null
+	<if test="RIQI!=null and RIQI!=''">
+		and trunc(TPL.TRANSACTION_DATE)=to_date(#{RIQI},'yyyy-MM-dd')
+	</if>
+	<if test="STARTDATE!=null and STARTDATE!=''">
+		and trunc(TPL.TRANSACTION_DATE)>=to_date(#{STARTDATE},'yyyy-MM-dd')
+	</if>
+	<if test="ENDDATE!=null and ENDDATE!=''">
+		and trunc(TPL.TRANSACTION_DATE) &lt;=to_date(#{ENDDATE},'yyyy-MM-dd')
+	</if>
+	<if test="KEYWORDS!=null and KEYWORDS!=''">
+		and (STUNAME LIKE CONCAT('%',CONCAT(#{KEYWORDS},'%'))
+		or SHENFENZHENGHAO LIKE CONCAT('%',CONCAT(#{KEYWORDS},'%'))
+		)
+	</if>
+	<if test="TRANSACTION_PAY_PLATFORM !=null and TRANSACTION_PAY_PLATFORM !=''">
+		and TPL.TRANSACTION_PAY_PLATFORM=#{TRANSACTION_PAY_PLATFORM}
+	</if>
+	<if test="TRANSACTION_STATUS !=null and TRANSACTION_STATUS !=''">
+		and TPL.TRANSACTION_STATUS=#{TRANSACTION_STATUS}
+	</if>
+	
+	order by TPL.TRANSACTION_DATE desc
+</select>
+
+
+
+
+
+</mapper>

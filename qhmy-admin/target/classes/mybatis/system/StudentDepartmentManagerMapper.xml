@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="StudentDepartmentManagerMapper">
+
+<!--begin 组织机构 sql -->
+    
+	
+	<!-- 分页查询组织机构  -->
+	<select id="departmentlistPage" parameterType="page" resultType="pd">
+	select *
+			
+			 from (
+  		  SELECT 
+  		   CD.DEPARTMENT_ID as PKID,
+  		   CD.NAME as DEPARTMENT_NAME,
+  		   CD.BIANMA,
+  		   CD.XUESHENGLEIXING_PKID,
+  		   (SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = CD.XUESHENGLEIXING_PKID) XUESHENGLEIXING,
+  		   CD.REMARK,
+  		   (CASE WHEN CD.LEIBIE='1' then '学校' WHEN CD.LEIBIE='2' then '学院' WHEN CD.LEIBIE='3' THEN '系' WHEN CD.LEIBIE='4' THEN '专业' else '其他' end) LEIBIE,
+  		   CD.CJSJ,CD.JIHUOZT,
+  		   C.COLLEGES_NAME, U.USERNAME,
+		      CD.PAIXU,cd.STANDARDCODE
+		    FROM SYS_DEPARTMENT CD
+		  INNER JOIN T_COLLEGES C
+		      ON (C.PKID = CD.COLLEGES_PKID)
+		  LEFT JOIN SYS_USER U
+		      ON (U.USER_ID = CD.CREATER)
+		  WHERE 1=1 
+		
+		  
+		  <if test="pd.PKID!=null and pd.PKID!=''">
+      		and CD.DEPARTMENT_ID=#{pd.PKID} or CD.PARENT_ID=#{pd.PKID}
+		  </if>
+		  <if test="pd.seText==null or pd.seText==''">
+			  <if test="pd.PKID==null or pd.PKID==''">
+	      		and CD.PARENT_ID = 'null' 
+	      		or  CD.PARENT_ID in
+	      		<foreach item="item" index="index" collection="pd.topDeptList" open="(" separator="," close=")"> 
+				   #{pd.topDeptList[${index}].DEPARTMENT_ID} 
+				  </foreach>
+	      		
+			  </if>
+		  </if>
+		 
+		  ORDER BY cd.LEIBIE,CD.PAIXU,cd.cjsj 
+		  ) T 
+		  WHERE 1=1 
+		  <if test="pd.seText!=null and pd.seText!=''">
+		  	AND DEPARTMENT_NAME LIKE CONCAT(CONCAT('%', #{pd.seText}),'%')
+		  </if>
+		  ORDER BY T.PAIXU,T.DEPARTMENT_NAME
+    </select>
+    <!-- end 分页查询组织机构  -->
+    
+    <!-- 查询组织机构  -->
+	<select id="departmentList" parameterType="pd" resultType="vo">
+  		  SELECT CD.DEPARTMENT_ID AS id,CD.NAME AS NAME,CD.PARENT_ID AS PARENTID,CD.PAIXU as paixu
+		  FROM SYS_DEPARTMENT CD
+		  order by CD.PAIXU,CD.NAME
+    </select>
+    <!-- end 查询组织机构  -->
+    <!-- 学生类型查询 -->
+	<select id="getXSLXName" parameterType="pd" resultType="pd">
+		   <!-- 将查询出来的名称行转列以逗号隔开 -->
+  		   SELECT WMSYS.WM_CONCAT(NAME) AS XUESHENGLEIXING FROM (
+  		   <!--   学生类型pkid与字典表关联查询出类型名称name -->
+           SELECT NAME FROM SYS_DICTIONARIES SDIC RIGHT JOIN (
+           <!-- 将学生类型pkid列转多行 -->
+           SELECT DISTINCT REGEXP_SUBSTR ((SELECT UD.XUESHENGLEIXING_PKID FROM SYS_DEPARTMENT UD
+            WHERE UD.DEPARTMENT_ID=#{PKID}),'[^,]+',1,LEVEL) as TOKEN FROM DUAL
+             CONNECT BY REGEXP_SUBSTR ((SELECT UD.XUESHENGLEIXING_PKID FROM SYS_DEPARTMENT UD
+            WHERE UD.DEPARTMENT_ID=#{PKID}),'[^,]+',1,LEVEL) IS NOT NULL
+            ) TEMP on SDIC.DICTIONARIES_ID= TEMP.TOKEN)
+                  
+    </select>
+    <!-- end 学生类型查询  -->
+    
+    <!-- 保存 -->
+    <insert id="save" parameterType="pd" useGeneratedKeys="false">
+		insert into SYS_DEPARTMENT
+		  (DEPARTMENT_ID, name,BIANMA, remark, colleges_pkid, creater, PARENT_ID,LEIBIE,STANDARDCODE,XUESHENGLEIXING_PKID,JIHUOZT)
+		values
+		  (#{pkid}, #{department_name,jdbcType=VARCHAR},#{BIANMA,jdbcType=VARCHAR}, #{remark,jdbcType=VARCHAR}, '11111', #{creater}, #{parent_pkid},
+		#{LEIBIE},#{STANDARDCODE,jdbcType=VARCHAR},#{XUESHENGLEIXING_PKID,jdbcType=VARCHAR},#{JIHUOZT,jdbcType=VARCHAR})
+	</insert>
+	<!-- end 保存 -->
+	
+	
+	<!-- 更新 -->
+	<update id="update" parameterType="pd">
+		UPDATE SYS_DEPARTMENT CD SET 
+		CD.NAME=#{department_name},
+		CD.BIANMA=#{BIANMA},
+		CD.REMARK=#{remark,jdbcType=VARCHAR},
+		CD.PARENT_ID=#{parent_pkid,jdbcType=VARCHAR},
+		CD.XGSJ=SYSDATE,
+		CD.LEIBIE=#{LEIBIE},
+		CD.XUESHENGLEIXING_PKID=#{XUESHENGLEIXING_PKID},
+		CD.JIHUOZT=#{JIHUOZT},
+		cd.STANDARDCODE=#{STANDARDCODE,jdbcType=VARCHAR}
+		WHERE DEPARTMENT_ID=#{pkid}
+	</update>
+	<!-- end 更新 -->
+	
+	<!-- 启用和未启用状态修改-->
+	<update id="updateIsUse" parameterType="pd">
+		UPDATE SYS_DEPARTMENT D SET D.JIHUOZT = #{JIHUOZT} WHERE D.DEPARTMENT_ID IN (
+		SELECT SD.DEPARTMENT_ID FROM SYS_DEPARTMENT SD START WITH SD.DEPARTMENT_ID =#{PKID}
+		CONNECT BY PRIOR SD.DEPARTMENT_ID = SD.PARENT_ID)
+	</update>
+	<!-- end 启用和未启用状态修改-->
+    
+    
+    <!-- 查询组织机构  -->
+	<select id="queryDepartment" parameterType="pd" resultType="pd">
+  		  SELECT CD.DEPARTMENT_ID as PKID,
+  		   CD.NAME as DEPARTMENT_NAME,
+  		   CD.BIANMA,
+  		   CD.REMARK,
+  		   CD.COLLEGES_PKID,
+  		   CD.PARENT_ID as PARENT_PKID,
+  		   CD.LEIBIE,
+  		   cd.STANDARDCODE,
+  		   CD.XUESHENGLEIXING_PKID,
+  		   CD.JIHUOZT,
+  		   (SELECT D.NAME FROM SYS_DEPARTMENT D WHERE D.DEPARTMENT_ID=CD.PARENT_ID AND ROWNUM=1) as PARENT_NAME
+		    FROM SYS_DEPARTMENT CD  WHERE 1=1 
+		  <if test="pkid!=null and pkid!=''">
+		  	AND CD.DEPARTMENT_ID=#{pkid}
+		  </if>
+    </select>
+    <!-- end 查询组织机构  -->
+    
+    
+    <!-- 删除 组织机构  -->
+    <delete id="departmentDel">
+    	DELETE FROM SYS_DEPARTMENT CD WHERE 1=1 AND CD.DEPARTMENT_ID=#{pkid}
+    </delete>
+    <!-- end 删除 组织机构  -->
+    <!-- 查询组织下是否已有人员 -->
+    <select id="isHaveUser" parameterType="pd" resultType="pd">
+		select * from t_student s where s.DEPARTMENT_PKID = #{pkid} and ROWNUM = 1   
+    </select>
+    <select id="getDepTreeNodes" parameterType="pd" resultType="pd">
+    	select wm_concat(parent_id) DEPTREENODES from (
+		select m.parent_id from sys_department m start with m.department_id=#{pkid} connect by prior m.parent_id=m.department_id
+		order by level desc
+		)
+    </select>
+    <update id="updateDepTreeNodes" parameterType="pd">
+    	update sys_department s set s.DEPTREENODES = #{DEPTREENODES}
+    	where s.DEPARTMENT_ID = #{pkid}
+    </update>
+    
+    <!-- 
+    	查询最顶级院校专业信息
+     -->
+     <select id="getTopDept" parameterType="pd" resultType="pd">
+     	select SD.DEPARTMENT_ID,SD.NAME,NAME_EN,SD.BIANMA,SD.PARENT_ID,SD.BZ,SD.HEADMAN,SD.TEL,SD.FUNCTIONS,		
+				SD.ADDRESS,SD.DEPARTMENT_TYPE_ID,SD.CREWSIZE,SD.REGISTADDRESS,SD.BUSINESSLICCODE,SD.PROJECTCODE,SD.XMXT_TIMES,		
+				SD.SYNCHRONPK,SD.DATASOURCE,SD.PROJECTSTATUS,SD.VER,SD.PRID,SD.ENID,SD.ZHUANGTAI,SD.JIHUOZT,SD.FENGONGSIBM,SD.LIANXIREN,	
+				SD.LIANXIFANGSHI,SD.SHENG_ID,SD.DISHI_ID,SD.QUXIAN_ID,SD.CENGJILEIXING,SD.COLLEGES_PKID,SD.CREATER,			
+				SD.REMARK,SD.CJSJ,SD.XGSJ,SD.LEIBIE,SD.PAIXU,SD.STANDARDCODE,SD.XUESHENGLEIXING_PKID,
+				(SELECT D.NAME FROM sys_dictionaries D WHERE D.DICTIONARIES_ID = SD.XUESHENGLEIXING_PKID) XUESHENGLEIXING
+		from sys_department SD where parent_id='null'
+     </select>
+    
+    
+    <!-- 更新排序 -->
+	<update id="updatePaiXu" parameterType="pd">
+		UPDATE SYS_DEPARTMENT CD SET 
+		CD.paixu=#{paixu,jdbcType=NUMERIC}
+		WHERE DEPARTMENT_ID=#{pkid}
+	</update>
+    
+    
+    
+        <!-- 批量保存 saveDeptByBatch-->
+    <insert id="saveDeptByBatch" parameterType="java.util.List" useGeneratedKeys="false">
+		insert into SYS_DEPARTMENT
+		  (DEPARTMENT_ID, name,BIANMA, creater, PARENT_ID,LEIBIE,COLLEGES_PKID,STANDARDCODE,XUESHENGLEIXING_PKID,JIHUOZT)
+		<foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		select
+		  #{item.DEPARTMENT_ID}, #{item.name,jdbcType=VARCHAR},#{item.BIANMA,jdbcType=VARCHAR}, #{item.creater}, #{item.PARENT_ID},
+		#{item.LEIBIE},'11111',#{item.standardCode,jdbcType=VARCHAR},#{item.XSLX_PKID,jdbcType=VARCHAR},'Y'
+		from dual
+		</foreach>
+		
+	</insert>
+    <insert id="saveNationByBatch" parameterType="java.util.List" useGeneratedKeys="false">
+    	insert into SYS_DICTIONARIES 
+    	(DICTIONARIES_ID, NAME,BIANMA, ORDER_BY, PARENT_ID,IS_USED,
+		CJSJ)
+		<foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		select
+		  sys_guid(), #{item.NAME,jdbcType=VARCHAR},#{item.BIANMA}, 1, 'NATION','Y',
+		SYSDATE
+		from dual
+		</foreach>
+    </insert>
+    <insert id="saveStuSourceByBatch" parameterType="java.util.List" useGeneratedKeys="false">
+    	insert into SYS_DICTIONARIES 
+    	(DICTIONARIES_ID, NAME,BIANMA, ORDER_BY, PARENT_ID,IS_USED,
+		CJSJ)
+		<foreach item="item" index="index" collection="list" open="(" separator="union"  close=")">  
+		select
+		  sys_guid(), #{item.NAME,jdbcType=VARCHAR},#{item.BIANMA}, 1, 'STUDENT_SOURCE','Y',
+		SYSDATE
+		from dual
+		</foreach>
+    </insert>
+    
+    
+    
+    
+    
+    
+    
+<!--end 组织机构 sql  -->
+</mapper>

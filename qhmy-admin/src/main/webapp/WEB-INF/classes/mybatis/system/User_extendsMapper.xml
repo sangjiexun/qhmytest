@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="User_extendsMapper">
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_USER_EXTENDS"
+	</sql>
+	<!-- 字段 -->
+	<sql id="Field">
+	 	"USER_ID",
+ 		"PRID",
+	 	"USER_NO",
+	 	"USER_CARD",
+	 	"USER_SEX",
+	 	"USER_NATION",
+	 	"USER_XUELI",
+	 	"USER_NATIVE",
+	 	"USER_BIRTHDAY",
+	 	"USER_POST",
+	 	"USER_ADDRESS",
+	 	"USER_EMAIL",
+	 	"USER_1",
+	 	"USER_2",
+	 	"BS",
+	 	"JIGUAN",
+	 	"YXDATE",
+	 	"NEWADDRESS",
+	 	"PICTURE",
+	 	"PICTUREZ",
+	 	"PICTUREB",
+	 	"BLACKLIST",
+	 	"TEL",
+		"GK_JOBID",
+	 	"GK_FENBAO_PK",
+	 	"GK_TEAM_PK",
+		"GK_GZ_PK",
+	 	"GK_STARTDATE",
+	 	"GK_TEAMZ",
+	 	"GK_ENDDATE",
+	 	"GK_YAJIN_PK",
+	 	"GK_GIVEMONEY",
+	 	"GK_REASON",
+	 	"GK_SAFEID",
+	 	"GK_BEIAN",
+	 	"GK_ZJBANLI",
+	 	"GK_PHOTO",
+	 	"QT_HTBH",
+	 	"QT_HTDATE",
+	 	"QT_PXDATE",
+	 	"QT_TJDATE",
+	 	"QT_POST_PK",
+	 	"QT_GZJS",
+	 	"QT_PEOPLE",
+	 	"QT_TEL",
+	 	"QT_YXDAY",
+	 	"QT_JCCARD",
+	 	"QT_ADDRESS",
+	 	"QT_FUJIA",
+	 	"QT_IFHT",
+	 	"QT_IFCNS",
+	 	"QT_IFPHOTO",
+		"QT_IFJCK",
+		"QT_IFGZK",
+		"QT_IFBXK",
+	 	"QT_EXIT",
+		"LIFTNUM",
+	 	"ROOMNUM",
+	 	"BEDNUM",
+	 	"CHECKINDATE",
+	 	"NOWBH",
+	 	"LW_ZJBH",
+	 	"LW_ZJMC",
+	 	"LW_ZJLX",
+	 	"LW_ZJPIC",
+		"TG",
+	 	"WG",
+	 	"LG",
+	 	"LW_WHCD",
+		"RG_JE",
+	 	"RG_DW",
+		"ZJH",
+	 	"LW_CARDTYPE",
+	 	"ENID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{USER_ID},
+ 		#{PRID},
+	 	#{USER_NO},
+	 	#{USER_CARD},
+	 	#{USER_SEX},
+	 	#{USER_NATION},
+	 	#{USER_XUELI},
+	 	#{USER_NATIVE},
+	 	#{USER_BIRTHDAY},
+	 	#{USER_POST},
+	 	#{USER_ADDRESS},
+	 	#{USER_EMAIL},
+	 	#{USER_1},
+	 	#{USER_2},
+	 	#{BS},
+	 	#{JIGUAN},
+	 	#{YXDATE},
+	 	#{NEWADDRESS},
+	 	#{PICTURE},
+	 	#{PICTUREZ},
+	 	#{PICTUREB},
+	 	#{BLACKLIST},
+	 	#{TEL},
+		#{GK_JOBID},
+	 	#{GK_FENBAO_PK},
+	 	#{GK_TEAM_PK},
+		#{GK_GZ_PK},
+	 	#{GK_STARTDATE},
+	 	#{GK_TEAMZ},
+	 	#{GK_ENDDATE},
+	 	#{GK_YAJIN_PK},
+	 	#{GK_GIVEMONEY},
+	 	#{GK_REASON},
+	 	#{GK_SAFEID},
+	 	#{GK_BEIAN},
+	 	#{GK_ZJBANLI},
+	 	#{GK_PHOTO},
+	 	#{QT_HTBH},
+	 	#{QT_HTDATE},
+	 	#{QT_PXDATE},
+	 	#{QT_TJDATE},
+	 	#{QT_POST_PK},
+	 	#{QT_GZJS},
+	 	#{QT_PEOPLE},
+	 	#{QT_TEL},
+	 	#{QT_YXDAY},
+	 	#{QT_JCCARD},
+	 	#{QT_ADDRESS},
+	 	#{QT_FUJIA},
+	 	#{QT_IFHT},
+	 	#{QT_IFCNS},
+	 	#{QT_IFPHOTO},
+		#{QT_IFJCK},
+		#{QT_IFGZK},
+		#{QT_IFBXK},
+	 	#{QT_EXIT},
+		#{LIFTNUM},
+	 	#{ROOMNUM},
+	 	#{BEDNUM},
+	 	#{CHECKINDATE},
+	 	#{NOWBH},
+	 	#{LW_ZJBH},
+	 	#{LW_ZJMC},
+	 	#{LW_ZJLX},
+	 	#{LW_ZJPIC},
+		#{TG},
+	 	#{WG},
+	 	#{LG},
+	 	#{LW_WHCD},
+		#{RG_JE},
+	 	#{RG_DW},
+		#{ZJH},
+	 	#{LW_CARDTYPE},
+	 	#{ENID}
+	</sql>
+	
+	<!-- 用户列表 -->
+	<select id="userlistPage" parameterType="page" resultType="pd" >
+		select  
+		<include refid="Field"></include>
+		from <include refid="tableName"></include> u
+		where 1=1 
+		<if test="pd.ROLE_ID != null and pd.ROLE_ID != ''"><!-- 用户检索 -->
+			and u."USER_ID"=#{pd.USER_ID} 
+		</if>
+		order by u."USER_ID" desc
+	</select>
+	
+	<select id="userlist" parameterType="pd" resultType="pd">
+	
+	select  
+		<include refid="Field"></include>
+		from <include refid="tableName"></include> where user_id=#{user_id};
+	
+	</select>
+	
+	
+	
+	
+	<!-- 新增用户 -->
+	<insert id="saveU" parameterType="pd" >
+		insert into <include refid="tableName"></include> (
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	
+	
+	<!-- 获取总数 -->
+	<select id="getUserCount" parameterType="String" resultType="pd">
+		select 
+			count("USER_ID") "userCount"
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- zhoudibo -->
+</mapper>

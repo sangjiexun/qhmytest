@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:jaxws="http://cxf.apache.org/jaxws"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml" />
+    <import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
+    
+    <!--  Cxf WebService服务端示例 -->
+     <bean id="demoServerPasswordCallback"  class="com.fh.webservice.server.impl.DemoServerPasswordCallback"/> 
+    <jaxws:endpoint id="DemoWebservice" implementor="com.fh.webservice.server.impl.DemoWebserviceImple" address="/demo">
+    	  <jaxws:inInterceptors>  
+            <bean class="org.apache.cxf.binding.soap.saaj.SAAJInInterceptor" />  
+            <bean class="org.apache.cxf.ws.security.wss4j.WSS4JInInterceptor">  
+                <constructor-arg>  
+                    <map>  
+                    	<!-- 设置加密类型 -->
+                        <entry key="action" value="UsernameToken" />  
+                    	<!-- 设置密码类型为明文 -->
+                        <entry key="passwordType" value="PasswordText" />
+                        <entry key="passwordCallbackRef">  
+                            <ref bean="demoServerPasswordCallback" />  
+                        </entry>  
+                    </map>  
+                </constructor-arg>  
+            </bean>  
+        </jaxws:inInterceptors>
+    </jaxws:endpoint> 
+    <!--  Cxf WebService 客户端示例 -->
+    <bean id="demoClientPasswordCallback"  class="com.fh.webservice.client.impl.DemoClientPasswordCallback"/> 
+    <jaxws:client id="demoClient" serviceClass="com.fh.webservice.client.DemoWebservice" 
+    	address="http://192.168.1.12:8080/colleges-admin/services/demo?wsdl" >
+    	 <jaxws:outInterceptors>  
+            <bean class="org.apache.cxf.interceptor.LoggingOutInterceptor"/>  
+            <bean class="org.apache.cxf.ws.security.wss4j.WSS4JOutInterceptor">   
+                <constructor-arg>  
+                    <map>  
+                        <entry key="action" value="UsernameToken"/>  
+                        <entry key="passwordType" value="PasswordText"/> 
+                        <entry key="user" value="admin111111"/> 
+                        <entry key="passwordCallbackRef">  
+                            <ref bean="demoClientPasswordCallback"/>  
+                        </entry>  
+                    </map>  
+                </constructor-arg>  
+            </bean>  
+        </jaxws:outInterceptors> 
+      </jaxws:client>
+    	
+</beans>

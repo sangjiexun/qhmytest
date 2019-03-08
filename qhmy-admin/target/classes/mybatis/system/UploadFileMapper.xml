@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="UploadFileMapper">
+
+	<select id="getFenbaoshangFj" parameterType="pd" resultType="pd">
+		select * from T_FENBAOSHANG_FJ F where FENBAOSHENG_PKID = #{duiwupkid} and client_id = #{fileid} 
+	</select>
+	
+	<select id="getQiyezizhiFj" parameterType="pd" resultType="pd">
+		select *  from t_qiyezizhi_fj fj where fj.duiwu_pkid=#{duiwupkid} and fj.trnumber=#{TRNUMBER} and client_id = #{fileid} 
+	</select>
+	
+	<select id="getHeimingdanFj" parameterType="pd" resultType="pd">
+		select * from t_heimingdan_fj F where f.heimingdan_renyuan_pkid = #{HEIMINGDAN_RENYUAN_PKID} and client_id = #{fileid} 
+	</select>
+	
+	<select id="getLaowurenyuanFj" parameterType="pd" resultType="pd">
+		select * from T_LAOWURENYUAN_HT F where f.LAOWURENYUAN_PKID = #{laowurenyuan_pkid} and CLIENT_ID = #{fileid} 
+	</select>
+	<select id="getGongZiFj" parameterType="pd" resultType="pd">
+		select * from T_GONGZI_FJ WHERE GOGNZI_PKID = #{GOGNZI_PKID} and CLIENT_ID = #{fileid}
+	</select>
+	<select id="getAnQuanJyFj" parameterType="pd" resultType="pd">
+		select * from T_ANQUANJIAOYU_FJ WHERE ANQUANJIAOYU_PKID = #{ANQUANJIAOYU_PKID} and CLIENT_ID = #{fileid}
+	</select>
+	<select id="getJcFj" parameterType="pd" resultType="pd">
+		select * from T_JIANGCHENG_FJ WHERE JIANGCHENG_PKID = #{JIANGCHENG_PKID} and CLIENT_ID = #{fileid}
+	</select>
+</mapper>

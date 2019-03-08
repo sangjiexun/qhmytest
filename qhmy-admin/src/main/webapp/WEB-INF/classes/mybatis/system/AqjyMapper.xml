@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AqjyMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"KT_JIAOYUJL"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findByNamelistPagename" parameterType="page" resultType="pd">
+		select s.name username,u.user_no user_no,s.user_idcard user_idcard, ycname, sj, DEV_NAME from sys_user_extends u,
+             sys_user s,
+            (select user_serial, ycname, sj, DEV_NAME
+               from kt_jiaoyujl k,
+                    (select bianma
+                       from sys_department t
+                      where t.bianma = #{pd.PRID})
+              where k.prid = bianma
+             ) n
+		where u.user_id = n.user_serial and s.user_id = n.user_serial
+	</select>
+	<select id="findByNamelistPagenameW" parameterType="page" resultType="pd">		
+	select bm, nm, user_no, idcard, bz_name
+ 	 from (select bm, u1.name nm, user_no, idcard, tt.name bz_name, id
+          from sys_user_extends su,
+               sys_department tt,
+               (select t.bianma      bm,
+                       s.name        name,
+                       s.user_id     id,
+                       s.user_idcard idcard
+                  from sys_user s, sys_department t
+                 where s.islabour = 'y'
+                   and s.prid = t.bianma) u1
+         where u1.id = su.user_id
+           and su.gk_team_pk = tt.department_id) u2
+ 	where U2.id not in (select k.user_serial id
+                       from kt_jiaoyujl k, sys_department s
+                      where k.prid = s.bianma) and u2.bm = #{pd.PRID}
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+	
+	select name qy_name,xm_name,ycname,jy_count,wjy_count,sj,u3.prid prid from 
+	sys_department s,(
+	select u1.xm_name xm_name,ycname,jy_count,ct_all-jy_count wjy_count,pd,sj,prid
+	from
+	(
+	select t.name xm_name,s.prid prid, count(*) ct_all from sys_user s ,sys_department t where s.islabour = 'y' and s.prid = t.bianma group by t.name,s.prid
+	)u1,(
+	select name xm_name,ycname,s.parent_id pd,sj, count(*) jy_count from kt_jiaoyujl k ,sys_department s where k.prid = s.bianma
+	group by name,ycname,s.parent_id,sj )u2 where u1.xm_name = u2.xm_name
+	)u3 where u3.pd = s.department_id
+	 <if test="pd.qymc!=null and pd.qymc!='' ">
+       			and s.name = #{pd.qymc}
+     </if>
+     <if test="pd.xmmc!=null and pd.xmmc!='' ">
+       			and xm_name = #{pd.xmmc}
+     </if>
+     <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and to_char(sj,'yyyy-mm-dd') &gt;= #{pd.startLoginStart}
+	 </if>
+	 <if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+				and to_char(sj,'yyyy-mm-dd') &lt;= #{pd.lastLoginStart}
+	 </if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"AQJY_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

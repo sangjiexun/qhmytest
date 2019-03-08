@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="EditUserMapper">
+    <!--修改密码  -->
+    <update id="updatePwd" parameterType="pd" statementType="STATEMENT">
+		UPDATE ${tablename} SET PASSWORD=${PASSWORD}  WHERE USER_ID=${USER_ID}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

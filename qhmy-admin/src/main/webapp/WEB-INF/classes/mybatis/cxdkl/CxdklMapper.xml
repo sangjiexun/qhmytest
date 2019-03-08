@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CxdklMapper">
+	
+	<!--表名 -->
+	<sql id="tableName">
+		sys_department
+	</sql>
+	<sql id="table1">
+		sys_user
+	</sql>
+	
+	<sql id="table2">
+		sys_user_extends
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"USER_ID",	
+		"NAME",
+		"ISLABOUR",
+		"DEPARTMENT_ID",
+		"DEPARTMENT_TYPE_ID",
+		"USER_IDCARD",
+		"COUNT",
+		"DK_COUNT",
+		"DATA_1"
+<!-- 		"DKL" -->
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+			#{USER_ID},	
+			#{NAME},
+			#{ISLABOUR},
+			#{DEPARTMENT_ID},
+			#{DEPARTMENT_TYPE_ID},
+			#{USER_IDCARD},
+			#{COUNT},
+			#{DK_COUNT},
+			#{DATA_1}
+<!-- 			#{DKL} -->
+	
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 所有信息-->
+	<select id="getmessagelistPage" parameterType="page" resultType="pd">
+	select xm_name name,
+	qyid,
+	xmid,
+       data,
+       sum(count) count,
+       sum(dk_count) dk_count,
+       trunc(sum(dk_count) / sum(count), 2) dkl
+  from (select t.name xm_name,s.department_id  qyid,s.name qy_name, data,xmid, count, dk_count
+          from sys_department s,
+               (select s.name name,
+                       s.parent_id pd,
+                       s.department_id xmid,
+                       to_char(a.statisdate, 'yyyy-mm-dd') data,
+                       a.totalcount count,
+                       a.actualcount dk_count
+                  from ATTENDANCE a, sys_department s
+                 where s.bianma = a.prid
+                 order by data desc) t
+         where t.pd = s.department_id
+         <if test="pd.qymc!=null and pd.qymc!='' ">
+				and s.name = #{pd.qymc}
+		</if>
+		<if test="pd.xmmc!=null and pd.xmmc!='' ">
+				and xm_name = #{pd.xmmc}
+		</if>
+         )  u where 1 = 1 
+		
+        <if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and u.data &gt;= #{pd.startLoginStart}
+		</if>
+		<if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+				and u.data &lt;= #{pd.lastLoginStart}
+		</if>
+		 group by xm_name, data,qyid,xmid
+	
+	</select>
+	<select id="getmessagelistPage2" parameterType="page" resultType="pd">  
+	select qy_name,
+       xm_name,
+       fb_name,
+       bz_name,
+       qyid,
+       xmid,
+       to_char(a.statisdate, 'yyyy-mm-dd') data,
+       a.totalcount count,
+       a.actualcount dk_count,
+       trunc(a.actualcount / a.totalcount, 2) dkl
+
+  from attendance a,
+  (
+  select xm_name,fb_name,bz_name,di,name qy_name,pd qyid,xmid
+  from 
+       (
+        select name xm_name, fb_name, bz_name, di,s.parent_id pd,pd xmid
+        
+          from (
+                 
+                 select s.name fb_name, bz_name, s.parent_id pd, di
+                   from (
+                          
+                          select s.name bz_name, s.parent_id pd, s.department_id di
+                            from attendance a, sys_department s
+                           where a.teampk = s.department_id
+                          
+                          ) t,
+                         sys_department s
+                  where s.department_id = t.pd) t1,
+                sys_department s
+         where s.department_id = t1.pd) t2
+         ,sys_department s
+         where t2.pd = s.department_id
+         )t3
+ where a.teampk = t3.di 
+ 	 <if test="pd.qymc!=null and pd.qymc!='' ">
+					and qy_name = #{pd.qymc}
+	</if>
+	<if test="pd.xmmc!=null and pd.xmmc!='' ">
+					and xm_name = #{pd.xmmc}
+	</if>
+	<if test="pd.fbdw!=null and pd.fbdw!='' ">
+					and fb_name = #{pd.fbdw}
+	</if>
+	 <if test="pd.bz!=null and pd.bz!='' ">
+					and bz_name = #{pd.bz}
+	</if>
+ 	<if test="pd.startLoginStart!=null and pd.startLoginStart!='' ">
+				and  to_char(a.statisdate, 'yyyy-mm-dd') &gt;= #{pd.startLoginStart}
+	</if>
+	<if test=" pd.lastLoginStart!=null and pd.lastLoginStart!=''">
+				and  to_char(a.statisdate, 'yyyy-mm-dd') &lt;= #{pd.lastLoginStart}
+	</if>
+ 
+	</select>
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+	</update>
+	
+	<!-- 通过ID获取数据 -->
+	<select id="findById" parameterType="pd" resultType="pd">
+	</select>
+	
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"CXDKL_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

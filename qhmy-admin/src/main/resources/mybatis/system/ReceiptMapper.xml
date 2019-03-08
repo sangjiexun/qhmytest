@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ReceiptMapper">
+
+<!-- 获得所有缴费项目 -->
+    <select id="getAllPayItemList" parameterType="pd" resultType="pd">
+
+		SELECT T.PKID,'N' OTHERITEM_FLAG FROM T_PAY_ITEM T WHERE 1=1
+		<if test="PAY_TYPE_PKID!=null and PAY_TYPE_PKID != ''">
+			and t.PAY_TYPE_PKID = #{PAY_TYPE_PKID}
+		</if>
+		<if test="SCHOOL_YEAR_PKID!=null and SCHOOL_YEAR_PKID != ''">
+			and t.SCHOOL_YEAR_PKID = #{SCHOOL_YEAR_PKID}
+		</if>
+		ORDER BY T.XGSJ
+    </select>
+    <select id="getAllPayItemListAll" parameterType="pd" resultType="pd">
+    	SELECT T.PKID,T.PAYITEM,'N' OTHERITEM_FLAG FROM T_PAY_ITEM T WHERE 
+    	1=1
+		<if test="PAY_TYPE_PKID!=null and PAY_TYPE_PKID != ''">
+			and t.PAY_TYPE_PKID = #{PAY_TYPE_PKID}
+		</if>
+		<if test="SCHOOL_YEAR_PKID!=null and SCHOOL_YEAR_PKID != ''">
+			and t.SCHOOL_YEAR_PKID = #{SCHOOL_YEAR_PKID}
+		</if>
+		<!-- AND T.ENDDATE &gt; sysdate -->
+		ORDER BY T.XGSJ
+    </select>
+    
+    <!-- 获得所有缴费项目 -->
+    <select id="getAllPayItemList2" parameterType="pd" resultType="pd">
+
+		SELECT T.PKID,T.PAYITEM,'N' OTHERITEM_FLAG FROM T_PAY_ITEM T WHERE T.STATUS IN (1,2) 
+		ORDER BY T.XGSJ
+    </select>
+    
+    
+    <!-- 未缴过费的缴费项目 -->
+    <select id="getAllPayItemList3" parameterType="pd" resultType="pd">
+		
+		SELECT T.PKID,T.PAYITEM,'N' OTHERITEM_FLAG,T.IS_INCLUDE_CHILD,T.PARENT_ID,T.ITEMLIST_CREATEMODE,T.CHARGERULL,T.SCHOOL_YEAR_STR,
+		(SELECT PAY_STYLE_BIANMA FROM T_PAY_STYLE PS WHERE PS.PKID=T.PAY_TYPE_PKID) PAY_STYLE_BIANMA
+		FROM T_PAY_ITEM T 
+		WHERE T.STATUS IN (1,2) 
+		<if test="payitemPKIDs!=null and payitemPKIDs.size() > 0">
+			AND (t.PKID NOT IN 
+			<foreach item="item" index="index" collection="payitemPKIDs" open="(" separator="," close=")"> 
+			   #{payitemPKIDs[${index}]} 
+			  </foreach>
+			  
+			  OR t.PARENT_ID NOT IN 
+			<foreach item="item" index="index" collection="payitemPKIDs" open="(" separator="," close=")"> 
+			   #{payitemPKIDs[${index}]} 
+			  </foreach>
+			  )
+	    </if>
+		ORDER BY T.XGSJ
+    </select>
+    
+    <!-- 获得所有其他缴费项目 -->
+    <select id="getAllPayOtherItemList" parameterType="pd" resultType="pd">
+		SELECT T1.PKID,T1.ITEM_TYPE,T1.PAYITEM,T1.UPDATEPAYITEM,'Y' OTHERITEM_FLAG FROM T_PAY_OTHER_ITEM T1 WHERE T1.STATUS=1 
+		<if test="itemType!=null and itemType!=''">
+            AND ITEM_TYPE=#{itemType}
+        </if>
+		ORDER BY T1.XGSJ
+    </select>
+    
+    <!-- 获得所有缴费项目分组 -->
+    <select id="getPayItemGroupList" parameterType="pd" resultType="pd">
+		SELECT * FROM T_PAY_ITEM_GROUP T 
+		WHERE 1=1 
+		<choose>
+              <when test="groupPkid!=null and groupPkid!=''">
+              	  <choose>
+              	  	<when test="groupPkid == 'NOTNULL'">
+              	  		AND GROUP_PKID IS NOT NULL
+              	  	</when>
+              	  	<otherwise>
+	                  AND GROUP_PKID=#{groupPkid}
+	               </otherwise>
+              	  </choose>
+                  
+              </when>
+              <otherwise>
+                  AND T.GROUP_PKID IS NULL
+               </otherwise>
+        </choose>
+		
+    </select>
+    
+    <!-- 获得所有缴费项目分组 -->
+    <select id="getPayItemGroupsList" parameterType="pd" resultType="pd">
+		SELECT t.PKID,T.GROUP_PKID,T.PAY_ITEM_PKID,T.OTHERITEM_FLAG,T1.PAYITEM,T2.PAYITEM OTHERPAYITEM
+		FROM T_PAY_ITEM_GROUP T 
+		LEFT JOIN T_PAY_ITEM T1
+		ON T.PAY_ITEM_PKID=T1.PKID
+		LEFT JOIN T_PAY_OTHER_ITEM T2
+		ON T.PAY_ITEM_PKID = T2.PKID
+		WHERE T.GROUP_PKID IS NOT NULL GROUP BY T.GROUP_PKID,T.PAY_ITEM_PKID,T.OTHERITEM_FLAG,T.PKID ,T.XGSJ,T1.PAYITEM,T2.PAYITEM
+		ORDER BY T.XGSJ
+
+		
+    </select>
+    
+    <!-- 修改其它缴费设置 -->
+    <update id="updatePayItemGroup" parameterType="pd">
+    	update T_PAY_ITEM_GROUP 
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="groupName!=null and groupName!=''">
+    	,GROUP_NAME=#{groupName}
+    	</if>
+    	<choose>
+              <when test="groupPkid!=null and groupPkid!=''">
+                  ,GROUP_PKID = #{groupPkid}
+              </when>
+              <otherwise>
+                 ,GROUP_PKID = NULL
+               </otherwise>
+        </choose>
+    	WHERE PKID=#{pkid}
+    	
+    	
+    </update>
+    
+    <!-- 添加分组 -->
+	<insert id="insertPayItemGroup" parameterType="pd">
+	  INSERT INTO T_PAY_ITEM_GROUP
+	  (PKID, GROUP_PKID,GROUP_NAME,PAY_ITEM_PKID,OTHERITEM_FLAG,CJSJ,XGSJ,COLLEGES_PKID)
+		values
+	  (#{pkid}
+	  	<choose>
+              <when test="groupPkid!=null and groupPkid!=''">
+                  ,#{groupPkid}
+              </when>
+              <otherwise>
+                  ,NULL
+               </otherwise>
+        </choose>
+        <choose>
+              <when test="groupName!=null and groupName!=''">
+                  ,#{groupName}
+              </when>
+              <otherwise>
+                  ,NULL
+               </otherwise>
+        </choose>
+    	<choose>
+              <when test="payItemPkid!=null and payItemPkid!=''">
+                  ,#{payItemPkid}
+              </when>
+              <otherwise>
+                  ,NULL
+               </otherwise>
+        </choose>
+        <choose>
+              <when test="otherItemFlag!=null and otherItemFlag!=''">
+                  ,#{otherItemFlag}
+              </when>
+              <otherwise>
+                  ,NULL
+               </otherwise>
+        </choose>
+	  ,sysdate,sysdate,NULL)
+	</insert>
+	
+	<!--删除缴费项  -->
+    <delete id="deleteGroup" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_GROUP WHERE PKID=#{pkid}
+    </delete>
+    
+    <!--删除子缴费项  -->
+    <delete id="deleteGroupChild" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_GROUP WHERE GROUP_PKID=#{pkid}
+    </delete>
+    
+    <!-- 获得所有缴费条数 -->
+    <select id="getPayOrderDetailCount" parameterType="pd" resultType="pd">
+		select count(*) CCOUNT from T_PAY_ORDER_DETAIL T1
+		LEFT JOIN T_PAY_ORDER T2
+		ON T2.PKID = T1.PAY_ORDER_PKID
+		where 1=1 
+		<if test="payItemPkid!=null and payItemPkid!=''">
+    	and T1.PAY_ITEM_PKID=#{payItemPkid}
+    	</if>
+    	<if test="studentPkid!=null and studentPkid!=''">
+    	 and T1.STUDENT_PKID=#{studentPkid}
+    	</if>
+    	and PRINTFLAG != 'Y' AND T2.TRANSACTION_FLAG = 1
+    </select>
+    
+    <!--删除缴费项  -->
+    <delete id="deleteGroupByPayItemPkid" parameterType="pd">
+    	DELETE FROM T_PAY_ITEM_GROUP WHERE PAY_ITEM_PKID=#{payItemPkid}
+    </delete>
+
+
+	<!-- 订单明细查询 -->
+	<select id="getPayOrderDetaillistPage" parameterType="page" resultType="pd">
+
+	SELECT T1.PKID,T1.OTHERITEM_FLAG,PODM.MONEY,T2.XINGMING,T2.SHENFENZHENGHAO,T1.CJSJ,T1.PAY_ITEM_PKID,
+	(SELECT NAME FROM sys_dictionaries DS WHERE DS.DICTIONARIES_ID=T3.GRADE_PKID AND DS.PARENT_ID='GRADE') RUXUENIANFEN,
+	BM.XUEHAO,DDIC.NAME BANXING,STY.PAY_STYLE_NAME,PODM.PAY_MODE AS PAY_MODE,
+	(CASE WHEN UR.NAME IS NULL THEN '院方' ELSE UR.NAME END) SKR,
+	STY.PAY_STYLE_NAME AS PAYITEM,<!-- 父项目名称 -->
+ 
+	CASE
+		WHEN T6.ORDERCREATE_MODE = 'U' THEN
+		 '线上'
+		WHEN T6.ORDERCREATE_MODE = 'D' THEN
+		 '线下'
+		WHEN T6.ORDERCREATE_MODE = 'DO' THEN
+		 '线下其他'
+		WHEN T6.ORDERCREATE_MODE = 'I' THEN
+		 '导入'
+	END ORDERCREATE_MODE,
+	
+	CASE
+		WHEN T1.STATUS = 1 THEN
+		 '正常'
+		WHEN T1.STATUS = 2 THEN
+		 '转入'
+		WHEN T1.STATUS = 3 THEN
+		 '转出'
+	END STATUS,
+	
+	CASE
+		WHEN T1.INPUT_OUTPUT = 'JX' THEN
+		 '收入'
+		WHEN T1.INPUT_OUTPUT = 'XX' THEN
+		 '支出'
+	END INPUT_OUTPUT,
+	
+	CASE
+		WHEN T1.PRINTFLAG = 'Y' THEN
+		 '已打印'
+		WHEN T1.PRINTFLAG = 'N' THEN
+		 '未打印'
+	END PRINTFLAG,
+  	T1.RECEIPTNO,
+  	(case when STY.BILL_TYPE=1 then '收据' when STY.BILL_TYPE=2 then '发票' end) as BILL_TYPE
+	FROM T_PAY_ORDER_DETAIL T1
+	LEFT JOIN SYS_USER UR ON T1.CJR=UR.USER_ID
+	 JOIN T_PAY_ORDER T6
+	ON T1.PAY_ORDER_PKID = T6.PKID and t6.TRANSACTION_FLAG=1
+	JOIN T_PAY_ORDER_DETAIL_MONEY PODM ON PODM.PAY_ORDER_DETAIL_PKID=T1.PKID AND PODM.MONEY > 0
+	LEFT JOIN T_PAY_ITEM_LIST pil
+  ON T1.T_PAY_ITEM_LIST_PKID = pil.PKID
+  LEFT JOIN T_PAY_ITEM T3
+  ON pil.T_PAY_ITEM_PKID = T3.PKID
+  LEFT JOIN T_PAY_STYLE STY
+    ON T3.PAY_TYPE_PKID=STY.PKID
+    LEFT JOIN T_PAY_ITEM_LIST L
+	ON L.PKID = T1.T_PAY_ITEM_LIST_PKID
+	LEFT JOIN T_STUDENT T2
+	ON T1.STUDENT_PKID = T2.PKID
+	LEFT JOIN T_STUDENT_BM BM
+	ON BM.PKID=L.STUDENT_BM_PKID
+	JOIN SYS_DICTIONARIES DDIC
+	ON DDIC.DICTIONARIES_ID=BM.BANJI_TYPE_PKID
+	WHERE 1=1
+	<if test="pd.studentPkid !=null and pd.studentPkid!=''">
+   		AND T2.PKID=#{pd.studentPkid}
+   	</if>
+	<if test="pd.printFlag !=null and pd.printFlag!=''">
+   		AND T1.PRINTFLAG=#{pd.printFlag}
+   	</if>
+   	<if test="pd.INPUT_OUTPUT !=null and pd.INPUT_OUTPUT!=''">
+   		AND T1.INPUT_OUTPUT=#{pd.INPUT_OUTPUT}
+   	</if>
+   	<if test="pd.ordercreateMode !=null and pd.ordercreateMode!=''">
+   		AND T6.ORDERCREATE_MODE=#{pd.ordercreateMode}
+   	</if>
+   	<if test="pd.SKR !=null and pd.SKR!='' and  pd.SKR!='yf'">
+   		AND T1.CJR=#{pd.SKR}
+   	</if>
+   	<if test="pd.SKR !=null and pd.SKR!='' and pd.SKR=='yf'">
+   		AND T1.CJR='院方'
+   	</if>
+    <if test="pd.PAY_MODE !=null and pd.PAY_MODE !=''">
+   		AND PODM.PAY_MODE=#{pd.PAY_MODE}
+   	</if>
+    <if test="pd.payItemPkid !=null and pd.payItemPkid !='' and pd.payItemPkid.size() > 0">
+			AND (t3.PARENT_ID IN 
+			<foreach item="item" index="index" collection="pd.payItemPkid" open="(" separator="," close=")"> 
+			   #{pd.payItemPkid[${index}]} 
+			  </foreach>
+			  
+			  OR T1.PAY_ITEM_PKID IN
+			  <foreach item="item" index="index" collection="pd.payItemPkid" open="(" separator="," close=")"> 
+			   #{pd.payItemPkid[${index}]} 
+			  </foreach>
+			  )
+	    </if>
+    
+	<if test="pd.conditions!=null and pd.conditions!=''">
+   		AND (
+   		BM.XUEHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%')
+   		or T2.SHENFENZHENGHAO LIKE CONCAT(CONCAT('%', #{pd.conditions}),'%') 
+   		or T2.XINGMING LIKE CONCAT(CONCAT('', #{pd.conditions}),'%') 
+   		or T1.RECEIPTNO LIKE CONCAT(CONCAT('', #{pd.conditions}),'%') 
+   		)
+   	</if>
+   	<if test="pd.PAY_TYPE_PKID!=null and pd.PAY_TYPE_PKID!=''">
+		and  t3.PAY_TYPE_PKID =#{pd.PAY_TYPE_PKID}
+    </if>
+    <if test="pd.SCHOOL_YEAR_PKID!=null and pd.SCHOOL_YEAR_PKID!=''">
+		and  t3.SCHOOL_YEAR_PKID =#{pd.SCHOOL_YEAR_PKID}
+    </if>
+     <if test="pd.startDate !=null and pd.startDate!=''">
+   		<!-- <![CDATA[ AND t.CJSJ >=to_date(#{pd.startdate},'yyyy-mm-dd HH24:mi:ss') ]]>   --> 
+   		AND T1.CJSJ &gt;=to_date(#{pd.startDate},'yyyy-mm-dd HH24:mi:ss')
+   	</if>
+   	<if test="pd.endDate !=null and pd.endDate !=''">
+   		<!-- <![CDATA[ AND t.CJSJ <= to_date(#{pd.enddate},'yyyy-mm-dd HH24:mi:ss') ]]> -->
+   		AND T1.CJSJ &lt;= to_date(#{pd.endDate},'yyyy-mm-dd HH24:mi:ss')
+   	</if>
+    
+    
+    <if test="pd.collegeNameEn='GUANGDIAN' and pd.RECEIPTNO!=null and pd.RECEIPTNO!=''">
+        and T1.RECEIPTNO like '%${pd.RECEIPTNO}'
+    </if>
+    
+      <if test="pd.collegeNameEn='GUANGDIAN' and pd.BILL_TYPE!=null and pd.BILL_TYPE!=''">
+         and STY.BILL_TYPE=#{pd.BILL_TYPE}
+    </if>
+    
+	ORDER BY T2.SHENFENZHENGHAO,T1.CJSJ DESC
+
+    </select>
+    
+    <!-- 获得缴费记录 -->
+    <select id="getPayOrderDetailList" parameterType="pd" resultType="pd">
+		SELECT T1.PKID,T1.OTHERITEM_FLAG,PODM.MONEY,P.PICI_NAME,(SELECT NAME FROM SYS_USER U WHERE U.USER_ID=T1.CJR AND ROWNUM=1) AS XGR,
+		T2.XINGMING,T2.SHENFENZHENGHAO,T1.CJSJ,T1.PAY_ITEM_PKID,T1.STUDENT_PKID,T1.INPUT_OUTPUT,T1.RECEIPTNO,L.AMOUNTRECEIVABLE,
+		(SELECT NAME FROM sys_dictionaries DS WHERE DS.DICTIONARIES_ID=T3.GRADE_PKID AND DS.PARENT_ID='GRADE') RUXUENIANFEN,SY.SCHOOL_YEAR_NAME,BM.XUEHAO,
+		 t10.PAY_STYLE_NAME PAYITEM,
+	    DDIC.NAME BANXING,DDIC.Bianma BIANMA,PS.SCHOOLNAME,(select name  from SYS_DICTIONARIES s where s.dictionaries_id=bm.rxnianfen_pkid)||(select name  from SYS_DICTIONARIES s where s.dictionaries_id=bm.banji_type_pkid)||t10.PAY_STYLE_NAME PAY_STYLE_NAME,(CASE WHEN UR.NAME IS NULL THEN '院方' ELSE UR.NAME END) SKR,
+	    (SELECT PS.PAY_STYLE_NAME FROM t_pay_style PS WHERE PS.PKID=T3.PAY_TYPE_PKID) AS PAY_STYLE_NAME,<!-- 缴费类型 -->
+	    
+ 		PODM.PAY_MODE AS PAY_MODE,<!-- 支付方式 -->
+ 		
+ 		<!--(select getWholeRoomName_func(SD.PKID) DORMNAME from t_student_dorm sd
+	   	 start with sd.t_student_pkid=T2.PKID
+      	 connect by prior sd.PKID= sd.PARENT_PKID) AS DORMNAME, 宿舍信息 -->
+      	 
+      	 (SELECT PS.PAY_STYLE_BIANMA FROM t_pay_style PS WHERE PS.PKID=T3.PAY_TYPE_PKID) AS PAY_STYLE_BIANMA,<!-- 缴费类型编码 -->
+      	 (select c.class_name from t_class c where c.pkid=T2.BANJI and rownum=1) as CLASS_NAME,<!-- 班级名称 -->
+		
+		CASE
+			WHEN T6.ORDERCREATE_MODE = 'U' THEN
+			 '线上'
+			WHEN T6.ORDERCREATE_MODE = 'D' THEN
+			 '线下'
+			WHEN T6.ORDERCREATE_MODE = 'DO' THEN
+			 '线下其他'
+			WHEN T6.ORDERCREATE_MODE = 'I' THEN
+			 '导入'
+		END ORDERCREATE_MODE,
+		
+		CASE
+			WHEN T1.STATUS = 1 THEN
+			 '正常'
+			WHEN T1.STATUS = 2 THEN
+			 '转入'
+			WHEN T1.STATUS = 3 THEN
+			 '转出'
+		END STATUS,
+		
+		CASE
+			WHEN T1.PRINTFLAG = 'Y' THEN
+			 '已打印'
+			WHEN T1.PRINTFLAG = 'N' THEN
+			 '未打印'
+		END PRINTFLAG
+		FROM T_PAY_ORDER_DETAIL T1
+		LEFT JOIN SYS_USER UR ON T1.CJR=UR.USER_ID
+		 JOIN T_PAY_ORDER T6
+		ON T1.PAY_ORDER_PKID = T6.PKID AND T6.TRANSACTION_FLAG = 1
+		JOIN T_PAY_ORDER_DETAIL_MONEY PODM ON PODM.PAY_ORDER_DETAIL_PKID=T1.PKID AND PODM.MONEY > 0
+		LEFT JOIN T_PAY_ITEM_LIST L
+		ON L.PKID = T1.T_PAY_ITEM_LIST_PKID
+		LEFT JOIN T_PAY_ITEM T3
+		ON l.T_PAY_ITEM_PKID = T3.PKID
+		 LEFT join t_pay_style t10
+		on t3.PAY_TYPE_PKID=t10.pkid
+		left join T_SCHOOL_YEAR SY
+		ON T3.GRADE_PKID=SY.PKID
+		LEFT JOIN T_STUDENT T2
+		ON T1.STUDENT_PKID = T2.PKID
+		LEFT JOIN T_STUDENT_BM BM
+		ON BM.PKID=L.STUDENT_BM_PKID
+		LEFT JOIN SYS_DICTIONARIES DDIC
+		ON DDIC.DICTIONARIES_ID=BM.BANJI_TYPE_PKID
+		LEFT JOIN T_PART_SCHOOL PS
+		ON PS.PKID=T2.WHKXUEXIAO
+		LEFT JOIN T_PICI P
+		ON T2.PICI_PKID=P.PKID
+		WHERE 1=1
+		<if test="BILL_TYPE!=null and BILL_TYPE !=''">
+			AND t10.BILL_TYPE = #{BILL_TYPE}
+	    </if>
+	    <if test="PAY_MODE !=null and PAY_MODE !=''">
+			AND PODM.PAY_MODE = #{PAY_MODE}
+	    </if>
+	    
+		<if test="detailPkidList!=null and detailPkidList.size() > 0">
+			AND 
+			<foreach item="item" index="index" collection="detailPkidList" open="(" separator="or" close=")"> 
+			    T1.PKID = #{detailPkidList[${index}]} 
+			  </foreach>
+	    </if>
+	    <if test="studentPkid!=null and studentPkid !=''">
+			AND T1.STUDENT_PKID = #{studentPkid}
+	    </if>
+	    <if test="printFlag!=null and printFlag !=''">
+			AND T1.PRINTFLAG = #{printFlag}
+	    </if>
+	    <if test="INPUT_OUTPUT !=null and INPUT_OUTPUT!=''">
+	   		AND T1.INPUT_OUTPUT=#{INPUT_OUTPUT}
+	   	</if>
+	    <if test="payItemPkidList!=null and payItemPkidList.size() > 0">
+			AND T1.T_PAY_ITEM_LIST_PKID IN 
+			<foreach item="item" index="index" collection="payItemPkidList" open="(" separator="," close=")"> 
+			   #{payItemPkidList[${index}]} 
+			  </foreach>
+	    </if>
+	   	
+		ORDER BY T2.SHENFENZHENGHAO,t10.paixu,T1.CJSJ DESC
+    </select>
+    
+    
+    <!-- 修改订单明细 -->
+    <update id="updatePayOrderDetails" parameterType="pd">
+    	update T_PAY_ORDER_DETAIL 
+    	set 
+    	XGSJ=SYSDATE
+    	<if test="printFlag!=null and printFlag!=''">
+    	,PRINTFLAG=#{printFlag}
+    	</if>
+    	<if test="XGR!=null and XGR!=''">
+    	,XGR=#{XGR}
+    	</if>
+    	<if test="RECEIPTNO !=null and RECEIPTNO !=''">
+    	,RECEIPTNO=#{RECEIPTNO}
+    	</if>
+    	<if test="PRINTCOUNT !=null and PRINTCOUNT !=''">
+    	,PRINTCOUNT=PRINTCOUNT+1
+    	</if>
+    	WHERE 1=1
+    	<if test="detailPkidList!=null and detailPkidList.size() > 0">
+			AND PKID IN 
+			<foreach item="item" index="index" collection="detailPkidList" open="(" separator="," close=")"> 
+			   #{item}  
+			  </foreach>
+	    </if>
+    	
+    	
+    </update>
+    
+    <!-- 获得学生缴费项目 -->
+    <select id="getPayItemListGroupByPayItemPkid" parameterType="pd" resultType="pd">
+    
+    select DISTINCT(PAY_ITEM_PKID) AS PAY_ITEM_PKID from T_PAY_ITEM_LIST
+    where 1=1 
+    	<if test="studentPkid!=null and studentPkid!=''">
+    	 and STUDENT_PKID=#{studentPkid}
+    	</if>
+	union
+	select DISTINCT(PAY_ITEM_PARENT_PKID) AS PAY_ITEM_PKID from T_PAY_ITEM_LIST
+	where 1=1 
+    	<if test="studentPkid!=null and studentPkid!=''">
+    	 and STUDENT_PKID=#{studentPkid}
+    	</if>
+
+	<!-- 	select DISTINCT(PAY_ITEM_PKID) from T_PAY_ITEM_LIST
+		where 1=1 
+    	<if test="studentPkid!=null and studentPkid!=''">
+    	 and STUDENT_PKID=#{studentPkid}
+    	</if> -->
+    </select>
+    
+    
+    <!-- 通过父缴费项目PKID获得旗下所有子缴费项目 -->
+    <select id="getAllChildPayItemsByParentPkid" parameterType="pd" resultType="pd">
+    	select * from T_PAY_ITEM t where 1=1 and t.PARENT_ID=#{PARENT_ID}
+    </select>
+    
+    <!-- 获得单据号 -->
+    <select id="getSeqReceiptNO" parameterType="pd" resultType="pd">
+		SELECT TO_CHAR(SEQ_RECEIPTNO.NEXTVAL,'00000') as RECEIPTNO FROM DUAL 
+	</select>
+	
+	<select id="getSeqCount" parameterType="pd" resultType="pd">
+		SELECT count(*) CCOUNT FROM user_sequences S where S.SEQUENCE_NAME=#{SEQNAME}
+	</select>
+	
+    <!-- 获取发票号码 -->
+    <select id="getInvoiceInfo" parameterType="pd" resultType="pd">
+		 SELECT T.PKID,T.INVOICE_NO,T.LEASER_USER,T.STATUS,T.REGISTER_DATE,
+   				T.REGISTER_USER FROM T_INVOICE_INFO T WHERE T.STATUS = '1' AND T.LEASER_USER = #{LEASER_USER} 
+   				<!-- ORDER BY T.INVOICE_NO -->
+   				 order by to_number(regexp_substr(T.INVOICE_NO,'[0-9]+*[0-9]+',1)) ASC
+	</select>
+	<!-- 修改发票状态 -->
+	<update id="updateInvoiceStatus" parameterType="pd">
+		UPDATE T_INVOICE_INFO T SET T.STATUS = '2' WHERE T.INVOICE_NO = #{INVOICE_NO}
+	</update>
+	
+	<!-- 查询用户 -->
+	<select id="getUserList" parameterType="pd" resultType="pd">
+		 SELECT T.USER_ID,T.USERNAME,T.NAME FROM SYS_USER T
+	</select>
+</mapper>

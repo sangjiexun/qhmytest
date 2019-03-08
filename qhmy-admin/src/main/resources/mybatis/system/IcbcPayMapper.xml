@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="IcbcPayMapper">
+	<!-- 查询表数据 -->
+	<select id="getIcbcPaylistPage" parameterType="page" resultType="pd">
+		select  /*+ FIRST_ROWS(100) */  o.STUDENT_NAME,o.STUDENT_PKID XUEHAO,O.CARDNO,O.ORDERNO,O.TOTALMONEY,
+		(case when O.TRANSACTION_FLAG =1 then '支付成功' when O.TRANSACTION_FLAG =0 then '未支付' else '支付失败' end)TRANSACTION_FLAG,
+		to_char(PL.CJSJ,'YYYY-MM-DD HH24:MI:SS' ) TRANSACTION_DATE,PL.TRANSACTION_HOST_SN
+		from t_pay_order o 
+		JOIN T_PAY_TRANSACTION_LOG PL ON PL.PAY_ORDER_PKID = O.PKID
+		where 1=1 
+		<if test="pd.keywords !=null and pd.keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			)
+		</if>
+		<if test="pd.DATESTART != null and pd.DATESTART !=''">
+			and PL.CJSJ &gt;= to_date(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND !=''">
+			and PL.CJSJ &lt;= to_date(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.pay_status != null and pd.pay_status !=''">
+			and O.TRANSACTION_FLAG = #{pd.pay_status}
+		</if>
+		ORDER BY O.CJSJ DESC
+	</select>
+	<select id="geticbcCz" parameterType="pd" resultType="pd">
+		select nvl(sum(o.TOTALMONEY),0) as TOTALMONEY,count(distinct o.CUSTOMERID) TOTALPEOPLE 
+		from t_pay_order o
+		JOIN T_PAY_TRANSACTION_LOG PL ON PL.PAY_ORDER_PKID = O.PKID
+		where o.TRANSACTION_FLAG = 1
+		<if test="keywords !=null and keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		<if test="DATESTART != null and DATESTART !=''">
+			and PL.CJSJ &gt;= to_date(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND !=''">
+			and PL.CJSJ &lt;= to_date(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pay_status != null and pay_status !=''">
+			and O.TRANSACTION_FLAG = #{pay_status}
+		</if>
+	</select>
+	<select id="icbcPayTablelist" parameterType="pd" resultType="pd">
+		select o.STUDENT_NAME,o.STUDENT_PKID XUEHAO,O.CARDNO,O.ORDERNO,O.TOTALMONEY,
+		(case when O.TRANSACTION_FLAG =1 then '支付成功' when O.TRANSACTION_FLAG =0 then '未支付' else '支付失败' end)TRANSACTION_FLAG,
+		to_char(PL.CJSJ,'YYYY-MM-DD HH24:MI:SS' ) TRANSACTION_DATE,PL.TRANSACTION_HOST_SN
+		from t_pay_order o 
+		JOIN T_PAY_TRANSACTION_LOG PL ON PL.PAY_ORDER_PKID = O.PKID
+		where 1=1 
+		<if test="keywords !=null and keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		<if test="DATESTART != null and DATESTART !=''">
+			and PL.CJSJ &gt;= to_date(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND !=''">
+			and PL.CJSJ &lt;= to_date(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pay_status != null and pay_status !=''">
+			and O.TRANSACTION_FLAG = #{pay_status}
+		</if>
+		ORDER BY O.CJSJ DESC
+	</select>
+	<select id="getEcardPayTablelist" parameterType="pd" resultType="pd">
+		select o.STUDENT_NAME,o.STUDENT_PKID as XUEHAO, o.CARDNO,o.ORDERNO,m.TRANSACTION_MONEY,
+		to_char(m.CZSJ,'YYYY-MM-DD HH24:MI:SS') AS CZSJ,
+		(CASE WHEN M.IS_YIKATONG = 1 THEN '充值成功' when M.IS_YIKATONG = 0 then '未充值' 
+		when M.IS_YIKATONG = -2 then '对账失败' when M.IS_YIKATONG = 2 then '对账成功' else '充值失败' END) IS_YIKATONG
+		from T_PAY_TRANSACTION_MIDDLE m
+		join t_pay_order o on o.pkid = m.PAY_ORDER_PKID
+		where 1=1
+		<if test="keywords !=null and keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		<if test="DATESTART != null and DATESTART !=''">
+			and m.CZSJ &gt;= to_date(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND !=''">
+			and m.CZSJ &lt;= to_date(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pay_status != null and pay_status !=''">
+			and M.IS_YIKATONG = #{pay_status}
+		</if>
+		ORDER BY m.CJSJ DESC
+	</select>
+	<select id="getEcardPayTablelistPage" parameterType="page" resultType="pd">
+		select  /*+ FIRST_ROWS(100) */  o.STUDENT_NAME,o.STUDENT_PKID as XUEHAO, o.CARDNO,o.ORDERNO,m.TRANSACTION_MONEY,
+		to_char(m.CZSJ,'YYYY-MM-DD HH24:MI:SS') AS CZSJ,
+		(CASE WHEN M.IS_YIKATONG = 1 THEN '充值成功' when M.IS_YIKATONG = 0 then '未充值' 
+		when M.IS_YIKATONG = -2 then '对账失败' when M.IS_YIKATONG = 2 then '对账成功' else '充值失败' END) IS_YIKATONG
+		from T_PAY_TRANSACTION_MIDDLE m
+		join t_pay_order o on o.pkid = m.PAY_ORDER_PKID
+		where 1=1
+		<if test="pd.keywords !=null and pd.keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+			)
+		</if>
+		<if test="pd.DATESTART != null and pd.DATESTART !=''">
+			and m.CZSJ &gt;= to_date(#{pd.DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.DATEEND != null and pd.DATEEND !=''">
+			and m.CZSJ &lt;= to_date(#{pd.DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pd.pay_status != null and pd.pay_status !=''">
+			and M.IS_YIKATONG = #{pd.pay_status}
+		</if>
+		ORDER BY m.CJSJ DESC
+	</select>
+	<select id="getecardCz" parameterType="pd" resultType="pd">
+		select nvl(sum(m.TRANSACTION_MONEY),0) as TOTALMONEY,count(distinct o.CUSTOMERID) TOTALPEOPLE 
+		from T_PAY_TRANSACTION_MIDDLE m
+		JOIN t_pay_order o ON m.PAY_ORDER_PKID = O.PKID
+		where 1=1
+		<if test="keywords !=null and keywords!=''">
+			AND (O.STUDENT_NAME LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.STUDENT_PKID LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			OR O.CARDNO LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+			)
+		</if>
+		<if test="DATESTART != null and DATESTART !=''">
+			and m.CZSJ &gt;= to_date(#{DATESTART},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="DATEEND != null and DATEEND !=''">
+			and m.CZSJ &lt;= to_date(#{DATEEND},'YYYY-MM-DD HH24:MI:SS')
+		</if>
+		<if test="pay_status != null and pay_status !=''">
+			and M.IS_YIKATONG = #{pay_status}
+		</if>
+	</select>
+	<select id="getSysTime" parameterType="pd" resultType="pd">
+		select to_char(SYSDATE,'YYYY-MM-DD HH24:MI:SS') SYSTIME from dual 
+	</select>
+</mapper>

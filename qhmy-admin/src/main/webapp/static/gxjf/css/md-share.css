@@ -1,0 +1,75 @@
+
+ul,li{
+	margin: 0;
+	padding: 0;
+	list-style: none;
+			
+}
+body{
+	background:#edf0f5;
+}
+.fl-sideBox{
+	margin-top:20px;
+}
+.fl-sideBox li{
+	margin-bottom: 15px;
+}
+.md-bg{
+	background: url(../images/zhigong_sy/bg.png) no-repeat #fff;
+	background-size: 100%;
+    background-position: bottom;
+	padding:20px;
+	position: fixed;
+    top: 50px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;"
+}
+
+.md-picture{
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0; 
+	width: 100%;
+}
+.fl-listBox{
+	width: 16.6%;
+	padding: 15px 0;
+	text-align: center;
+}
+
+.fl-iconBox{
+	width:50px;
+	height: 50px;
+	border-radius: 10px;
+	background: #e83a30;
+	margin: 0 auto;
+	margin-bottom: 8px;
+}
+.fl-iconBox span{
+	color: #fff;
+	line-height: 50px;
+	font-size:20px;
+}
+.bg-orange{
+	background: #f88008;
+}
+.bg-blue{
+	background: #3080e8;
+}
+.bg-green{
+	background: #30e8bd;
+}
+.bg-yellow{
+	background: #f9d904;
+}
+.bg-purple{
+	background: #8930e8;
+}
+.bg-cyan{
+	background: #a5e830;
+}
+.clearfix{
+	clear:both;
+}

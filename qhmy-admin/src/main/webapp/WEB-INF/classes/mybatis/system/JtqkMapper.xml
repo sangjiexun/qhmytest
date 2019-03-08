@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="JtqkMapper">
+<resultMap type="Department" id="departmentResultMap">
+		<id column="DEPARTMENT_ID" property="DEPARTMENT_ID"/>
+		<result column="NAME" property="NAME"/>
+		<result column="PARENT_ID" property="PARENT_ID"/>
+</resultMap>
+	
+	<!--表名 -->
+	<sql id="tableName">
+		"SYS_DEPARTMENT"
+	</sql>
+	
+	<!-- 字段 -->
+	<sql id="Field">
+		"NAME",
+		"NAME_EN",
+		"BIANMA",
+		"PARENT_ID",
+		"BZ",
+		"DEPARTMENT_ID",
+		"DEPARTMENT_TYPE_ID"
+	</sql>
+	
+	<!-- 字段值 -->
+	<sql id="FieldValue">
+		#{NAME},
+		#{NAME_EN},
+		#{BIANMA},
+		#{PARENT_ID},
+		#{BZ},
+		#{DEPARTMENT_ID},
+		#{DEPARTMENT_TYPE_ID}	
+	</sql>
+	
+	<!-- 新增-->
+	<insert id="save" parameterType="pd">
+		insert into
+		<include refid="tableName"></include>
+		(
+		<include refid="Field"></include>
+		) values (
+		<include refid="FieldValue"></include>
+		)
+	</insert>
+	
+	<!-- 删除-->
+	<delete id="delete" parameterType="pd">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"JTQK_ID" = #{JTQK_ID}
+	</delete>
+	
+	<!-- 修改 -->
+	<update id="edit" parameterType="pd">
+		update
+		<include refid="tableName"></include>
+			set 
+				"NAME" = #{NAME},	
+			"JTQK_ID" = "JTQK_ID"
+			where 
+				"JTQK_ID" = #{JTQK_ID}
+	</update>
+	<select id="listSubDepartmentByParentId" parameterType="pd" resultMap="departmentResultMap">
+	
+select s.department_type_id department_type_id,
+       s.name_en            name_en,
+       s.bianma             bianma,
+       s.parent_id          parent_id,
+       s.department_id      department_id,
+       s.bz                 bz,
+       u.name               name,
+       u.count_in           count_in,
+       u.count_out          count_out
+from (
+select name, sum(count_in)count_in,sum(count_out) count_out from(
+(select t.name name, count(*) count_in,0 count_out
+    from sys_department t,
+       (select distinct e.prid,
+                        e.gk_fenbao_pk,
+                        e.gk_team_pk,
+                        e.gk_startdate,
+                        e.gk_enddate,
+                        e.user_id,
+                        bianma
+          from sys_user_extends e,
+               (select a.bianma bianma, a.department_id, b.bm bm
+                  from sys_department a,
+                       (
+                        
+                        select t.parent_id parent_id, t.bianma bm
+                          from Sys_Department T, sys_user_extends e
+                         where t.bianma = e.prid) b
+                
+                 where a.department_id = b.parent_id) d
+         where e.prid = d.bm
+          <if test = "startLoginStart!=null and startLoginStart!=''" >
+          and e.gk_startdate &gt;= #{startLoginStart}
+          </if >
+          <if test = "lastLoginStart!=null and lastLoginStart!=''" >
+          and e.gk_startdate &lt;= #{lastLoginStart}
+          </if >
+          <if test = "startLoginStart!=null and startLoginStart!=''" >
+          and e.gk_enddate &gt;= #{startLoginStart}
+          </if >
+          <if test = "lastLoginStart!=null and lastLoginStart!=''" >
+          and e.gk_enddate &lt;= #{lastLoginStart}
+          </if >
+         ) c
+  where c.gk_startdate !='null'
+     and t.parent_id = #{parentId}
+     and t.department_id = (case
+       when t.department_type_id = '4' then
+          c.gk_team_pk
+         when t.department_type_id = '3' then
+          c.gk_fenbao_pk 
+          else
+            t.department_id
+          end
+     )
+     and nvl(t.bianma,'1') = (case
+         when t.department_type_id = '2' then
+          c.prid
+         when t.department_type_id = '1' then
+          c.bianma
+         else
+         '1'
+       end)
+       and t.name = (case
+         when t.department_type_id = '4' then
+          <if test = "bz!=null and bz!=''" >
+           #{bz}
+          </if >
+          <if test = "bz==null or bz==''" >
+           t.name
+          </if >
+         when t.department_type_id = '3' then
+          <if test = "fbdw!=null and fbdw!=''" >
+           #{fbdw}
+          </if >
+          <if test = "fbdw==null or fbdw==''" >
+           t.name
+          </if >
+         when t.department_type_id = '2' then
+          <if test = "xmmc!=null and xmmc!=''" >
+           #{xmmc}
+          </if >
+          <if test = "xmmc==null or xmmc==''" >
+           t.name
+          </if >
+         when t.department_type_id = '1' then
+         <if test = "qymc!=null and qymc!=''" >
+           #{qymc}
+          </if >
+          <if test = "qymc==null or qymc==''" >
+           t.name
+          </if >
+         else
+          t.name
+       end)
+  group by t.name) 
+  union all 
+(select t.name name,0 count_in, count(*) count_out
+    from sys_department t,
+       (select distinct e.prid,
+                        e.gk_fenbao_pk,
+                        e.gk_team_pk,
+                        e.gk_startdate,
+                        e.gk_enddate,
+                        e.user_id,
+                        bianma
+          from sys_user_extends e,
+               (select a.bianma bianma, a.department_id, b.bm bm
+                  from sys_department a,
+                       (
+                        
+                        select t.parent_id parent_id, t.bianma bm
+                          from Sys_Department T, sys_user_extends e
+                         where t.bianma = e.prid) b
+                
+                 where a.department_id = b.parent_id) d
+         where e.prid = d.bm) c
+  where c.gk_enddate != 'null'
+     and t.parent_id = #{parentId}
+    and t.department_id = (case
+       when t.department_type_id = '4' then
+          c.gk_team_pk
+         when t.department_type_id = '3' then
+          c.gk_fenbao_pk 
+          else
+            t.department_id
+          end
+     ) and nvl(t.bianma,'1') = (case
+         when t.department_type_id = '2' then
+          c.prid
+         when t.department_type_id = '1' then
+          c.bianma
+         else
+          '1'
+       end)
+       and t.name = (case
+         when t.department_type_id = '4' then
+          <if test = "bz!=null and bz!=''" >
+           #{bz}
+          </if >
+          <if test = "bz==null or bz==''" >
+           t.name
+          </if >
+         when t.department_type_id = '3' then
+          <if test = "fbdw!=null and fbdw!=''" >
+           #{fbdw}
+          </if >
+          <if test = "fbdw==null or fbdw==''" >
+           t.name
+          </if >
+         when t.department_type_id = '2' then
+          <if test = "xmmc!=null and xmmc!=''" >
+           #{xmmc}
+          </if >
+          <if test = "xmmc==null or xmmc==''" >
+           t.name
+          </if >
+         when t.department_type_id = '1' then
+         <if test = "qymc!=null and qymc!=''" >
+           #{qymc}
+          </if >
+          <if test = "qymc==null or qymc==''" >
+           t.name
+          </if >
+         else
+          t.name
+       end)
+  group by t.name)
+  ) group by name
+  )u,sys_department s where s.name = u.name
+	</select>
+	<!-- 通过ID获取数据 -->
+	<select id="findByIdlistPagename" parameterType="page" resultType="pd">
+		select 
+        u3.username username,
+        u3.user_no user_no,
+        u3.user_idcard user_idcard,
+        g.name gz,
+        u3.gk_startdate gk_startdate,
+        u3.gk_enddate gk_enddate,
+        u3.user_address user_address
+		from sys_gongzhong g,
+		(select u1.name   username,
+       u2.user_no  user_no,
+       u1.user_idcard user_idcard,
+       u2.gk_gz_pk gk_gz_pk,
+       u2.gk_startdate gk_startdate,
+       u2.gk_enddate gk_enddate,
+       u2.user_address user_address
+  		from sys_user u1,
+       (select u.user_id      user_id,
+               u.user_no      user_no,
+               u.gk_gz_pk     gk_gz_pk,
+               u.gk_startdate gk_startdate,
+               u.gk_enddate   gk_enddate,
+               u.user_address user_address
+          from sys_user_extends u
+         where u.gk_team_pk = #{pd.BIANMA} and  u.gk_startdate != 'null') u2
+
+ 		where u1.user_id = u2.user_id )u3
+		where g.type_number = u3.gk_gz_pk
+	</select>
+	<!-- 通过ID获取数据 -->
+	<select id="findByIdlistPagename1" parameterType="page" resultType="pd">
+		select 
+        u3.username username,
+        u3.user_no user_no,
+        u3.user_idcard user_idcard,
+        g.name gz,
+        u3.gk_startdate gk_startdate,
+        u3.gk_enddate gk_enddate,
+        u3.user_address user_address
+		from sys_gongzhong g,
+		(select u1.name   username,
+       u2.user_no  user_no,
+       u1.user_idcard user_idcard,
+       u2.gk_gz_pk gk_gz_pk,
+       u2.gk_startdate gk_startdate,
+       u2.gk_enddate gk_enddate,
+       u2.user_address user_address
+  		from sys_user u1,
+       (select u.user_id      user_id,
+               u.user_no      user_no,
+               u.gk_gz_pk     gk_gz_pk,
+               u.gk_startdate gk_startdate,
+               u.gk_enddate   gk_enddate,
+               u.user_address user_address
+          from sys_user_extends u
+         where u.gk_team_pk = #{pd.BIANMA} and u.gk_enddate != 'null') u2
+
+ 		where u1.user_id = u2.user_id)u3
+		where g.type_number = u3.gk_gz_pk
+	</select>
+	<!-- 列表 -->
+	<select id="datalistPage" parameterType="page" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+		where 1=1
+		<if test="pd.keywords!= null and pd.keywords != ''"><!-- 关键词检索 -->
+			and
+				(
+				<!--	根据需求自己加检索条件
+					字段1 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%')
+					 or 
+					字段2 LIKE CONCAT(CONCAT('%', #{pd.keywords}),'%') 
+				-->
+				)
+		</if>
+	</select>
+	
+	<!-- 列表(全部) -->
+	<select id="listAll" parameterType="pd" resultType="pd">
+		select
+		<include refid="Field"></include>
+		from 
+		<include refid="tableName"></include>
+	</select>
+	
+	<!-- 批量删除 -->
+	<delete id="deleteAll" parameterType="String">
+		delete from
+		<include refid="tableName"></include>
+		where 
+			"JTQK_ID" in
+		<foreach item="item" index="index" collection="array" open="(" separator="," close=")">
+                 #{item}
+		</foreach>
+	</delete>
+	
+	<!-- zhoudibo -->
+</mapper>

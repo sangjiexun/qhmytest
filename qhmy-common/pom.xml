@@ -1,0 +1,365 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.keman.qhmy</groupId>
+    <artifactId>qhmy</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <groupId>com.keman.qhmy</groupId>
+  <artifactId>qhmy-common</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>qhmy-common</name>
+  <url>http://maven.apache.org</url>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  
+  <dependencies>
+		
+		<!-- 缓存框架 -->
+		<dependency>
+		  <groupId>net.sf.ehcache</groupId>
+		  <artifactId>ehcache-core</artifactId>
+		</dependency>
+		
+		
+		<!-- spring -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-orm</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-context-support</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-aspects</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-mock</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.springframework</groupId>
+		  <artifactId>spring-dao</artifactId>
+		</dependency>
+		
+		<!-- shiro 安全框架 -->
+		<dependency>
+		  <groupId>org.apache.shiro</groupId>
+		  <artifactId>shiro-all</artifactId>
+		</dependency>
+		
+		<!-- mybatis-->
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis</artifactId>
+		</dependency>
+
+		<!--mybatis spring 插件 -->
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis-spring</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.mybatis.caches</groupId>
+		  <artifactId>mybatis-ehcache</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.mybatis.caches</groupId>
+		  <artifactId>mybatis-oscache</artifactId>
+		</dependency>
+
+		<!-- mysql连接 -->
+		<dependency>
+		  <groupId>mysql</groupId>
+		  <artifactId>mysql-connector-java</artifactId>
+		</dependency>
+		
+		<!-- oracle连接 -->
+		<dependency>
+		  <groupId>com.myoracle</groupId>
+		  <artifactId>oraclejdbc</artifactId>
+		</dependency>
+
+		<!-- 数据�?-->
+		<dependency>
+		  <groupId>com.alibaba</groupId>
+		  <artifactId>druid</artifactId>
+		</dependency>
+		
+
+		<dependency>
+		  <groupId>org.aspectj</groupId>
+		  <artifactId>aspectjweaver</artifactId>
+		</dependency>
+
+		<!-- log4j -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+		</dependency>
+
+		<!-- servlet -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>javax.servlet.jsp.jstl</groupId>
+		  <artifactId>jstl</artifactId>
+		  <classifier>sources</classifier>
+		</dependency>
+		
+		<dependency>
+		  <groupId>javax.servlet.jstl</groupId>
+		  <artifactId>myjstl</artifactId>
+		</dependency>
+		
+		<!-- json -->
+		<dependency>
+		  <groupId>org.codehaus.jackson</groupId>
+		  <artifactId>jackson-mapper-asl</artifactId>
+		</dependency>
+
+		<dependency>
+		  <groupId>com.alibaba</groupId>
+		  <artifactId>fastjson</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+		<!-- 文件上传 -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+		</dependency>
+
+		<dependency>
+		  <groupId>commons-fileupload</groupId>
+		  <artifactId>commons-fileupload</artifactId>
+		</dependency>
+		
+		<!-- poi -->
+		<dependency>
+		  <groupId>org.apache.poi</groupId>
+		  <artifactId>poi</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.slf4j</groupId>
+		  <artifactId>slf4j-api</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>net.sf.json-lib</groupId>
+		  <artifactId>json-lib</artifactId>
+		  <classifier>jdk15</classifier>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.java-websocket</groupId>
+		  <artifactId>Java-WebSocket</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.freemarker</groupId>
+		  <artifactId>freemarker</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>dom4j</groupId>
+		  <artifactId>dom4j</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>myaspectjtools</groupId>
+		  <artifactId>myaspectjtools</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.aspectj</groupId>
+		  <artifactId>aspectjtools</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>commons-net</groupId>
+		  <artifactId>commons-net</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.codehaus.mojo</groupId>
+		  <artifactId>buildnumber-maven-plugin</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>com.google.code.findbugs</groupId>
+		  <artifactId>findbugs</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.codehaus.mojo</groupId>
+		  <artifactId>findbugs-maven-plugin</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.jasig.cas.client</groupId>
+		  <artifactId>cas-client-core</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.apache.ant</groupId>
+		  <artifactId>ant</artifactId>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.codehaus.groovy</groupId>
+		  <artifactId>groovy-all</artifactId>
+		</dependency>
+		
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+		  <groupId>com.mchange</groupId>
+		  <artifactId>c3p0</artifactId>
+		  <version>0.9.5.2</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.json</groupId>
+		  <artifactId>org.json</artifactId>
+		  <version>2.0</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>net.sourceforge.jexcelapi</groupId>
+		  <artifactId>jxl</artifactId>
+		  <version>2.6</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>com.belerweb</groupId>
+		  <artifactId>pinyin4j</artifactId>
+		  <version>2.5.1</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.apache.commons</groupId>
+		  <artifactId>commons-lang3</artifactId>
+		  <version>3.5</version>
+		</dependency>
+		
+		<dependency>
+		  <groupId>net.lingala.zip4j</groupId>
+		  <artifactId>zip4j</artifactId>
+		  <version>1.2.8</version>
+		</dependency>
+		
+			<dependency>
+	  <groupId>com.keman.base64</groupId>
+	  <artifactId>baes64Decoder</artifactId>
+	  <version>1.0</version>
+	</dependency>
+	<dependency>
+	  <groupId>com.keman.mail</groupId>
+	  <artifactId>mail</artifactId>
+	  <version>1.0</version>
+	</dependency>
+	<dependency>
+	  <groupId>com.keman.QRCode</groupId>
+	  <artifactId>QRCode</artifactId>
+	  <version>1.0</version>
+	</dependency>
+	<dependency>  
+	        <groupId>org.springframework.session</groupId>  
+	        <artifactId>spring-session</artifactId>  
+	        <version>1.0.1.RELEASE</version>  
+	    </dependency>  
+		<dependency>
+		  <groupId>org.springframework.session</groupId>
+		  <artifactId>spring-session-data-redis</artifactId>
+		  <version>1.2.1.RELEASE</version>
+		</dependency>
+		<dependency>
+		  <groupId>redis.clients</groupId>
+		  <artifactId>jedis</artifactId>
+		  <version>2.8.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.orange.redis-embedded</groupId>
+			<artifactId>embedded-redis</artifactId>
+			<version>0.6</version>
+	</dependency>
+	
+	
+	</dependencies>
+  
+</project>

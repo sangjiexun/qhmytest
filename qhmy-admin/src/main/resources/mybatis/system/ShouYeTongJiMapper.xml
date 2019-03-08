@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ShouYeTongJiMapper">
+    <!--实时在场人数  -->
+	<select id="findShiShiRenShu" parameterType="String" resultType="int">
+<!-- 		SELECT COUNT(DISTINCT(LAOWURENYUAN_PKID)) -->
+<!--  			 FROM (SELECT LAOWURENYUAN_PKID, -->
+<!--                MAX(CASE -->
+<!--                      WHEN JINHUOCHU = 2 THEN -->
+<!--                       SHUAKASHIJIAN -->
+<!--                    END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ, -->
+<!--                MAX(CASE -->
+<!--                      WHEN JINHUOCHU = 1 THEN -->
+<!--                       SHUAKASHIJIAN -->
+<!--                    END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ, -->
+<!--                JINHUOCHU -->
+<!--           FROM T_SHUAKAJILU -->
+<!--          WHERE  XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND SHUAKASHIJIAN >= TRUNC(SYSDATE)  )   -->
+<!--  		WHERE JINMENSJ > nvl(CHUMENSJ,trunc(SYSDATE)) -->
+SELECT RS FROM MV_XIANCHANGSSRS WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND RIQI=TRUNC(SYSDATE)
+
+	
+	</select>
+	<!--累计进场人数  -->
+	<select id="findljjc" parameterType="String" resultType="int">
+<!-- 		select count(distinct laowurenyuan_pkid )  -->
+<!--         from   -->
+<!--            t_shuakajilu   -->
+<!--        where XIANGMU_BIANMA=#{XIANGMU_BIANMA} and shuakashijian>=trunc(sysdate)  -->
+SELECT RILEIJIJCS FROM MV_INDEX_JCRS WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND RIQI=TRUNC(SYSDATE)
+	</select>
+	
+	<!-- 项目在场人数 -->
+	<select id="findzcrs" parameterType="String" resultType="int">
+<!-- 		select count(distinct pkid ) from t_laowurenyuan WHERE  zhuangtai=1 and XIANGMU_BIANMA=#{XIANGMU_BIANMA} -->
+SELECT ZAICHANGGRS FROM MV_INDEX_GRS WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+	</select>
+	
+	<!--饼图 工种实时人数统计  -->
+	<select id="findGongZhongRenShu" parameterType="String" resultType="pd">
+		SELECT MINGCHENG, MAX(RANK) RENSHU
+   FROM (SELECT MINGCHENG,
+                ROW_NUMBER() OVER(PARTITION BY MINGCHENG ORDER BY MINGCHENG) RANK
+           FROM T_ZD_GONGZHONG C
+           JOIN (
+                
+                SELECT A.GONGZHONG_BIANMA
+                  FROM T_LAOWURENYUAN A
+                  JOIN (SELECT DISTINCT (LAOWURENYUAN_PKID)
+                          FROM (SELECT LAOWURENYUAN_PKID,
+                                       MAX(CASE
+                                             WHEN JINHUOCHU = 2 THEN
+                                              SHUAKASHIJIAN
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+                                       MAX(CASE
+                                             WHEN JINHUOCHU = 1 THEN
+                                              SHUAKASHIJIAN
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+                                       JINHUOCHU
+                                  FROM T_SHUAKAJILU
+                                 WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND 
+                                 SHUAKASHIJIAN >= TRUNC(SYSDATE))
+                         WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE))) B ON A.PKID =
+                                                         B.LAOWURENYUAN_PKID AND A.zhuangtai=1  
+                
+                ) D ON C.BIANMA = D.GONGZHONG_BIANMA
+         
+         )
+  GROUP BY MINGCHENG
+	
+	
+	
+	</select>
+	
+	
+	<!--查询当天的工种人数  -->
+	<select id="findJrgz"  parameterType="String" resultType="pd">
+			 SELECT MINGCHENG, MAX(RANK) RENSHU
+   FROM (SELECT MINGCHENG,
+                ROW_NUMBER() OVER(PARTITION BY MINGCHENG ORDER BY MINGCHENG) RANK
+           FROM T_ZD_GONGZHONG C
+           JOIN (
+                
+                SELECT A.GONGZHONG_BIANMA
+                  FROM T_LAOWURENYUAN A
+                  JOIN (SELECT distinct(laowurenyuan_pkid) FROM t_shuakajilu WHERE 
+                  XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND 
+                                 SHUAKASHIJIAN >= TRUNC(SYSDATE)
+                  ) B ON A.PKID = B.LAOWURENYUAN_PKID <!--  AND A.zhuangtai=1 -->
+                
+                ) D ON C.BIANMA = D.GONGZHONG_BIANMA
+         
+         )
+  GROUP BY MINGCHENG
+	
+	</select>
+	
+	<!--最近一周实际到场人数  -->
+	<select id="shiJiRenshu"  parameterType="String" resultType="pd">
+		    
+SELECT TRUNC(SHUAKASHIJIAN) RIQI, MAX(RANK) RENSHU 
+  FROM (SELECT SHUAKASHIJIAN, 
+               LAOWURENYUAN_PKID, 
+               DENSE_RANK() OVER(PARTITION BY TRUNC(SHUAKASHIJIAN) ORDER BY LAOWURENYUAN_PKID DESC) RANK 
+          FROM (SELECT * 
+                  FROM T_SHUAKAJILU 
+                 WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND trunc(SYSDATE) - SHUAKASHIJIAN &lt;= 7 and SHUAKASHIJIAN &lt; TRUNC(SYSDATE)
+                    ) )
+ GROUP BY TRUNC(SHUAKASHIJIAN) 
+ ORDER BY TRUNC(SHUAKASHIJIAN) 
+	
+	</select>
+	
+	
+	
+	<!-- 查询项目下的队伍 -->
+	<select id="findDw" parameterType="String" resultType="pd">
+<!-- 		SELECT DUIWU_PKID, DUIZHANGMC  -->
+<!--   FROM ( -->
+        
+<!--         SELECT * -->
+<!--           FROM T_PROJECT_DUIWU A -->
+<!--           JOIN T_DUIWU B ON A.DUIWU_PKID = B.PKID -->
+<!--          WHERE A.XIANGMU_BIANMA = #{XIANGMU_BIANMA} )  -->
+<!--  GROUP BY DUIWU_PKID, DUIZHANGMC -->
+
+SELECT DUIWU_PKID, DUIZHANGMC, FENBAOSHANG_PKID, FENBAOSHANGMC
+  FROM (SELECT DUIWU_PKID, DUIZHANGMC, FENBAOSHANG_PKID
+          FROM (
+                
+                SELECT *
+                  FROM T_PROJECT_DUIWU A
+                  JOIN T_DUIWU B ON A.DUIWU_PKID = B.PKID
+                 WHERE A.XIANGMU_BIANMA = #{XIANGMU_BIANMA} AND a.zhuangtai='1' )
+         GROUP BY DUIWU_PKID, DUIZHANGMC, FENBAOSHANG_PKID) C
+  LEFT JOIN T_FENBAOSHANG D ON C.FENBAOSHANG_PKID = D.PKID
+
+		
+	</select>
+	
+	<!-- 每个队伍的实时在场人数-->
+	<select id="findSsRsByDwid" parameterType="pd" resultType="int">
+	SELECT COUNT(*) FROM 
+(SELECT DISTINCT(LAOWURENYUAN_PKID)
+  FROM (SELECT LAOWURENYUAN_PKID,
+               MAX(CASE
+                     WHEN JINHUOCHU = 2 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE
+                     WHEN JINHUOCHU = 1 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU
+          FROM T_SHUAKAJILU
+         WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} and SHUAKASHIJIAN >= TRUNC(SYSDATE) )
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE))) a JOIN t_laowurenyuan  b ON a.LAOWURENYUAN_PKID=b.pkid AND b.duiwu_pkid=#{duiwu_pkid} 
+	</select>
+	
+	<!-- 每个队伍日累计进场-->
+	<select id="findLjRsByDwid" parameterType="pd" resultType="int" >
+		select count(distinct laowurenyuan_pkid )  
+        from   
+           t_shuakajilu  a  JOIN  t_laowurenyuan b ON a.laowurenyuan_pkid=b.pkid 
+       where a.XIANGMU_BIANMA=#{XIANGMU_BIANMA} and a.shuakashijian>=trunc(sysdate)  AND b.duiwu_pkid=#{duiwu_pkid} 
+	
+	</select>
+	
+	<!--每个队伍在场人数  -->
+	<select id="findZcRsByDwid"  parameterType="pd" resultType="int"  >
+		select count(distinct pkid ) from t_laowurenyuan WHERE  zhuangtai=1 and XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND duiwu_pkid=#{duiwu_pkid}
+	
+	</select>
+	
+	<!-- 每个队伍某一天日累计进场-->
+	<select id="findDtLjRsByDwid" parameterType="pd" resultType="int" >
+		select count(distinct laowurenyuan_pkid )  
+        from   
+           t_shuakajilu  a  JOIN  t_laowurenyuan b ON a.laowurenyuan_pkid=b.pkid 
+       where a.XIANGMU_BIANMA=#{XIANGMU_BIANMA} and to_char(a.shuakashijian,'mm/dd')=#{riqi}  AND b.duiwu_pkid=#{duiwu_pkid} 
+	
+	</select>
+	
+	
+	<!--一个项目有哪些工种  -->
+	<select id="findGzByXmbm" parameterType="pd" resultType="pd">
+	SELECT c.bianma,c.mingcheng
+	FROM T_ZD_GONGZHONG C JOIN (
+	SELECT distinct(gongzhong_bianma) from t_laowurenyuan WHERE zhuangtai=1 AND
+	XIANGMU_BIANMA=#{XIANGMU_BIANMA} ) d ON C.BIANMA = D.GONGZHONG_BIANMA   
+	</select>
+	
+	
+	<!--分别查每种工种的 现场实时人数 日累计进场 项目在场人数  -->
+	<!-- 实时人数 -->
+	<select id="countSsrsByGz" parameterType="pd" resultType="int">
+		SELECT COUNT(*) FROM t_laowurenyuan a JOIN   
+                        (SELECT DISTINCT (LAOWURENYUAN_PKID) 
+                          FROM (SELECT LAOWURENYUAN_PKID, 
+                                       MAX(CASE 
+                                             WHEN JINHUOCHU = 2 THEN 
+                                              SHUAKASHIJIAN 
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ, 
+                                       MAX(CASE
+                                             WHEN JINHUOCHU = 1 THEN
+                                              SHUAKASHIJIAN
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ, 
+                                       JINHUOCHU
+                                  FROM T_SHUAKAJILU
+                                 WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND 
+                                 SHUAKASHIJIAN >= TRUNC(SYSDATE)) 
+                         WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE)) 
+                         ) b ON  a.pkid=b.LAOWURENYUAN_PKID WHERE <!-- a.zhuangtai=1  AND--> a.gongzhong_bianma=#{GONGZHONG_BIANMA}
+		
+	</select>
+	<!--累计人数  -->
+	<select id="countLjrsByGz" parameterType="pd" resultType="int">
+		SELECT COUNT(*)  
+      FROM T_LAOWURENYUAN A 
+      JOIN (SELECT DISTINCT (LAOWURENYUAN_PKID) 
+              FROM T_SHUAKAJILU 
+             WHERE XIANGMU_BIANMA = #{XIANGMU_BIANMA} 
+               AND SHUAKASHIJIAN >= TRUNC(SYSDATE)) B ON A.PKID = B.LAOWURENYUAN_PKID 
+     WHERE <!-- A.ZHUANGTAI = 1 AND  -->
+     A.GONGZHONG_BIANMA = #{GONGZHONG_BIANMA}
+	</select>
+	<!--在场人数  -->
+	<select id="countZcRsByGz" parameterType="pd" resultType="int">
+		SELECT COUNT(DISTINCT pkid)  from t_laowurenyuan WHERE   zhuangtai=1 and    XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND gongzhong_bianma=#{GONGZHONG_BIANMA} 
+	</select>
+	
+	<!-- 饼图 第二个list页面的语句 -->
+	
+	<!--查询一个项目下的一个工种都对应 有哪些队伍  -->
+	<select id="listDwBygz" parameterType="pd" resultType="pd">
+		SELECT C.*,D.FENBAOSHANGMC FROM ( 
+SELECT B.DUIZHANGMC,B.PKID, B.FENBAOSHANG_PKID 
+  FROM (SELECT *  
+          FROM T_LAOWURENYUAN 
+         WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND GONGZHONG_BIANMA=#{GONGZHONG_BIANMA} <!--  AND 
+         ZHUANGTAI = 1-->) A 
+  JOIN T_DUIWU B ON A.DUIWU_PKID = B.PKID 
+ GROUP BY B.DUIZHANGMC, B.FENBAOSHANG_PKID,B.PKID) C LEFT JOIN T_FENBAOSHANG D ON C.FENBAOSHANG_PKID=D.PKID
+	</select>
+	
+	<!--根据队伍pkid和工种编码查实时人数 -->
+	<select id="countSsRsByDwpkid" parameterType="pd" resultType="int">
+		
+SELECT COUNT(*) FROM  
+(SELECT DISTINCT(LAOWURENYUAN_PKID) 
+  FROM (SELECT LAOWURENYUAN_PKID, 
+               MAX(CASE 
+                     WHEN JINHUOCHU = 2 THEN 
+                      SHUAKASHIJIAN 
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE 
+                     WHEN JINHUOCHU = 1 THEN 
+                      SHUAKASHIJIAN 
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU 
+          FROM T_SHUAKAJILU 
+         WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND SHUAKASHIJIAN >= TRUNC(SYSDATE)) 
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE))) A JOIN T_LAOWURENYUAN  B ON A.LAOWURENYUAN_PKID=B.PKID AND B.DUIWU_PKID=#{DUIWU_PKID} AND B.GONGZHONG_BIANMA=#{GONGZHONG_BIANMA}
+	</select>
+	
+	<!-- 根据队伍pkid查累计进场人数 -->
+	<select id="countLjrsByDwpkid" parameterType="pd" resultType="int">
+      SELECT COUNT(DISTINCT LAOWURENYUAN_PKID ) 
+         FROM  
+           T_SHUAKAJILU  A  JOIN  T_LAOWURENYUAN B ON A.LAOWURENYUAN_PKID=B.PKID
+       WHERE A.XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND A.SHUAKASHIJIAN>=TRUNC(SYSDATE)  AND B.DUIWU_PKID=#{DUIWU_PKID}  AND B.GONGZHONG_BIANMA=#{GONGZHONG_BIANMA}
+	</select>
+	
+	<!-- 根据队伍pkid在场人数   -->
+	<select id="countZcrsByDwpkid" parameterType="pd" resultType="int">
+		SELECT COUNT(DISTINCT PKID) FROM T_LAOWURENYUAN WHERE  ZHUANGTAI=1 AND XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND DUIWU_PKID=#{DUIWU_PKID} AND GONGZHONG_BIANMA=#{GONGZHONG_BIANMA} 
+	</select>
+	
+	<!--查询当前项目 当前工种 当前队伍下的班组  -->
+	<select id="listBz" parameterType="pd" resultType="pd" >
+		
+SELECT A.* 
+  FROM T_BANZU A 
+ 
+  JOIN (SELECT PKID 
+          FROM T_PROJECT_DUIWU 
+         WHERE DUIWU_PKID = #{DUIWU_PKID} 
+           AND XIANGMU_BIANMA = #{XIANGMU_BIANMA} 
+           AND ZHUANGTAI = 1) B ON A.PROJECT_DUIWU_PKID = B.PKID WHERE A.DUIWU_PKID = #{DUIWU_PKID} 
+   AND A.ZHUANGTAI = 1  
+   AND A.GONGZHONG = #{GONGZHONG_BIANMA}
+	</select>
+	
+	<!-- 根据班组查 实时人数 -->
+	<select id="countbZsSrs" parameterType="pd" resultType="int">
+		SELECT COUNT(*) FROM  
+(SELECT DISTINCT(LAOWURENYUAN_PKID) 
+  FROM (SELECT LAOWURENYUAN_PKID, 
+               MAX(CASE 
+                     WHEN JINHUOCHU = 2 THEN 
+                      SHUAKASHIJIAN 
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE 
+                     WHEN JINHUOCHU = 1 THEN 
+                      SHUAKASHIJIAN 
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU 
+          FROM T_SHUAKAJILU 
+         WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND SHUAKASHIJIAN >= TRUNC(SYSDATE)) 
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE))) A JOIN T_LAOWURENYUAN  B ON A.LAOWURENYUAN_PKID=B.PKID AND B.DUIWU_PKID=#{DUIWU_PKID} AND B.GONGZHONG_BIANMA=#{GONGZHONG_BIANMA} 
+ AND B.ZHUANGTAI=1 AND B.BANZU_PKID=#{BANZU_PKID}
+	
+	</select>
+	
+	<!-- 根据班组查累计人数 -->
+	<select id="countbZlJrs" parameterType="pd" resultType="int">
+		 SELECT COUNT(DISTINCT LAOWURENYUAN_PKID ) 
+         FROM  
+           T_SHUAKAJILU  A  JOIN  T_LAOWURENYUAN B ON A.LAOWURENYUAN_PKID=B.PKID
+       WHERE A.XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND A.SHUAKASHIJIAN>=TRUNC(SYSDATE)  
+       AND B.DUIWU_PKID=#{DUIWU_PKID}  AND B.GONGZHONG_BIANMA=#{GONGZHONG_BIANMA} 
+       <!--  AND B.ZHUANGTAI=1--> AND B.BANZU_PKID=#{BANZU_PKID}
+	
+	</select>
+	<!-- 根据班组查 项目在场人数 -->
+	<select id="countbZzCrs" parameterType="pd" resultType="int">
+	    SELECT COUNT(DISTINCT PKID) FROM T_LAOWURENYUAN WHERE  
+	    ZHUANGTAI=1 AND XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND DUIWU_PKID=#{DUIWU_PKID} 
+	    AND GONGZHONG_BIANMA=#{GONGZHONG_BIANMA} 
+	    AND ZHUANGTAI=1 AND BANZU_PKID=#{BANZU_PKID}
+	
+	</select>
+	
+	
+	<!-- 根据项目id查项目名称 -->
+	<select id="findXmmcBybm" parameterType="String" resultType="String">
+	 SELECT XIANGMUMC FROM V_T_PROJECT WHERE XIANGMUBM=#{XIANGMU_BIANMA}
+	
+	</select>
+	<!--根据项目编码  -->
+	
+	
+	<!--风险预警模块   -->
+	<!--查询当前项目预警规则  -->
+	<select id="getYuJingGZ" parameterType="String" resultType="pd">
+	SELECT  * FROM T_YUJING_RULE K WHERE K.XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+	</select>
+	
+	<!-- 班组当天出勤率  -->
+	<!--每个班组当天累计进场人数  -->
+	<select id="getbzljrs" parameterType="String" resultType="pd">
+	SELECT BANZU_PKID, MAX(RANK) RENSHU FROM (
+SELECT A.*,ROW_NUMBER() OVER(PARTITION BY BANZU_PKID ORDER BY PKID DESC) RANK  FROM T_LAOWURENYUAN A JOIN  (
+SELECT DISTINCT (LAOWURENYUAN_PKID )
+FROM 
+T_SHUAKAJILU WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+AND  SHUAKASHIJIAN>=TRUNC(SYSDATE)
+)B ON A.PKID=B.LAOWURENYUAN_PKID
+
+) GROUP BY BANZU_PKID
+	</select>
+	
+	<!--每个班组总的在场人数  -->
+	<select id="getTotalBzRs"  parameterType="pd" resultType="int">
+	SELECT COUNT(*) FROM T_LAOWURENYUAN WHERE ZHUANGTAI=1 AND XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND BANZU_PKID=#{BANZU_PKID}
+	</select>
+	
+	<!--每个队伍当天累计进场人数  -->
+	<select id="getdwljrs" parameterType="String" resultType="pd">
+	SELECT DUIWU_PKID, MAX(RANK) RENSHU FROM (
+SELECT A.*,ROW_NUMBER() OVER(PARTITION BY DUIWU_PKID ORDER BY PKID DESC) RANK  FROM T_LAOWURENYUAN A JOIN  (
+SELECT DISTINCT (LAOWURENYUAN_PKID )
+FROM 
+T_SHUAKAJILU WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+AND  SHUAKASHIJIAN>=TRUNC(SYSDATE)
+)B ON A.PKID=B.LAOWURENYUAN_PKID
+
+) GROUP BY DUIWU_PKID
+	</select>
+	
+	<!--每个队伍总的在场人数  -->
+	<select id="getTotalDwRs"  parameterType="pd" resultType="int">
+	SELECT COUNT(*) FROM T_LAOWURENYUAN WHERE ZHUANGTAI=1 AND XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND DUIWU_PKID=#{DUIWU_PKID}
+	</select>
+	
+	<!--每个工种当天累计进场数  -->
+	<select id="getgzljrs" parameterType="String" resultType="pd">
+	SELECT GONGZHONG_BIANMA, MAX(RANK) RENSHU FROM (
+SELECT A.*,ROW_NUMBER() OVER(PARTITION BY GONGZHONG_BIANMA ORDER BY PKID DESC) RANK  FROM T_LAOWURENYUAN A JOIN  (
+SELECT DISTINCT (LAOWURENYUAN_PKID )
+FROM 
+T_SHUAKAJILU WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA}
+AND  SHUAKASHIJIAN>=TRUNC(SYSDATE)
+)B ON A.PKID=B.LAOWURENYUAN_PKID
+
+) GROUP BY GONGZHONG_BIANMA
+	</select>
+	
+	<!--每个工种伍总的数  -->
+	<select id="getTotalGzRs"  parameterType="pd" resultType="int">
+	SELECT COUNT(*) FROM T_LAOWURENYUAN WHERE ZHUANGTAI=1 AND XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND GONGZHONG_BIANMA=#{GONGZHONG_BIANMA}
+	</select>
+	
+	<!--查询昨天未出场的人数  -->
+	<select id="getWeiCcRs" parameterType="pd" resultType="int">
+		<!-- SELECT COUNT(DISTINCT(LAOWURENYUAN_PKID))
+  FROM (SELECT LAOWURENYUAN_PKID,
+               MAX(CASE
+                     WHEN JINHUOCHU = 2 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE
+                     WHEN JINHUOCHU = 1 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU
+          FROM T_SHUAKAJILU
+         WHERE SHUAKASHIJIAN = TRUNC(SYSDATE-1) AND XIANGMU_BIANMA=#{XIANGMU_BIANMA})
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE)) -->
+ select count(*) from (
+select sk.*,max(shuakashijian) over(partition by laowurenyuan_pkid order by shuakashijian desc) as maxsj 
+from t_shuakajilu sk 
+where 1=1 
+and shuakashijian>=trunc(sysdate-1) and shuakashijian &lt; trunc(sysdate)
+and xiangmu_bianma=#{XIANGMU_BIANMA}
+) T where 1=1 and maxsj=shuakashijian and ((jinhuochu=1) or  (jinhuochu=2 and shuakashijian &gt;to_date(#{RULEDATE},'yyyy-MM-dd HH24:mi')));
+	
+	</select>
+	<!--连续在场N天  X小时未出场的  -->
+	<select id="getLianxuWccRs" parameterType="pd" resultType="int">
+		SELECT COUNT(*) FROM (
+select 
+  laowurenyuan_pkid,min(qiandaoshijian) as startDate,max(qiandaoshijian) as endDate,count(*) as "length" 
+from (
+  SELECT pkid,laowurenyuan_pkid,qiandaoshijian
+    ,qiandaoshijian-row_number() over (partition by laowurenyuan_pkid order by qiandaoshijian) as grp 
+  from T_LAOWURENYUAN_KAOQIN WHERE gongshi>#{GONGRENZCSJ_XIAOSHI} and PROJECT_BIANMA=#{XIANGMU_BIANMA} 
+) t group by laowurenyuan_pkid,grp
+having count(*)&gt;=#{GONGRENZCSJ_TIAN}
+)
+	
+	</select>
+	
+	<!-- 安全教育预警 -->
+	<select id="getSafeEduBetweenMonths" parameterType="String" resultType="int">
+		SELECT TRUNC(MONTHS_BETWEEN(SYSDATE,MAX(RIQI))) DAYS FROM T_ANQUANJIAOYU WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} 
+	</select>
+	
+	
+	
+	
+	
+	
+	<!-- 最新动态 -->
+	<select id="getZuiXDt" parameterType="String" resultType="pd">
+ SELECT t.*,ROWNUM RM FROM (
+SELECT B.XINGMING, A.OPERTYPE, to_char(A.CJSJ,'yyyy-mm-dd hh24:mi') CJSJ 
+  FROM T_OP_LOG A
+  JOIN T_LAOWURENYUAN B ON A.LAOWURENYUAN_PKID = B.PKID
+ WHERE A.XIANGMU_BM=#{XIANGMU_BIANMA} 
+ ORDER BY A.CJSJ DESC)t  WHERE ROWNUM &lt; 6
+	
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<!--下面是组织首页的SQL  -->
+	<!--项目在册人数  -->
+	<select id="getZaiCeRs" resultType="Integer">
+		SELECT COUNT(DISTINCT PKID) 
+		FROM T_LAOWURENYUAN 
+		WHERE XIANGMU_BIANMA IN
+		 <foreach item="item" index="index" collection="list"   
+                         open="(" separator="," close=")">  
+                        #{item}  
+         </foreach>  
+		AND ZHUANGTAI<![CDATA[ <> ]]> -1
+	
+	</select>
+	
+	<!--在场人数  -->
+	<select id="getZaiChRs" resultType="Integer">
+		SELECT COUNT(DISTINCT PKID) 
+		FROM T_LAOWURENYUAN 
+		WHERE XIANGMU_BIANMA IN
+		 <foreach item="item" index="index" collection="list"   
+                         open="(" separator="," close=")">  
+                        #{item}  
+         </foreach>  
+		AND ZHUANGTAI=1
+	</select>
+	
+	<!-- 累计进场 -->
+	<select id="getLjJcRs" resultType="Integer">
+		SELECT COUNT(DISTINCT LAOWURENYUAN_PKID)
+  FROM T_SHUAKAJILU
+ WHERE SHUAKASHIJIAN >= TRUNC(SYSDATE)
+   AND XIANGMU_BIANMA IN 
+   <foreach item="item" index="index" collection="list"   
+                         open="(" separator="," close=")">  
+                        #{item}  
+         </foreach>  
+	</select>
+	
+	<!-- 现场实时人数 -->
+	<select id="getSsRs" resultType="Integer">
+		
+         SELECT COUNT(DISTINCT(LAOWURENYUAN_PKID))
+  FROM (SELECT LAOWURENYUAN_PKID,
+               MAX(CASE
+                     WHEN JINHUOCHU = 2 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE
+                     WHEN JINHUOCHU = 1 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU
+          FROM T_SHUAKAJILU
+         WHERE SHUAKASHIJIAN >= TRUNC(SYSDATE) AND xiangmu_bianma IN
+         
+         <foreach item="item" index="index" collection="list"   
+                         open="(" separator="," close=")">  
+                        #{item}  
+         </foreach>  
+         
+         )
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE)) 
+	</select>
+	
+	<!--组织首页统计的柱状图开始了  -->
+	<!--组织的每个项目现场实时人数 并且 倒叙排序 取前10的记录  -->
+	<select id="getTop10ZongRsXm" resultType="pd">
+		
+        SELECT a.* ,ROWNUM rn FROM (
+SELECT COUNT(DISTINCT LAOWURENYUAN_PKID ) renshu,xiangmu_bianma 
+  FROM (SELECT LAOWURENYUAN_PKID,xiangmu_bianma,
+               MAX(CASE
+                     WHEN JINHUOCHU = 2 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+               MAX(CASE
+                     WHEN JINHUOCHU = 1 THEN
+                      SHUAKASHIJIAN
+                   END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+               JINHUOCHU
+          FROM T_SHUAKAJILU
+         WHERE SHUAKASHIJIAN >= TRUNC(SYSDATE) AND xiangmu_bianma IN
+         
+         <foreach item="item" index="index" collection="list"   
+                         open="(" separator="," close=")">  
+                        #{item}  
+         </foreach>  
+         
+         
+         )
+ WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE)) GROUP BY xiangmu_bianma ORDER BY renshu DESC ) a  WHERE ROWNUM &lt;=10
+     
+	</select>
+	
+	
+	
+	<!--组织统计-饼图  -->
+	<!--组织节点下的实时工种以及人数  -->
+	<select id="getShsGzRs" resultType="pd">
+		SELECT MINGCHENG, MAX(RANK) RENSHU
+   FROM (SELECT MINGCHENG,
+                ROW_NUMBER() OVER(PARTITION BY MINGCHENG ORDER BY MINGCHENG) RANK
+           FROM T_ZD_GONGZHONG C
+           JOIN (
+                
+                SELECT A.GONGZHONG_BIANMA
+                  FROM T_LAOWURENYUAN A 
+                 RIGHT OUTER  JOIN (SELECT DISTINCT (LAOWURENYUAN_PKID)
+                          FROM (SELECT LAOWURENYUAN_PKID,
+                                       MAX(CASE
+                                             WHEN JINHUOCHU = 2 THEN
+                                              SHUAKASHIJIAN
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS CHUMENSJ,
+                                       MAX(CASE
+                                             WHEN JINHUOCHU = 1 THEN
+                                              SHUAKASHIJIAN
+                                           END) OVER(PARTITION BY LAOWURENYUAN_PKID ORDER BY SHUAKASHIJIAN DESC) AS JINMENSJ,
+                                       JINHUOCHU
+                                  FROM T_SHUAKAJILU
+                                 WHERE xiangmu_bianma IN
+                                 
+                                 <foreach item="item" index="index" collection="list"   
+                                 open="(" separator="," close=")">  
+                                  #{item}  
+                                 </foreach>  
+                                 
+                                 AND 
+                                 SHUAKASHIJIAN &gt;= TRUNC(SYSDATE))
+                         WHERE JINMENSJ >nvl(CHUMENSJ,trunc(SYSDATE))) B ON A.PKID =
+                                                         B.LAOWURENYUAN_PKID 
+                
+                ) D ON C.BIANMA = D.GONGZHONG_BIANMA
+         
+         )
+  GROUP BY MINGCHENG
+	</select>
+	<!--今日的工种人数  -->
+	<select id="getJrGzRs" resultType="pd">
+		SELECT MINGCHENG, MAX(RANK) RENSHU
+   FROM (SELECT MINGCHENG,
+                ROW_NUMBER() OVER(PARTITION BY MINGCHENG ORDER BY MINGCHENG) RANK
+           FROM T_ZD_GONGZHONG C
+           JOIN (        
+                SELECT A.GONGZHONG_BIANMA
+                  FROM T_LAOWURENYUAN A
+                  JOIN (SELECT distinct(laowurenyuan_pkid) FROM t_shuakajilu  WHERE xiangmu_bianma IN
+                   <foreach item="item" index="index" collection="list"   
+                                 open="(" separator="," close=")">  
+                                  #{item}  
+                                 </foreach>
+                  
+                  AND SHUAKASHIJIAN &gt;= TRUNC(SYSDATE)
+                  ) B ON A.PKID = B.LAOWURENYUAN_PKID <!--AND A.zhuangtai=1 */-->
+                
+                ) D ON C.BIANMA = D.GONGZHONG_BIANMA
+         
+         )
+  GROUP BY MINGCHENG
+	
+	</select>
+	
+	<!--组织首页折线图  -->
+	<!--组织最近7天项目的实际到场人数  -->
+	<select id="getLatest7daysDchRs" resultType="pd">
+	SELECT TRUNC(SHUAKASHIJIAN) RIQI, MAX(RANK) RENSHU 
+  FROM (SELECT SHUAKASHIJIAN, 
+               LAOWURENYUAN_PKID, 
+               DENSE_RANK() OVER(PARTITION BY TRUNC(SHUAKASHIJIAN) ORDER BY LAOWURENYUAN_PKID DESC) RANK 
+          FROM (SELECT * 
+                  FROM T_SHUAKAJILU 
+                 WHERE xiangmu_bianma IN
+                 
+                 <foreach item="item" index="index" collection="list"   
+                                 open="(" separator="," close=")">  
+                                  #{item}  
+                 </foreach>
+                 
+                 AND SYSDATE - SHUAKASHIJIAN &lt;= 7 and SHUAKASHIJIAN &lt; TRUNC(SYSDATE)<!--  AND SYSDATE - SHUAKASHIJIAN >0 -->
+                    ) )
+ GROUP BY TRUNC(SHUAKASHIJIAN) 
+ ORDER BY TRUNC(SHUAKASHIJIAN) 
+	
+	
+	</select>
+	
+	<!--某个项目某天的日累计进场人数  -->
+	<select id="getXmLjRs" parameterType="pd" resultType="int">
+		 SELECT COUNT(DISTINCT LAOWURENYUAN_PKID ) 
+        FROM  
+           T_SHUAKAJILU  
+       WHERE XIANGMU_BIANMA=#{XIANGMU_BIANMA} AND TO_CHAR(SHUAKASHIJIAN,'MM/DD')=#{RIQI}	
+	</select>
+	
+	<!-- 查询当前组织下的项目 -->
+	<select id="listCurrentOrgProjects" parameterType="pd" resultType="pd">
+		select "ID", "XIANGMUBM", "DEPARTMENT_ID", "XIANGMUMC"
+  		from v_t_project p
+ 		where p.DEPARTMENT_ID in 
+       (select t.department_id
+          from v_SYS_DEPARTMENT t
+         start with t.DEPARTMENT_ID = #{DEPARTMENT_ID}
+        connect by prior t.DEPARTMENT_ID = t.PARENT_ID)
+      <!--  <if test="USER_ID!=null and USER_ID!='' and USER_ID !='1'.toString() and USER_ID !='0'.toString() ">
+        	and id in
+       (select PROJECT_ID from v_sys_user_project up where up.user_id = #{USER_ID})
+        
+        </if> -->
+   		
+       <if test="keywords != null and keywords != ''">
+			and
+				(
+				 "XIANGMUMC" LIKE CONCAT(CONCAT('%', #{keywords}),'%')
+				)
+		</if>
+	
+	
+	
+	</select>
+	
+	
+	<!--组织项目树加载时判断项目是否在有效期内  -->
+	<select id="isOutYouXiaoQi" parameterType="pd" resultType="Integer" statementType="STATEMENT">
+		SELECT COUNT(*) FROM ${tablename} T WHERE  T.XIANGMUBM_PROJECT=${XIANGMUBM} AND T.YOUXIAOQIZHI>SYSDATE
+	</select>
+	
+	<!--组织项目树加载时判断项目是否授权 -->
+	<select id="isShouQuan" parameterType="pd" resultType="Integer" statementType="STATEMENT">
+		SELECT COUNT(*) FROM ${tablename} T WHERE  T.XIANGMUBM_PROJECT=${XIANGMUBM}
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

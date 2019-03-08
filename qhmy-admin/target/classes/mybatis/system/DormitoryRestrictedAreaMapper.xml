@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DormitoryRestrictedAreaMapper">
+	<select id="getDrArealist" parameterType="pd" resultType="pd">
+		select * from T_DORM_RESTRICTEDAREA d
+	</select>
+	<update id="update" parameterType="pd" >
+		update T_DORM_RESTRICTEDAREA d set d.AREATYPE = #{AREATYPE}
+	</update>
+	<insert id="save" parameterType="pd">
+		insert into t_dorm_restrictedarea
+  		(pkid, areatype, createtime, updatetime)
+		values
+  		(sys_guid(), #{AREATYPE}, SYSDATE, SYSDATE)
+	</insert>
+	<select id="getStudent" parameterType="pd" resultType="pd">
+		select count(*) as cou from T_STUDENT_DORM d 
+	</select>
+</mapper>

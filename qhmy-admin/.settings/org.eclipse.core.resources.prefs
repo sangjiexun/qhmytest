@@ -1,0 +1,13 @@
+eclipse.preferences.version=1
+encoding//src/main/java=UTF-8
+encoding//src/main/resources=UTF-8
+encoding//src/main/resources/conf.properties=UTF-8
+encoding//src/main/resources/spring/redis.properties=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/system/index/left.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/system/index/top.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/system/index/zuzhi.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/system/receipt/receiptSetting.jsp=UTF-8
+encoding//src/main/webapp/static/ace/mycss/home_chart.css=UTF-8
+encoding//src/main/webapp/static/ace/mycss/home_chart2.css=UTF-8
+encoding//src/test/java=UTF-8
+encoding/<project>=UTF-8
